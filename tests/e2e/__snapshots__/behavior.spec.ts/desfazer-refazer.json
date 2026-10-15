@@ -1,0 +1,7 @@
+{
+  "after": "<p><b>abc</b>XYZ</p>",
+  "undo1": "<p>abcXYZ</p>",
+  "undo2": "<p>abc</p>",
+  "redo1": "<p>abcXYZ</p>",
+  "redo2": "<p><b>abc</b>XYZ</p>"
+}

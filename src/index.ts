@@ -1,5 +1,5 @@
 export { default as VersaEdit, default } from './react/VersaEdit'
-export type { VersaEditProps } from './react/VersaEdit'
+export type { VersaEditHandle, VersaEditProps } from './react/VersaEdit'
 export type { VersaEditLabels, VersaEditLocale } from './core/i18n'
 export type { FontFamilyOption, FrameOptions } from './core/defaults'
 export {

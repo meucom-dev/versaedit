@@ -6,9 +6,9 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules'] },
+  { ignores: ['dist', 'node_modules', 'test-results', 'playwright-report'] },
   {
-    files: ['src/**/*.{ts,tsx}', 'playground/**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}', 'playground/**/*.{ts,tsx}', 'tests/**/*.ts'],
     extends: [
       js.configs.recommended,
       ...tseslint.configs.recommended,
