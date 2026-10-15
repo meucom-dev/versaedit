@@ -46,6 +46,15 @@ const CSS = `
 .ve-highlight-sample { font-weight: 600; background: #ffff00; padding: 0 3px; border-radius: 2px; }
 .ve-highlight-remove { font-weight: 600; opacity: 0.5; text-decoration: line-through; }
 
+/* Ditado */
+.ve-dictation { position: relative; display: inline-flex; }
+.ve-btn.ve-recording { color: #fff; background: #d92d20; animation: ve-pulse 1.4s ease-in-out infinite; }
+.ve-btn.ve-recording:hover { background: #b42318; }
+@keyframes ve-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(217,45,32,0.45); } 50% { box-shadow: 0 0 0 5px rgba(217,45,32,0); } }
+@media (prefers-reduced-motion: reduce) { .ve-btn.ve-recording { animation: none; } }
+.ve-dictation-bubble { position: absolute; top: calc(100% + 6px); left: 0; z-index: 205; max-width: 320px; min-width: 120px; padding: 6px 10px; background: #1f2328; color: #fff; border-radius: 6px; font-size: 12px; line-height: 1.4; box-shadow: 0 4px 12px rgba(0,0,0,0.2); white-space: normal; }
+.ve-dictation-bubble.ve-dictation-error { background: #b42318; }
+
 /* Formulário de link */
 .ve-link-wrap { position: relative; display: inline-flex; }
 .ve-link-popover { position: absolute; top: calc(100% + 6px); left: 0; z-index: 210; display: grid; gap: 6px; width: 260px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.18); font-size: 12px; color: #333; }

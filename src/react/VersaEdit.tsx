@@ -24,6 +24,11 @@ import {
 } from '../core/defaults'
 import { VersaEditCore, type LinkDraft, type ObjectState } from '../core/editor'
 import { resolveLabels, type VersaEditLabels, type VersaEditLocale } from '../core/i18n'
+import {
+  browserSpeechRecognition,
+  SPEECH_LANG,
+  type SpeechRecognitionConstructor,
+} from '../core/speech'
 import { injectStyles } from '../core/styles'
 import { ObjectToolbar } from './floating/ObjectToolbar'
 import { ResizeHandle } from './floating/ResizeHandle'
@@ -79,6 +84,16 @@ export interface VersaEditProps {
    * Sem ele, a imagem é gravada no conteúdo em base64.
    */
   onImageUpload?: (file: File) => Promise<string>
+  /**
+   * Botão de ditado (fala para texto) pelo microfone. Padrão: true; aparece só
+   * nos navegadores com reconhecimento de voz (Chrome, Edge, Safari), que
+   * processam o áudio nos servidores do fabricante.
+   */
+  showDictation?: boolean
+  /** Idioma do ditado (padrão: o do `locale`, ex.: 'pt-BR', 'en-US') */
+  speechLang?: string
+  /** Outro mecanismo de reconhecimento com a interface do SpeechRecognition */
+  speechRecognition?: SpeechRecognitionConstructor
   /** Idioma da interface (padrão: 'en') */
   locale?: VersaEditLocale
   /** Troca qualquer texto da interface */
@@ -128,6 +143,9 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     showFileButtons = true,
     onSave,
     onImageUpload,
+    showDictation = true,
+    speechLang,
+    speechRecognition,
     locale = 'en',
     labels,
   },
@@ -263,6 +281,15 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     if (link.href !== href) link.href = href
   }, [googleFontsKey])
 
+  // Ditado: só com mecanismo de reconhecimento disponível
+  const [browserRecognition] = useState(browserSpeechRecognition)
+  const recognition = speechRecognition ?? browserRecognition
+  const dictationLang = speechLang ?? SPEECH_LANG[locale] ?? 'en-US'
+  const dictation = useMemo(
+    () => (showDictation && recognition ? { recognition, lang: dictationLang } : null),
+    [showDictation, recognition, dictationLang],
+  )
+
   const rootStyle = {
     '--ve-accent': accentColor,
     ...(headingFontFamily ? { '--ve-heading-font': headingFontFamily } : {}),
@@ -286,6 +313,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
         linkDraft={linkDraft}
         openLink={openLink}
         closeLink={closeLink}
+        dictation={dictation}
       />
 
       {/* ═══ ÁREA DE EDIÇÃO — largura, altura e moldura configuráveis ═══ */}

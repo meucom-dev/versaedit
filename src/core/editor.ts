@@ -50,6 +50,7 @@ import {
   type TbBorderStyle,
 } from './objects'
 import { applyPendingStyleToFragment, buildPasteHtml } from './paste'
+import { applyVoiceCommands, formatDictatedText } from './speech'
 import { isSafeUrl, safeCssColor, sanitizeHtml } from './sanitize'
 import {
   isRangeWithinEditor,
@@ -640,6 +641,44 @@ export class VersaEditCore {
       reader.onload = (ev) => insert(typeof ev.target?.result === 'string' ? ev.target.result : '')
       reader.readAsDataURL(file)
     })
+  }
+
+  // ─── DITADO ──────────────────────────────────────────────────────
+  /**
+   * Insere um trecho ditado no cursor (ou no lugar da seleção): troca os
+   * comandos de voz pela pontuação, separa do texto anterior com espaço e põe
+   * maiúscula no início de frase.
+   */
+  insertDictation = (spoken: string): void => {
+    const editor = this.el
+    let range = this.getCurrentRange()
+    if (!range) {
+      range = document.createRange()
+      range.selectNodeContents(editor)
+      range.collapse(false)
+    }
+    this.restoreRange(range)
+
+    // Texto do bloco atual até o cursor, para decidir espaço e maiúscula
+    let block: Node = range.startContainer
+    while (block.parentNode && block.parentNode !== editor && block !== editor) {
+      block = block.parentNode
+    }
+    const before = document.createRange()
+    before.setStart(block, 0)
+    before.setEnd(range.startContainer, range.startOffset)
+    const text = formatDictatedText(applyVoiceCommands(spoken, this.opts.locale), before.toString())
+    if (!text) return
+
+    for (const piece of text.split(/(\n\n|\n)/)) {
+      if (piece === '\n\n') exec('insertParagraph')
+      else if (piece === '\n') exec('insertLineBreak')
+      else if (piece) exec('insertText', piece)
+    }
+    const after = window.getSelection()
+    if (after?.rangeCount) this.savedRange = after.getRangeAt(0).cloneRange()
+    this.enforceHeight()
+    this.emitChange()
   }
 
   // ─── LINK (formulário da interface, sem prompt()) ──────────────

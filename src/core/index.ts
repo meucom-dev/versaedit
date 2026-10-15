@@ -13,4 +13,5 @@ export {
 export * from './defaults'
 export { format, resolveLabels, type VersaEditLabels, type VersaEditLocale } from './i18n'
 export { injectStyles } from './styles'
+export * from './speech'
 export { escapeHtml, isSafeUrl, purifyHtml, sanitizeHtml } from './sanitize'

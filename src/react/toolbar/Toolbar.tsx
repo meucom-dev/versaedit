@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import type { FontFamilyOption } from '../../core/defaults'
 import type { LinkDraft, TextboxBorder, VersaEditCore } from '../../core/editor'
+import type { SpeechRecognitionConstructor } from '../../core/speech'
 import type { VersaEditLabels } from '../../core/i18n'
 import {
   IconAlignCenter,
@@ -25,6 +26,7 @@ import {
 } from '../icons'
 import { ColorPicker, type ColorKind } from './ColorPicker'
 import { FontPicker } from './FontPicker'
+import { DictationButton } from './DictationButton'
 import { HighlightPicker } from './HighlightPicker'
 import { LinkPopover } from './LinkPopover'
 import { TextboxControls } from './TextboxControls'
@@ -62,6 +64,7 @@ export function Toolbar({
   linkDraft,
   openLink,
   closeLink,
+  dictation,
 }: {
   core: () => VersaEditCore | null
   labels: VersaEditLabels
@@ -79,6 +82,8 @@ export function Toolbar({
   linkDraft: LinkDraft | null
   openLink: () => void
   closeLink: () => void
+  /** Ditado: mecanismo de reconhecimento e idioma; null esconde o botão */
+  dictation: { recognition: SpeechRecognitionConstructor; lang: string } | null
 }) {
   const toolbarRef = useRef<HTMLDivElement>(null)
   const activeIndex = useRef(0)
@@ -125,7 +130,9 @@ export function Toolbar({
     Array.from(toolbarRef.current?.querySelectorAll<HTMLElement>('button, select') ?? []).filter(
       (el) =>
         !(el as HTMLButtonElement).disabled &&
-        !el.closest('.ve-palette, .ve-font-options, .ve-highlight-palette, .ve-link-popover'),
+        !el.closest(
+          '.ve-palette, .ve-font-options, .ve-highlight-palette, .ve-link-popover, .ve-dictation-bubble',
+        ),
     )
 
   useEffect(() => {
@@ -304,6 +311,17 @@ export function Toolbar({
       <ToolbarBtn onClick={() => core()?.removeLink()} title={L.removeLink}>
         <IconUnlink />
       </ToolbarBtn>
+      {dictation && (
+        <>
+          <ToolbarSep />
+          <DictationButton
+            core={core}
+            labels={L}
+            lang={dictation.lang}
+            recognition={dictation.recognition}
+          />
+        </>
+      )}
       <ToolbarSep />
       <ToolbarBtn onClick={() => core()?.insertHorizontalRule()} title={L.insertHr}>
         <IconHr />

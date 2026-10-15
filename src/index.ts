@@ -10,6 +10,13 @@ export {
 } from './core/defaults'
 // Núcleo sem React, para quem quiser montar a própria interface
 export { VersaEditCore } from './core/editor'
+export { applyVoiceCommands, browserSpeechRecognition, createDictation } from './core/speech'
+export type {
+  Dictation,
+  DictationOptions,
+  SpeechRecognitionConstructor,
+  SpeechRecognitionLike,
+} from './core/speech'
 export type {
   CoreCallbacks,
   CoreOptions,
