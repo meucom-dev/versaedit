@@ -46,6 +46,17 @@ const CSS = `
 .ve-highlight-sample { font-weight: 600; background: #ffff00; padding: 0 3px; border-radius: 2px; }
 .ve-highlight-remove { font-weight: 600; opacity: 0.5; text-decoration: line-through; }
 
+/* Formulário de link */
+.ve-link-wrap { position: relative; display: inline-flex; }
+.ve-link-popover { position: absolute; top: calc(100% + 6px); left: 0; z-index: 210; display: grid; gap: 6px; width: 260px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.18); font-size: 12px; color: #333; }
+.ve-link-popover label { display: grid; gap: 2px; }
+.ve-link-popover input { font: inherit; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; }
+.ve-link-popover input:focus { outline: 2px solid var(--ve-accent); outline-offset: 0; }
+.ve-link-error { color: #b42318; }
+.ve-link-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.ve-link-actions button { font: inherit; padding: 4px 10px; border-radius: 4px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
+.ve-link-actions button[type="submit"] { background: var(--ve-accent); border-color: var(--ve-accent); color: #fff; }
+
 /* Moldura e área de edição */
 .ve-frame { position: relative; max-width: 100%; margin: 0; box-sizing: border-box; }
 .ve-content { display: block; max-width: 100%; box-sizing: border-box; padding: 8px 16px; border: none; overflow: hidden; resize: none; line-height: 1.6; font-size: 12pt; color: #1f2328; background-color: #fff; caret-color: currentColor; outline: none; }
@@ -56,7 +67,7 @@ const CSS = `
 .ve-content blockquote { border-left: 3px solid var(--ve-accent); margin: 0; padding: 8px 16px; background: ${accent(5)}; color: #555; font-style: italic; clear: both; }
 
 /* Imagens */
-.ve-content img { cursor: pointer; transition: outline 0.15s; outline: 2px solid transparent; outline-offset: 2px; display: block; -webkit-user-drag: none; }
+.ve-content img { touch-action: none; -webkit-touch-callout: none; cursor: pointer; transition: outline 0.15s; outline: 2px solid transparent; outline-offset: 2px; display: block; -webkit-user-drag: none; }
 .ve-content img:hover { outline-color: ${accent(50)}; }
 .ve-content img.selected { outline-color: var(--ve-accent); outline-width: 3px; cursor: grab; }
 .ve-content img.selected:active { cursor: grabbing; }
@@ -71,7 +82,7 @@ const CSS = `
 .ve-content .rich-textbox.selected { outline-color: var(--ve-accent); outline-width: 3px; cursor: text; }
 .ve-content .rich-textbox.tb-float-left { float: left; margin: 40px; max-width: 50%; }
 .ve-content .rich-textbox.tb-float-right { float: right; margin: 40px; max-width: 50%; }
-.ve-content .textbox-handle { display: inline-flex; align-items: center; justify-content: center; cursor: grab; color: var(--ve-accent); background: ${accent(15)}; border: 1px solid ${accent(40)}; border-radius: 4px; font-size: 14px; line-height: 1; user-select: none; -webkit-user-drag: none; padding: 4px 8px; margin-right: 6px; vertical-align: middle; }
+.ve-content .textbox-handle { touch-action: none; display: inline-flex; align-items: center; justify-content: center; cursor: grab; color: var(--ve-accent); background: ${accent(15)}; border: 1px solid ${accent(40)}; border-radius: 4px; font-size: 14px; line-height: 1; user-select: none; -webkit-user-drag: none; padding: 4px 8px; margin-right: 6px; vertical-align: middle; }
 .ve-content .textbox-handle:active { cursor: grabbing; }
 
 /* Menus flutuantes de imagem e caixa de texto */
@@ -80,7 +91,7 @@ const CSS = `
 .ve-float-toolbar button:hover { background: #f0f0f0; }
 .ve-float-toolbar button.ve-danger { color: #dc3545; }
 .ve-float-sep { width: 1px; background: #ddd; }
-.ve-resize-handle { position: absolute; width: 14px; height: 14px; background: var(--ve-accent); border: 2px solid #fff; border-radius: 3px; cursor: nwse-resize; z-index: 110; box-shadow: 0 1px 4px rgba(0,0,0,0.3); user-select: none; -webkit-user-drag: none; }
+.ve-resize-handle { touch-action: none; position: absolute; width: 14px; height: 14px; background: var(--ve-accent); border: 2px solid #fff; border-radius: 3px; cursor: nwse-resize; z-index: 110; box-shadow: 0 1px 4px rgba(0,0,0,0.3); user-select: none; -webkit-user-drag: none; }
 .ve-resize-handle:hover { filter: brightness(0.85); }
 `
 

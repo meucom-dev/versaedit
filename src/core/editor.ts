@@ -14,6 +14,7 @@ import {
   normalizeLinkUrl,
   TAB_HTML,
   textboxHtml,
+  unwrapListsFromParagraphs,
 } from './commands'
 import { DEFAULT_FONT_FAMILIES, DEFAULT_FONT_SIZES, type FontFamilyOption } from './defaults'
 import {
@@ -45,7 +46,7 @@ import {
   setFloatSide,
   setImagePosition,
   toolbarPosition,
-  type MouseListener,
+  type PointerListener,
   type TbBorderStyle,
 } from './objects'
 import { applyPendingStyleToFragment, buildPasteHtml } from './paste'
@@ -106,6 +107,21 @@ export interface CoreCallbacks {
   onSelectionStyle?: (style: SelectionStyle) => void
   onObjectChange?: (state: ObjectState | null) => void
   onTextboxSelect?: (border: TextboxBorder) => void
+  /**
+   * Envio de imagem: recebe o arquivo escolhido e devolve a URL publicada.
+   * Sem ele, a imagem é gravada no conteúdo em base64.
+   */
+  onImageUpload?: (file: File) => Promise<string>
+  /** Pedido de link pelo teclado (Ctrl+K): a interface abre o formulário de link */
+  onLinkRequest?: () => void
+}
+
+/** Dados para o formulário de link */
+export interface LinkDraft {
+  /** Texto selecionado (ou o texto do link existente) */
+  text: string
+  /** Endereço do link existente sob o cursor, se houver */
+  url: string
 }
 
 const DEFAULT_OPTIONS: CoreOptions = {
@@ -154,6 +170,9 @@ export class VersaEditCore {
   private resizeStart = { x: 0, y: 0, w: 0, h: 0 }
   private readonly pointer = createPointerTracker()
 
+  // Seleção guardada enquanto o formulário de link está aberto
+  private linkRange: Range | null = null
+
   constructor(
     el: HTMLDivElement,
     options: Partial<CoreOptions> = {},
@@ -175,7 +194,21 @@ export class VersaEditCore {
       attributes: true,
     })
     document.addEventListener('selectionchange', this.handleSelectionChange)
+    for (const [type, listener] of this.listeners) el.addEventListener(type, listener)
   }
+
+  // Eventos nativos da área de edição (o núcleo não depende de framework)
+  private readonly listeners: [string, EventListener][] = [
+    ['pointerdown', (e) => this.handlePointerDown(e as PointerEvent)],
+    ['mousedown', (e) => this.handleMouseDown(e as MouseEvent)],
+    ['click', (e) => this.handleClick(e as MouseEvent)],
+    ['keydown', (e) => this.handleKeyDown(e as KeyboardEvent)],
+    ['beforeinput', (e) => this.handleBeforeInput(e as InputEvent)],
+    ['paste', (e) => this.handlePaste(e as ClipboardEvent)],
+    ['input', () => this.handleInput()],
+    ['focusout', () => this.handleBlur()],
+    ['dragstart', (e) => e.preventDefault()],
+  ]
 
   /** Remove ouvintes e temporizadores (ao desmontar o editor) */
   destroy(): void {
@@ -184,6 +217,7 @@ export class VersaEditCore {
     this.history.dispose()
     this.pointer.stop()
     document.removeEventListener('selectionchange', this.handleSelectionChange)
+    for (const [type, listener] of this.listeners) this.el.removeEventListener(type, listener)
   }
 
   setOptions(options: Partial<CoreOptions>): void {
@@ -235,9 +269,15 @@ export class VersaEditCore {
     }
   }
 
+  /** Troca o conteúdo (como um carregamento externo: reinicia o histórico) */
+  setHTML = (html: string): void => {
+    this.lastEmitted = null
+    this.load(html)
+  }
+
   /** Avisa a mudança: atualiza o estado de altura e chama onChange */
   emitChange = (): void => {
-    this.cb.onOverflowChange?.(editorContentExceedsHeight(this.el))
+    if (this.cb.onOverflowChange) this.cb.onOverflowChange(editorContentExceedsHeight(this.el))
     if (this.cb.onChange) {
       const html = this.getHTML()
       this.lastEmitted = html
@@ -447,8 +487,21 @@ export class VersaEditCore {
   // ─── FORMATAÇÃO ──────────────────────────────────────────────────
   execCommand = (command: string, value?: string): void => {
     exec(command, value)
+    if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
+      unwrapListsFromParagraphs(this.el)
+    }
     this.el.focus()
     this.emitChange()
+  }
+
+  // Inserções (imagem, linha, caixa de texto) entram depois do trecho
+  // selecionado, sem apagá-lo
+  private collapseSelectionToEnd(): void {
+    const selection = window.getSelection()
+    if (!selection?.rangeCount || selection.isCollapsed) return
+    const range = selection.getRangeAt(0)
+    if (!isRangeWithinEditor(this.el, range)) return
+    selection.collapseToEnd()
   }
 
   formatBlock = (tag: string): void => {
@@ -571,34 +624,59 @@ export class VersaEditCore {
   // ─── INSERÇÕES ───────────────────────────────────────────────────
   insertImage = (): void => {
     pickFile('image/*', (file) => {
-      const reader = new FileReader()
-      reader.onload = (ev) => {
-        const src = typeof ev.target?.result === 'string' ? ev.target.result : ''
+      const insert = (src: string) => {
         if (!isSafeUrl('src', src)) return
         this.el.focus()
+        this.collapseSelectionToEnd()
         insertHtml(imageHtml(src, this.opts.labels.imageAlt))
         this.emitChange()
       }
+      // Com onImageUpload, a imagem é enviada e entra pela URL devolvida
+      if (this.cb.onImageUpload) {
+        this.cb.onImageUpload(file).then(insert, () => alert(this.opts.labels.imageUploadError))
+        return
+      }
+      const reader = new FileReader()
+      reader.onload = (ev) => insert(typeof ev.target?.result === 'string' ? ev.target.result : '')
       reader.readAsDataURL(file)
     })
   }
 
-  insertLink = (): void => {
-    const L = this.opts.labels
+  // ─── LINK (formulário da interface, sem prompt()) ──────────────
+  /** Guarda a seleção e devolve o texto e o endereço para o formulário de link */
+  beginLink = (): LinkDraft => {
     const range = this.getCurrentRange()
-    const typedUrl = prompt(L.linkUrlPrompt, 'https://')
-    if (!typedUrl) return
-    const url = normalizeLinkUrl(typedUrl)
-    if (!url) {
-      alert(L.linkInvalid)
-      return
+    this.linkRange = range
+    const node = range?.commonAncestorContainer ?? null
+    const element = node && (node.nodeType === 3 ? node.parentElement : (node as Element))
+    const anchor = element?.closest('a')
+    if (range && anchor && this.el.contains(anchor)) {
+      // Cursor ou seleção dentro de um link: o formulário edita o link inteiro
+      range.selectNode(anchor)
+      return { text: anchor.textContent ?? '', url: anchor.getAttribute('href') ?? '' }
     }
-    const selectedText = range?.toString() || ''
-    const linkText = prompt(L.linkTextPrompt, selectedText || url) || url
+    return { text: range?.toString() ?? '', url: '' }
+  }
+
+  /** Insere (ou troca) o link na seleção guardada; false se o endereço for inválido */
+  applyLink = (typedUrl: string, text: string): boolean => {
+    const url = normalizeLinkUrl(typedUrl)
+    if (!url) return false
+    const range = this.linkRange
+    this.linkRange = null
     if (range) this.restoreRange(range)
     else this.el.focus()
-    insertHtml(linkHtml(url, linkText))
+    insertHtml(linkHtml(url, text.trim() || url))
     this.emitChange()
+    return true
+  }
+
+  /** Fecha o formulário de link sem mudar nada e devolve a seleção */
+  cancelLink = (): void => {
+    const range = this.linkRange
+    this.linkRange = null
+    if (range) this.restoreRange(range)
+    else this.el.focus()
   }
 
   removeLink = (): void => {
@@ -607,14 +685,37 @@ export class VersaEditCore {
 
   insertHorizontalRule = (): void => {
     this.el.focus()
+    this.collapseSelectionToEnd()
     insertHtml(HR_HTML)
     this.emitChange()
   }
 
+  // Caixa de texto: entra como bloco depois do parágrafo do cursor. Inserida
+  // direto no DOM porque o insertHTML do navegador desmonta o bloco quando o
+  // cursor está no meio de um parágrafo.
   insertTextbox = (): void => {
     const L = this.opts.labels
-    this.el.focus()
-    insertHtml(textboxHtml(L.textboxHandle, L.textboxDefault))
+    const editor = this.el
+    editor.focus()
+    const range = this.getCurrentRange()
+    const template = document.createElement('template')
+    template.innerHTML = textboxHtml(L.textboxHandle, L.textboxDefault)
+    const box = template.content.firstElementChild as HTMLElement
+    if (range && range.endContainer === editor) {
+      editor.insertBefore(box, editor.childNodes[range.endOffset] ?? null)
+    } else if (range) {
+      let block: Node = range.endContainer
+      while (block.parentNode && block.parentNode !== editor) block = block.parentNode
+      if (block.parentNode === editor) (block as ChildNode).after(box)
+      else editor.appendChild(box)
+    } else {
+      editor.appendChild(box)
+    }
+    // Cursor no fim do texto da caixa
+    const caret = document.createRange()
+    caret.selectNodeContents(box)
+    caret.collapse(false)
+    this.restoreRange(caret)
     this.emitChange()
   }
 
@@ -837,7 +938,7 @@ export class VersaEditCore {
   }
 
   // ─── ARRASTO ─────────────────────────────────────────────────────
-  private handleDragMove: MouseListener = (e) => {
+  private handleDragMove: PointerListener = (e) => {
     if (!this.isDragging) return
     const el = (
       this.dragType === 'image' ? this.selectedImg : this.selectedTextbox
@@ -851,7 +952,7 @@ export class VersaEditCore {
     this.updateResizeHandlePosition(el)
   }
 
-  private handleDragEnd: MouseListener = (e) => {
+  private handleDragEnd: PointerListener = (e) => {
     const type = this.dragType
     const el = (type === 'image' ? this.selectedImg : this.selectedTextbox) as HTMLElement | null
     this.isDragging = false
@@ -870,7 +971,7 @@ export class VersaEditCore {
   }
 
   // ─── REDIMENSIONAMENTO LIVRE (alça no canto inferior direito) ───
-  private handleResizeMove: MouseListener = (e) => {
+  private handleResizeMove: PointerListener = (e) => {
     const el = this.resizeEl
     if (!this.isResizing || !el) return
     const dx = e.clientX - this.resizeStart.x
@@ -885,15 +986,15 @@ export class VersaEditCore {
     this.updateObjectToolbar(el)
   }
 
-  private handleResizeEnd: MouseListener = () => {
+  private handleResizeEnd: PointerListener = () => {
     this.isResizing = false
     this.resizeEl = null
     this.pointer.stop()
     this.emitChange()
   }
 
-  /** Início do redimensionamento livre pela alça */
-  startResize = (clientX: number, clientY: number): void => {
+  /** Início do redimensionamento livre pela alça (pointerdown na alça) */
+  startResize = (clientX: number, clientY: number, pointerId = 1): void => {
     const el = (
       this.objType === 'image' ? this.selectedImg : this.selectedTextbox
     ) as HTMLElement | null
@@ -901,19 +1002,16 @@ export class VersaEditCore {
     this.isResizing = true
     this.resizeEl = el
     this.resizeStart = { x: clientX, y: clientY, w: el.offsetWidth, h: el.offsetHeight }
-    this.pointer.start(this.handleResizeMove, this.handleResizeEnd)
+    this.pointer.start(pointerId, this.handleResizeMove, this.handleResizeEnd)
   }
 
   // ─── EVENTOS DA ÁREA DE EDIÇÃO ───────────────────────────────────
-  /**
-   * mousedown na área de edição. `isInsideUi` diz se o alvo está em um menu
-   * flutuante da interface (não desmarca o objeto).
-   */
-  handleMouseDown = (e: MouseEvent, isInsideUi: (target: Node) => boolean): void => {
+  // pointerdown (mouse, toque ou caneta): seleciona imagem ou caixa de texto e
+  // começa o arrasto; fora delas, desmarca
+  private handlePointerDown = (e: PointerEvent): void => {
     const target = e.target as HTMLElement
 
     if (target.tagName === 'IMG') {
-      e.preventDefault()
       this.selectImage(target as HTMLImageElement)
       this.isDragging = true
       this.dragType = 'image'
@@ -921,12 +1019,11 @@ export class VersaEditCore {
       const off = getManualOffset(img)
       this.dragStart = { x: e.clientX, y: e.clientY, ox: off.x, oy: off.y }
       img.classList.add('dragging')
-      this.pointer.start(this.handleDragMove, this.handleDragEnd)
+      this.pointer.start(e.pointerId, this.handleDragMove, this.handleDragEnd)
       return
     }
 
     if (target.classList.contains('textbox-handle')) {
-      e.preventDefault()
       const tb = target.closest('.rich-textbox') as HTMLDivElement
       if (tb) {
         this.selectTextbox(tb)
@@ -935,46 +1032,51 @@ export class VersaEditCore {
         const off = getManualOffset(tb)
         this.dragStart = { x: e.clientX, y: e.clientY, ox: off.x, oy: off.y }
         tb.classList.add('dragging')
-        this.pointer.start(this.handleDragMove, this.handleDragEnd)
+        this.pointer.start(e.pointerId, this.handleDragMove, this.handleDragEnd)
       }
       return
     }
 
     const tbParent = target.closest('.rich-textbox') as HTMLDivElement | null
-    if (tbParent && tbParent.classList.contains('rich-textbox')) {
-      if (target.classList.contains('textbox-handle')) return
+    if (tbParent) {
       this.selectTextbox(tbParent)
       return
     }
 
-    if (!isInsideUi(target)) {
-      this.deselectImage()
-      this.deselectTextbox()
+    this.deselectImage()
+    this.deselectTextbox()
+  }
+
+  // mousedown sobre imagem ou alça: impede a seleção de texto nativa do navegador
+  private handleMouseDown = (e: MouseEvent): void => {
+    const target = e.target as HTMLElement
+    if (target.tagName === 'IMG' || target.classList.contains('textbox-handle')) {
+      e.preventDefault()
     }
   }
 
-  handleClick = (e: MouseEvent, isInsideUi: (target: Node) => boolean): void => {
+  private handleClick = (e: MouseEvent): void => {
     const target = e.target as HTMLElement
     if (target.tagName === 'IMG') {
       e.preventDefault()
       this.selectImage(target as HTMLImageElement)
     } else if (target.classList.contains('textbox-handle')) {
-      // tratado no mousedown
+      // tratado no pointerdown
     } else if (target.closest('.rich-textbox')) {
       const tb = target.closest('.rich-textbox') as HTMLDivElement
       this.selectTextbox(tb)
-    } else if (!isInsideUi(target)) {
+    } else {
       this.deselectImage()
       this.deselectTextbox()
     }
   }
 
-  handleBlur = (): void => {
+  private handleBlur = (): void => {
     if (this.preview) this.restorePreview()
     this.emitChange()
   }
 
-  handleInput = (): void => {
+  private handleInput = (): void => {
     this.enforceHeight()
     this.emitChange()
   }
@@ -984,13 +1086,12 @@ export class VersaEditCore {
     return truncateEditableToFit(this.el)
   }
 
-  // Digitação com estilo pendente (fonte, tamanho ou cor escolhidos sem seleção)
-  handleBeforeInput = (inputEvent: InputEvent): void => {
+  // Digitação com estilo pendente (fonte, tamanho ou cor escolhidos sem seleção).
+  // Só 'insertText': a composição de IME (insertCompositionText) não pode ser
+  // cancelada, e o texto sairia duplicado.
+  private handleBeforeInput = (inputEvent: InputEvent): void => {
     if (this.preview) this.restorePreview()
-    if (
-      !['insertText', 'insertCompositionText'].includes(inputEvent.inputType) ||
-      inputEvent.data === null
-    ) {
+    if (inputEvent.inputType !== 'insertText' || inputEvent.data === null) {
       return
     }
 
@@ -1021,7 +1122,7 @@ export class VersaEditCore {
     this.emitChange()
   }
 
-  handlePaste = (e: ClipboardEvent): void => {
+  private handlePaste = (e: ClipboardEvent): void => {
     if (this.preview) this.restorePreview()
     const editor = this.el
     const data = e.clipboardData
@@ -1090,7 +1191,7 @@ export class VersaEditCore {
   }
 
   // ─── TECLADO ─────────────────────────────────────────────────────
-  handleKeyDown = (e: KeyboardEvent): void => {
+  private handleKeyDown = (e: KeyboardEvent): void => {
     const editor = this.el
     // Antes do Enter nativo (parágrafo Word), impede a nova linha se ela
     // ultrapassaria a caixa física; não apaga texto e mostra o aviso.
@@ -1120,9 +1221,14 @@ export class VersaEditCore {
       this.emitChange()
       return
     }
-    // Desfazer / refazer próprios: Ctrl+Z, Ctrl+Y e Ctrl+Shift+Z
+    // Desfazer / refazer próprios: Ctrl+Z, Ctrl+Y e Ctrl+Shift+Z; Ctrl+K: link
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
       const key = e.key.toLowerCase()
+      if (key === 'k' && this.cb.onLinkRequest) {
+        e.preventDefault()
+        this.cb.onLinkRequest()
+        return
+      }
       if (key === 'z' && !e.shiftKey) {
         e.preventDefault()
         this.undo()

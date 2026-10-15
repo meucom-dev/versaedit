@@ -3,22 +3,32 @@ import { getCaretRangeFromPoint } from './selection'
 
 export type TbBorderStyle = 'solid' | 'dashed' | 'dotted' | 'double'
 
-// Ouvintes de mousemove/mouseup do documento durante um arrasto ou redimensionamento
-export type MouseListener = (e: MouseEvent) => void
+// Ouvintes de movimento e soltura do documento durante um arrasto ou
+// redimensionamento. Pointer Events: funcionam com mouse, toque e caneta;
+// só o ponteiro que começou o gesto é acompanhado.
+export type PointerListener = (e: PointerEvent) => void
 export function createPointerTracker() {
-  let active: { move: MouseListener; up: MouseListener } | null = null
+  let active: { move: PointerListener; up: PointerListener } | null = null
   const stop = () => {
     if (!active) return
-    document.removeEventListener('mousemove', active.move)
-    document.removeEventListener('mouseup', active.up)
+    document.removeEventListener('pointermove', active.move)
+    document.removeEventListener('pointerup', active.up)
+    document.removeEventListener('pointercancel', active.up)
     active = null
   }
   return {
-    start(move: MouseListener, up: MouseListener) {
+    start(pointerId: number, move: PointerListener, up: PointerListener) {
       stop()
-      active = { move, up }
-      document.addEventListener('mousemove', move)
-      document.addEventListener('mouseup', up)
+      const onMove: PointerListener = (e) => {
+        if (e.pointerId === pointerId) move(e)
+      }
+      const onUp: PointerListener = (e) => {
+        if (e.pointerId === pointerId) up(e)
+      }
+      active = { move: onMove, up: onUp }
+      document.addEventListener('pointermove', onMove)
+      document.addEventListener('pointerup', onUp)
+      document.addEventListener('pointercancel', onUp)
     },
     stop,
   }

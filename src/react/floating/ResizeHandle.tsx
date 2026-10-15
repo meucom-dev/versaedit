@@ -15,11 +15,13 @@ export function ResizeHandle({
       className="ve-resize-handle"
       title={title}
       style={{ top: position.top, left: position.left }}
-      onMouseDown={(e) => {
+      // Pointer Events: mouse, toque e caneta
+      onPointerDown={(e) => {
         e.preventDefault()
         e.stopPropagation()
-        core()?.startResize(e.clientX, e.clientY)
+        core()?.startResize(e.clientX, e.clientY, e.pointerId)
       }}
+      onMouseDown={(e) => e.preventDefault()}
     />
   )
 }

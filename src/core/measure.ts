@@ -1,24 +1,26 @@
 // ─── ALTURA, LIMITE E CORTE ───────────────────────────────────────
 
+// Altura natural do conteúdo (com o respiro interno). Mede o próprio editor,
+// sem clonar o conteúdo (imagens grandes em base64 deixavam a medição lenta).
 export function measureEditorContentHeight(editor: HTMLElement): number {
-  const measure = editor.cloneNode(true) as HTMLElement
-  measure.style.setProperty('position', 'fixed', 'important')
-  measure.style.setProperty('left', '-100000px', 'important')
-  measure.style.setProperty('top', '0', 'important')
-  measure.style.setProperty('visibility', 'hidden', 'important')
-  measure.style.setProperty('height', 'auto', 'important')
-  measure.style.setProperty('min-height', '0', 'important')
-  measure.style.setProperty('max-height', 'none', 'important')
-  measure.style.setProperty('overflow', 'visible', 'important')
-  measure.style.setProperty('width', `${editor.clientWidth}px`, 'important')
-  document.body.appendChild(measure)
-  const naturalHeight = Math.max(measure.scrollHeight, measure.getBoundingClientRect().height)
-  document.body.removeChild(measure)
-  return naturalHeight
+  // Conteúdo maior que a área: o próprio scrollHeight já é a altura natural
+  if (editor.scrollHeight > editor.clientHeight + 1) return editor.scrollHeight
+  const style = window.getComputedStyle(editor)
+  const paddingTop = parseFloat(style.paddingTop) || 0
+  const paddingBottom = parseFloat(style.paddingBottom) || 0
+  if (!editor.firstChild) return paddingTop + paddingBottom
+  // Conteúdo menor que a área: fundo do conteúdo em relação ao topo do editor
+  const range = document.createRange()
+  range.selectNodeContents(editor)
+  const contentRect = range.getBoundingClientRect()
+  const editorRect = editor.getBoundingClientRect()
+  if (!contentRect.height && !contentRect.width) return paddingTop + paddingBottom
+  return contentRect.bottom - editorRect.top - editor.clientTop + editor.scrollTop + paddingBottom
 }
 
+// O conteúdo passa da altura do editor? (o editor esconde o que transborda)
 export function editorContentExceedsHeight(editor: HTMLElement): boolean {
-  return measureEditorContentHeight(editor) > editor.clientHeight + 1
+  return editor.scrollHeight > editor.clientHeight + 1
 }
 
 // Remove apenas o conteúdo final que ultrapassa a altura física do editor.

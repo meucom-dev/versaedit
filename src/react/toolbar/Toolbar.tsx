@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import type { FontFamilyOption } from '../../core/defaults'
-import type { TextboxBorder, VersaEditCore } from '../../core/editor'
+import type { LinkDraft, TextboxBorder, VersaEditCore } from '../../core/editor'
 import type { VersaEditLabels } from '../../core/i18n'
 import {
   IconAlignCenter,
@@ -26,6 +26,7 @@ import {
 import { ColorPicker, type ColorKind } from './ColorPicker'
 import { FontPicker } from './FontPicker'
 import { HighlightPicker } from './HighlightPicker'
+import { LinkPopover } from './LinkPopover'
 import { TextboxControls } from './TextboxControls'
 import { ToolbarBtn, ToolbarSep } from './ToolbarButton'
 
@@ -58,6 +59,9 @@ export function Toolbar({
   isTextboxSelected,
   state,
   setState,
+  linkDraft,
+  openLink,
+  closeLink,
 }: {
   core: () => VersaEditCore | null
   labels: VersaEditLabels
@@ -71,7 +75,13 @@ export function Toolbar({
   isTextboxSelected: boolean
   state: ToolbarState
   setState: (patch: Partial<ToolbarState>) => void
+  /** Formulário de link aberto (com os dados da seleção) ou null */
+  linkDraft: LinkDraft | null
+  openLink: () => void
+  closeLink: () => void
 }) {
+  const toolbarRef = useRef<HTMLDivElement>(null)
+  const activeIndex = useRef(0)
   // Paleta aberta ('text' | 'bg')
   const [openPalette, setOpenPalette] = useState<ColorKind | null>(null)
   const colorPanelRef = useRef<HTMLDivElement>(null)
@@ -108,11 +118,61 @@ export function Toolbar({
 
   const run = (command: string) => () => core()?.execCommand(command)
 
+  // ─── TECLADO (padrão WAI-ARIA de toolbar) ─────────────────────────
+  // Só um controle da barra entra na ordem do Tab; as setas ← → (Home/End)
+  // passam de um controle para outro. Os menus abertos não entram nessa conta.
+  const navItems = (): HTMLElement[] =>
+    Array.from(toolbarRef.current?.querySelectorAll<HTMLElement>('button, select') ?? []).filter(
+      (el) =>
+        !(el as HTMLButtonElement).disabled &&
+        !el.closest('.ve-palette, .ve-font-options, .ve-highlight-palette, .ve-link-popover'),
+    )
+
+  useEffect(() => {
+    const items = navItems()
+    if (activeIndex.current >= items.length) activeIndex.current = 0
+    items.forEach((el, i) => (el.tabIndex = i === activeIndex.current ? 0 : -1))
+  })
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && openPalette) {
+      setOpenPalette(null)
+      core()?.restorePreview()
+      return
+    }
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return
+    const items = navItems()
+    const current = items.indexOf(e.target as HTMLElement)
+    if (current < 0) return
+    e.preventDefault()
+    const last = items.length - 1
+    const next =
+      e.key === 'Home'
+        ? 0
+        : e.key === 'End'
+          ? last
+          : e.key === 'ArrowRight'
+            ? (current + 1) % items.length
+            : (current - 1 + items.length) % items.length
+    items.forEach((el, i) => (el.tabIndex = i === next ? 0 : -1))
+    activeIndex.current = next
+    items[next].focus()
+  }
+
+  // Foco por clique ou Tab também atualiza o controle ativo
+  const handleFocus = (e: React.FocusEvent) => {
+    const index = navItems().indexOf(e.target as HTMLElement)
+    if (index >= 0) activeIndex.current = index
+  }
+
   return (
     <div
+      ref={toolbarRef}
       className="ve-toolbar"
       role="toolbar"
       aria-label={L.toolbar}
+      onKeyDown={handleKeyDown}
+      onFocus={handleFocus}
       style={{
         // Barra centralizada sobre o bloco de edição (pode ser mais larga que ele)
         width,
@@ -227,9 +287,20 @@ export function Toolbar({
         <IconOutdent />
       </ToolbarBtn>
       <ToolbarSep />
-      <ToolbarBtn onClick={() => core()?.insertLink()} title={L.insertLink}>
-        <IconLink />
-      </ToolbarBtn>
+      <div className="ve-link-wrap">
+        <ToolbarBtn
+          onClick={() => {
+            if (linkDraft) {
+              core()?.cancelLink()
+              closeLink()
+            } else openLink()
+          }}
+          title={L.insertLink}
+        >
+          <IconLink />
+        </ToolbarBtn>
+        {linkDraft && <LinkPopover core={core} labels={L} draft={linkDraft} onClose={closeLink} />}
+      </div>
       <ToolbarBtn onClick={() => core()?.removeLink()} title={L.removeLink}>
         <IconUnlink />
       </ToolbarBtn>
