@@ -2,30 +2,63 @@ import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { VersaEdit, type VersaEditLocale } from '../src'
 
-const INITIAL = '<p>Hello, <b>VersaEdit</b>! Edit this text.</p>'
+// Textos do próprio playground (o editor tem os seus em src/core/i18n)
+const TEXT = {
+  en: {
+    locale: 'Language',
+    accent: 'Accent color',
+    fileButtons: 'File buttons',
+    sample: '<p>Hello, <b>VersaEdit</b>! Edit this text.</p>',
+    second: '<p>Second editor with <i>onSave</i>.</p>',
+    useOnSave: 'Show editor with onSave',
+    hideOnSave: 'Hide editor with onSave',
+  },
+  'pt-BR': {
+    locale: 'Idioma',
+    accent: 'Cor de destaque',
+    fileButtons: 'Botões de arquivo',
+    sample: '<p>Olá, <b>VersaEdit</b>! Edite este texto.</p>',
+    second: '<p>Segundo editor com <i>onSave</i>.</p>',
+    useOnSave: 'Mostrar editor com onSave',
+    hideOnSave: 'Esconder editor com onSave',
+  },
+} satisfies Record<VersaEditLocale, Record<string, string>>
 
 function App() {
-  const [html, setHtml] = useState(INITIAL)
   const [locale, setLocale] = useState<VersaEditLocale>('en')
+  const T = TEXT[locale]
+  const [content, setContent] = useState(T.sample)
+  const [html, setHtml] = useState(T.sample)
   const [accent, setAccent] = useState('#2563eb')
   const [showFiles, setShowFiles] = useState(true)
   const [saved, setSaved] = useState<string | null>(null)
 
+  const changeLocale = (next: VersaEditLocale) => {
+    // Troca o texto de exemplo só se ele ainda não foi editado
+    if (html === T.sample) {
+      setContent(TEXT[next].sample)
+      setHtml(TEXT[next].sample)
+    }
+    setLocale(next)
+  }
+
   return (
     <div
+      lang={locale}
       style={{ maxWidth: 1000, margin: '24px auto', padding: '0 16px', fontFamily: 'system-ui' }}
     >
       <h1 style={{ fontSize: 20 }}>VersaEdit — playground</h1>
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
         <label>
-          Locale{' '}
-          <select value={locale} onChange={(e) => setLocale(e.target.value as VersaEditLocale)}>
-            <option value="en">en</option>
-            <option value="pt-BR">pt-BR</option>
+          {T.locale}{' '}
+          <select value={locale} onChange={(e) => changeLocale(e.target.value as VersaEditLocale)}>
+            <option value="en">English</option>
+            <option value="pt-BR">Português (Brasil)</option>
           </select>
         </label>
         <label>
-          Accent <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} />
+          {T.accent}{' '}
+          <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} />
         </label>
         <label>
           <input
@@ -33,11 +66,11 @@ function App() {
             checked={showFiles}
             onChange={(e) => setShowFiles(e.target.checked)}
           />{' '}
-          File buttons
+          {T.fileButtons}
         </label>
       </div>
       <VersaEdit
-        initialContent={INITIAL}
+        initialContent={content}
         onChange={setHtml}
         locale={locale}
         accentColor={accent}
@@ -59,12 +92,12 @@ function App() {
       )}
       <p style={{ fontSize: 12, color: '#666' }}>
         <button type="button" onClick={() => setSaved(saved === null ? '' : null)}>
-          {saved === null ? 'Use onSave' : 'Use file download'}
+          {saved === null ? T.useOnSave : T.hideOnSave}
         </button>
       </p>
       {saved !== null && (
         <VersaEdit
-          initialContent="<p>Second editor with <i>onSave</i>.</p>"
+          initialContent={T.second}
           onSave={setSaved}
           locale={locale}
           width={600}
