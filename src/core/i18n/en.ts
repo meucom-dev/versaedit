@@ -65,6 +65,8 @@ export const en = {
   imageUploadError: 'The image could not be uploaded.',
   dictate: 'Dictate (speech to text)',
   dictateStop: 'Stop dictation',
+  dictateShort: 'Dictate',
+  dictateStopShort: 'Stop',
   dictationListening: 'Listening…',
   dictationDenied: 'Microphone access was denied. Allow it in the browser to dictate.',
   dictationNoMicrophone: 'No microphone was found.',

@@ -54,6 +54,9 @@ const CSS = `
 @media (prefers-reduced-motion: reduce) { .ve-btn.ve-recording { animation: none; } }
 .ve-dictation-bubble { position: absolute; top: calc(100% + 6px); left: 0; z-index: 205; max-width: 320px; min-width: 120px; padding: 6px 10px; background: #1f2328; color: #fff; border-radius: 6px; font-size: 12px; line-height: 1.4; box-shadow: 0 4px 12px rgba(0,0,0,0.2); white-space: normal; }
 .ve-dictation-bubble.ve-dictation-error { background: #b42318; }
+.ve-dictation-standalone .ve-btn { gap: 6px; padding: 6px 12px; min-height: 32px; border: 1px solid #ccc; border-radius: 999px; background: #fff; color: #333; font-size: 14px; font-weight: 600; }
+.ve-dictation-standalone .ve-btn:hover { background: #f0f0f0; }
+.ve-dictation-standalone .ve-btn.ve-recording { color: #fff; background: #d92d20; border-color: #d92d20; }
 
 /* Formulário de link */
 .ve-link-wrap { position: relative; display: inline-flex; }

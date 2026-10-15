@@ -67,6 +67,8 @@ export const ptBR: VersaEditLabels = {
   imageUploadError: 'Não foi possível enviar a imagem.',
   dictate: 'Ditar (fala para texto)',
   dictateStop: 'Parar o ditado',
+  dictateShort: 'Ditar',
+  dictateStopShort: 'Parar',
   dictationListening: 'Ouvindo…',
   dictationDenied: 'O acesso ao microfone foi negado. Libere no navegador para ditar.',
   dictationNoMicrophone: 'Nenhum microfone foi encontrado.',

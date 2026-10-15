@@ -186,6 +186,17 @@ export function Toolbar({
         marginLeft: -(width - editorWidth) / 2,
       }}
     >
+      {dictation && (
+        <>
+          <DictationButton
+            core={core}
+            labels={L}
+            lang={dictation.lang}
+            recognition={dictation.recognition}
+          />
+          <ToolbarSep />
+        </>
+      )}
       {showFileButtons && (
         <>
           <ToolbarBtn onClick={() => core()?.saveToFile()} title={L.saveFile}>
@@ -311,17 +322,6 @@ export function Toolbar({
       <ToolbarBtn onClick={() => core()?.removeLink()} title={L.removeLink}>
         <IconUnlink />
       </ToolbarBtn>
-      {dictation && (
-        <>
-          <ToolbarSep />
-          <DictationButton
-            core={core}
-            labels={L}
-            lang={dictation.lang}
-            recognition={dictation.recognition}
-          />
-        </>
-      )}
       <ToolbarSep />
       <ToolbarBtn onClick={() => core()?.insertHorizontalRule()} title={L.insertHr}>
         <IconHr />

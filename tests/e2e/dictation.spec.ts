@@ -97,3 +97,30 @@ test('ditado substitui o trecho selecionado e entra no histórico', async ({ pag
   await t.btn('Undo (Ctrl+Z)').click()
   await expect.poll(t.html).toBe('<p>um dois três</p>')
 })
+
+test('na barra, o microfone é o primeiro botão', async ({ page }) => {
+  const t = await mount(page, {}, { speech: 'fake' })
+  await expect(t.toolbar.locator('button').first()).toHaveAttribute(
+    'aria-label',
+    'Dictate (speech to text)',
+  )
+})
+
+test('fora da barra (VersaEditDictation): texto visível e ditado no editor', async ({ page }) => {
+  const t = await mount(
+    page,
+    { locale: 'pt-BR', showDictation: false, initialContent: '<p>Ata</p>' },
+    { speech: 'fake', dictationOutside: true },
+  )
+  await expect(t.btn('Ditar (fala para texto)')).toHaveCount(0)
+  const mic = page.locator('#outside').getByRole('button', { name: 'Ditar (fala para texto)' })
+  await expect(mic).toHaveText('Ditar')
+  await t.caretToEnd()
+  await mic.click()
+  const stop = page.locator('#outside').getByRole('button', { name: 'Parar o ditado' })
+  await expect(stop).toHaveText('Parar')
+  await page.evaluate(() => window.__speech.say([['dois pontos presentes', true]]))
+  await expect.poll(t.html).toBe('<p>Ata: presentes</p>')
+  await stop.click()
+  await expect(mic).toHaveAttribute('aria-pressed', 'false')
+})

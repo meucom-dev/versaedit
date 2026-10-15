@@ -1,6 +1,6 @@
-import { StrictMode, useState } from 'react'
+import { StrictMode, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { VersaEdit, type VersaEditLocale } from '../src'
+import { VersaEdit, VersaEditDictation, type VersaEditHandle, type VersaEditLocale } from '../src'
 
 // Textos do próprio playground (o editor tem os seus em src/core/i18n)
 const TEXT = {
@@ -32,6 +32,7 @@ function App() {
   const [accent, setAccent] = useState('#2563eb')
   const [showFiles, setShowFiles] = useState(true)
   const [saved, setSaved] = useState<string | null>(null)
+  const editorRef = useRef<VersaEditHandle>(null)
 
   const changeLocale = (next: VersaEditLocale) => {
     // Troca o texto de exemplo só se ele ainda não foi editado
@@ -68,8 +69,12 @@ function App() {
           />{' '}
           {T.fileButtons}
         </label>
+        {/* Microfone em destaque, fora da barra de ferramentas */}
+        <VersaEditDictation editor={editorRef} locale={locale} />
       </div>
       <VersaEdit
+        ref={editorRef}
+        showDictation={false}
         initialContent={content}
         onChange={setHtml}
         locale={locale}

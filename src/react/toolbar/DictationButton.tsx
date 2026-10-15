@@ -16,11 +16,14 @@ export function DictationButton({
   labels: L,
   lang,
   recognition,
+  showText = false,
 }: {
   core: () => VersaEditCore | null
   labels: VersaEditLabels
   lang: string
   recognition: SpeechRecognitionConstructor
+  /** Mostra o texto ("Ditar"/"Parar") ao lado do ícone */
+  showText?: boolean
 }) {
   const [active, setActive] = useState(false)
   const [interim, setInterim] = useState('')
@@ -70,7 +73,7 @@ export function DictationButton({
   const bubble = error || (active ? interim || L.dictationListening : '')
 
   return (
-    <div className="ve-dictation">
+    <div className={`ve-dictation ${showText ? 've-dictation-standalone' : ''}`.trim()}>
       <button
         type="button"
         className={`ve-btn ${active ? 've-recording' : ''}`.trim()}
@@ -85,6 +88,7 @@ export function DictationButton({
         onClick={toggle}
       >
         <IconMic />
+        {showText && <span>{active ? L.dictateStopShort : L.dictateShort}</span>}
       </button>
       {bubble && (
         <div

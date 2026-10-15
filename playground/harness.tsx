@@ -4,6 +4,7 @@ import { createRef } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import {
   VersaEdit,
+  VersaEditDictation,
   type SpeechRecognitionConstructor,
   type SpeechRecognitionLike,
   type VersaEditHandle,
@@ -22,6 +23,8 @@ export interface HarnessOptions {
    * simula navegador sem suporte, para os testes darem o mesmo resultado em qualquer lugar.
    */
   speech?: 'fake' | 'none'
+  /** Microfone fora da barra (VersaEditDictation), acima do editor */
+  dictationOutside?: boolean
 }
 
 /** Controle do reconhecimento de voz falso usado nos testes */
@@ -115,26 +118,39 @@ window.__mount = async (props, options = {}) => {
   }
   root = createRoot(document.getElementById('host')!)
   root.render(
-    <VersaEdit
-      ref={ref}
-      speechRecognition={speechRecognition}
-      width={900}
-      height={420}
-      {...props}
-      onChange={(html) => {
-        out.html = html
-        out.changes++
-      }}
-      onOverflowChange={options.overflow !== false ? (value) => (out.overflow = value) : undefined}
-      onSave={options.onSave ? (html) => (out.saved = html) : undefined}
-      onImageUpload={
-        options.upload === 'ok'
-          ? (file) => Promise.resolve(`https://cdn.example.com/${file.name}`)
-          : options.upload === 'fail'
-            ? () => Promise.reject(new Error('upload failed'))
-            : undefined
-      }
-    />,
+    <>
+      {options.dictationOutside && (
+        <div id="outside">
+          <VersaEditDictation
+            editor={ref}
+            locale={props.locale}
+            speechRecognition={speechRecognition}
+          />
+        </div>
+      )}
+      <VersaEdit
+        ref={ref}
+        speechRecognition={speechRecognition}
+        width={900}
+        height={420}
+        {...props}
+        onChange={(html) => {
+          out.html = html
+          out.changes++
+        }}
+        onOverflowChange={
+          options.overflow !== false ? (value) => (out.overflow = value) : undefined
+        }
+        onSave={options.onSave ? (html) => (out.saved = html) : undefined}
+        onImageUpload={
+          options.upload === 'ok'
+            ? (file) => Promise.resolve(`https://cdn.example.com/${file.name}`)
+            : options.upload === 'fail'
+              ? () => Promise.reject(new Error('upload failed'))
+              : undefined
+        }
+      />
+    </>,
   )
   await new Promise((resolve) => setTimeout(resolve, 150))
 }
