@@ -1,0 +1,184 @@
+// ─── IMAGENS E CAIXAS DE TEXTO: posição, arrasto, redimensionamento ─
+import { getCaretRangeFromPoint } from './selection'
+
+export type TbBorderStyle = 'solid' | 'dashed' | 'dotted' | 'double'
+
+// Ouvintes de mousemove/mouseup do documento durante um arrasto ou redimensionamento
+export type MouseListener = (e: MouseEvent) => void
+export function createPointerTracker() {
+  let active: { move: MouseListener; up: MouseListener } | null = null
+  const stop = () => {
+    if (!active) return
+    document.removeEventListener('mousemove', active.move)
+    document.removeEventListener('mouseup', active.up)
+    active = null
+  }
+  return {
+    start(move: MouseListener, up: MouseListener) {
+      stop()
+      active = { move, up }
+      document.addEventListener('mousemove', move)
+      document.addEventListener('mouseup', up)
+    },
+    stop,
+  }
+}
+
+// ─── REPOSICIONAMENTO POR ARRASTO ───────────────────────────────
+// Limpa os deslocamentos manuais: o espaçamento volta aos 40px do CSS
+export function clearManualOffsets(el: HTMLElement) {
+  el.style.transform = ''
+  el.style.marginTop = ''
+  el.style.marginLeft = ''
+  el.style.marginRight = ''
+}
+
+// Deslocamento manual atual (translate aplicado pelo arrasto ou pelas setas)
+export function getManualOffset(el: HTMLElement): { x: number; y: number } {
+  const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(el.style.transform || '')
+  return { x: m ? parseFloat(m[1]) : 0, y: m ? parseFloat(m[2]) : 0 }
+}
+
+// Deslocamento fino livre (setas + Ctrl): move o elemento alguns pixels,
+// por cima do texto, sem alterar o fluxo do conteúdo
+export function nudgeElement(el: HTMLElement, dx: number, dy: number) {
+  const { x, y } = getManualOffset(el)
+  el.style.transform = `translate(${x + dx}px, ${y + dy}px)`
+}
+
+// Faz o elemento flutuar para o lado em que foi solto — assim o texto
+// sempre contorna o elemento com a margem de 40px definida no CSS
+export function setFloatSide(el: HTMLElement, side: 'left' | 'right') {
+  if (el.tagName === 'IMG') {
+    el.classList.remove('pos-left', 'pos-right', 'pos-center')
+    el.classList.add(side === 'left' ? 'pos-left' : 'pos-right')
+  } else {
+    el.classList.remove('tb-float-left', 'tb-float-right')
+    el.classList.add(side === 'left' ? 'tb-float-left' : 'tb-float-right')
+  }
+}
+
+// Move o elemento um bloco acima/abaixo no fluxo do conteúdo
+export function moveElementInFlow(el: HTMLElement, dir: -1 | 1) {
+  const parent = el.parentNode
+  if (!parent) return
+  if (dir === -1) {
+    const ref = el.previousElementSibling ?? (parent as HTMLElement).previousElementSibling
+    if (ref && ref.parentNode) ref.parentNode.insertBefore(el, ref)
+  } else {
+    const ref = el.nextElementSibling ?? (parent as HTMLElement).nextElementSibling
+    if (ref && ref.parentNode) ref.parentNode.insertBefore(el, ref.nextSibling)
+  }
+  clearManualOffsets(el)
+}
+
+// Reposiciona o elemento no ponto de queda; se não houver um ponto de texto
+// (por exemplo, em um espaço vazio), encaixa no bloco mais próximo.
+export function dropElementAtPoint(
+  editor: HTMLElement,
+  el: HTMLElement,
+  x: number,
+  y: number,
+): boolean {
+  // Retira temporariamente o elemento do fluxo para que o hit-test encontre
+  // o texto que estava sob a imagem, sem deixar o espaço antigo reservado.
+  const previousDisplay = el.style.display
+  el.style.visibility = 'hidden'
+  el.style.display = 'none'
+  let range: Range | null = null
+  let pointTarget: Element | null = null
+  let fallbackBefore: Node | null = null
+  let useFallback = false
+  try {
+    range = getCaretRangeFromPoint(x, y)
+    pointTarget = document.elementFromPoint(x, y)
+
+    const editorRect = editor.getBoundingClientRect()
+    const pointIsInsideEditor =
+      x >= editorRect.left && x <= editorRect.right && y >= editorRect.top && y <= editorRect.bottom
+
+    if (
+      pointIsInsideEditor &&
+      (!range || !editor.contains(range.startContainer) || el.contains(range.startContainer))
+    ) {
+      useFallback = true
+      let targetBlock: Element | null =
+        pointTarget && editor.contains(pointTarget) ? pointTarget : null
+
+      while (targetBlock?.parentElement && targetBlock.parentElement !== editor) {
+        targetBlock = targetBlock.parentElement
+      }
+
+      if (!targetBlock || targetBlock === editor || targetBlock === el) {
+        const blocks = Array.from(editor.children).filter(
+          (child): child is HTMLElement => child instanceof HTMLElement && child !== el,
+        )
+        targetBlock =
+          blocks.find((block) => y <= block.getBoundingClientRect().bottom) ??
+          (blocks.length ? blocks[blocks.length - 1] : null)
+      }
+
+      if (targetBlock && targetBlock !== editor && targetBlock !== el) {
+        const rect = targetBlock.getBoundingClientRect()
+        fallbackBefore = y < rect.top + rect.height / 2 ? targetBlock : targetBlock.nextSibling
+      }
+    }
+  } finally {
+    el.style.display = previousDisplay
+    el.style.visibility = ''
+  }
+
+  if (useFallback) {
+    editor.insertBefore(el, fallbackBefore)
+  } else {
+    if (!range || !editor.contains(range.startContainer)) return false
+    const container = range.startContainer
+    if (container === el || el.contains(container)) return false
+
+    if (container.nodeType === Node.TEXT_NODE && container.parentNode) {
+      const textNode = container as Text
+      const after = textNode.splitText(range.startOffset)
+      if (after.previousSibling !== el) container.parentNode.insertBefore(el, after)
+    } else if (container.nodeType === Node.ELEMENT_NODE) {
+      const parent = container as HTMLElement
+      const refNode = parent.childNodes[range.startOffset] ?? null
+      if (refNode !== el) parent.insertBefore(el, refNode)
+    } else {
+      return false
+    }
+  }
+
+  clearManualOffsets(el)
+  const editorRect = editor.getBoundingClientRect()
+  setFloatSide(el, x < editorRect.left + editorRect.width / 2 ? 'left' : 'right')
+  return true
+}
+
+// ─── IMAGE POSITION ──────────────────────────────────────────────
+export function setImagePosition(
+  img: HTMLImageElement,
+  posClass: 'pos-left' | 'pos-right' | 'pos-center',
+) {
+  img.classList.remove('pos-left', 'pos-right', 'pos-center')
+  img.classList.add(posClass)
+}
+
+// Posição do menu flutuante: 40px acima do elemento, relativa ao editor
+export function toolbarPosition(
+  el: HTMLElement,
+  editor: HTMLElement,
+): { top: number; left: number } {
+  const rect = el.getBoundingClientRect()
+  const editorRect = editor.getBoundingClientRect()
+  return { top: rect.top - editorRect.top - 40, left: rect.left - editorRect.left }
+}
+
+// Posição da alça de redimensionamento: canto inferior direito do elemento
+export function resizeHandlePosition(
+  el: HTMLElement,
+  editor: HTMLElement,
+): { top: number; left: number } {
+  const rect = el.getBoundingClientRect()
+  const editorRect = editor.getBoundingClientRect()
+  return { top: rect.bottom - editorRect.top - 7, left: rect.right - editorRect.left - 7 }
+}
