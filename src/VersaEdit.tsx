@@ -1,29 +1,50 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react'
-import { CTooltip } from '@coreui/react'
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { createEditorHistory } from './editorHistory'
 import { isSafeUrl, purifyHtml } from './sanitize'
-import CIcon from '@coreui/icons-react'
+import { injectStyles } from './styles'
+import { format, resolveLabels, type VersaEditLabels, type VersaEditLocale } from './i18n'
 import {
-  cilImage,
-  cilBold,
-  cilItalic,
-  cilList,
-  cilAlignLeft,
-  cilAlignCenter,
-  cilAlignRight,
-  cilActionUndo,
-  cilActionRedo,
-  cilLink,
-  cilMinus,
-  cilUnderline,
-  cilIndentDecrease,
-  cilIndentIncrease,
-  cilCheckCircle,
-  cilX,
-} from '@coreui/icons'
+  DEFAULT_ACCENT,
+  DEFAULT_COLOR_PALETTE,
+  DEFAULT_FONT,
+  DEFAULT_FONT_FAMILIES,
+  DEFAULT_FONT_SIZES,
+  DEFAULT_FRAME,
+  DEFAULT_HEIGHT,
+  DEFAULT_HIGHLIGHT_COLORS,
+  DEFAULT_WIDTH,
+  googleFontsUrl,
+  type FontFamilyOption,
+  type FrameOptions,
+} from './defaults'
+import {
+  IconAlignCenter,
+  IconAlignLeft,
+  IconAlignRight,
+  IconBold,
+  IconBorderColor,
+  IconBulletList,
+  IconClearFormat,
+  IconHr,
+  IconImage,
+  IconIndent,
+  IconItalic,
+  IconLink,
+  IconOpen,
+  IconOutdent,
+  IconPaper,
+  IconRedo,
+  IconSave,
+  IconTextColor,
+  IconTextbox,
+  IconTrash,
+  IconUnderline,
+  IconUndo,
+  IconUnlink,
+} from './icons'
 
 // ─── HELPER COMPONENTS (outside render) ───────────────────────────
-const ToolbarSep = () => <div className="editor-toolbar-sep" />
+const ToolbarSep = () => <div className="ve-sep" role="separator" />
 
 const ToolbarBtn = ({
   onClick,
@@ -34,171 +55,24 @@ const ToolbarBtn = ({
   title: string
   children: React.ReactNode
 }) => (
-  <CTooltip content={title}>
-    <button
-      type="button"
-      className="editor-toolbar-btn"
-      // Mantém o foco e o cursor no editor ao usar a barra de ferramentas
-      onMouseDown={(e) => e.preventDefault()}
-      onClick={(e) => {
-        e.preventDefault()
-        onClick()
-      }}
-    >
-      {children}
-    </button>
-  </CTooltip>
+  <button
+    type="button"
+    className="ve-btn"
+    title={title}
+    aria-label={title}
+    // Mantém o foco e o cursor no editor ao usar a barra de ferramentas
+    onMouseDown={(e) => e.preventDefault()}
+    onClick={(e) => {
+      e.preventDefault()
+      onClick()
+    }}
+  >
+    {children}
+  </button>
 )
 
-// ─── INJECTED STYLES ──────────────────────────────────────────────
-const IMAGE_EDITOR_STYLE_ID = 'rich-editor-image-styles'
-function injectImageEditorStyles() {
-  if (document.getElementById(IMAGE_EDITOR_STYLE_ID)) return
-  const style = document.createElement('style')
-  style.id = IMAGE_EDITOR_STYLE_ID
-  style.textContent = `
-    .editor-content img { cursor: pointer; transition: outline 0.15s; outline: 2px solid transparent; outline-offset: 2px; display: block; -webkit-user-drag: none; user-drag: none; }
-    .editor-content img:hover { outline-color: rgba(125,140,106,0.5); }
-    .editor-content img.selected { outline-color: #7D8C6A; outline-width: 3px; cursor: grab; }
-    .editor-content img.selected:active { cursor: grabbing; }
-    .editor-content img.pos-left { float: left; margin: 40px; max-width: 50%; }
-    .editor-content img.pos-right { float: right; margin: 40px; max-width: 50%; }
-    .editor-content img.pos-center { display: block; margin: 40px auto; max-width: 100%; clear: both; }
-    .editor-content img.dragging,
-    .editor-content .rich-textbox.dragging { opacity: 0.7; outline: 2px dashed #7D8C6A; position: relative; z-index: 60; cursor: grabbing; }
-    .img-toolbar { position: absolute; display: flex; gap: 4px; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 4px 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 100; }
-    .img-toolbar button { border: none; background: none; cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 13px; color: #555; }
-    .img-toolbar button:hover { background: #f0f0f0; }
-    .img-toolbar button.danger { color: #dc3545; }
-    .color-picker-wrapper { position: relative; display: inline-flex; align-items: center; }
-    .color-picker-wrapper input[type="color"] { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
-    .color-indicator { display: block; width: 10px; height: 10px; margin-top: 1px; border-radius: 50%; border: 1px solid #bbb; box-sizing: border-box; }
-    .color-palette { position: absolute; top: 100%; left: 0; z-index: 120; display: grid; grid-template-columns: repeat(6, 22px); gap: 6px; padding: 8px; margin-top: 4px; background: #fff; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
-    .color-swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px #bbb; padding: 0; cursor: pointer; position: relative; overflow: hidden; }
-    .color-swatch:hover { box-shadow: 0 0 0 2px #7D8C6A; }
-    .color-picker-wrapper .color-swatch--custom { background: conic-gradient(#e74c3c, #f1c40f, #27ae60, #2980b9, #8e44ad, #e74c3c); }
-    .color-picker-wrapper .color-swatch--custom input[type="color"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; pointer-events: auto; cursor: pointer; }
-    .editor-content .rich-textbox {
-      border: 1px dashed #7D8C6A;
-      padding: 10px;
-      margin: 40px;
-      min-height: 40px;
-      min-width: 100px;
-      position: relative;
-      cursor: text;
-      user-select: text;
-      overflow: auto;
-      outline: 2px solid transparent;
-      outline-offset: 2px;
-      transition: outline 0.15s;
-      background: rgba(125,140,106,0.03);
-      clear: both;
-    }
-    .editor-content .rich-textbox:hover { outline-color: rgba(125,140,106,0.3); }
-    .editor-content .rich-textbox.selected { outline-color: #7D8C6A; outline-width: 3px; cursor: text; }
-    .editor-content .rich-textbox.tb-float-left { float: left; margin: 40px; max-width: 50%; }
-    .editor-content .rich-textbox.tb-float-right { float: right; margin: 40px; max-width: 50%; }
-    .textbox-handle {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: grab;
-      color: #7D8C6A;
-      background: rgba(125,140,106,0.15);
-      border: 1px solid rgba(125,140,106,0.4);
-      border-radius: 4px;
-      font-size: 14px;
-      line-height: 1;
-      user-select: none;
-      -webkit-user-drag: none;
-      padding: 4px 8px;
-      margin-right: 6px;
-      vertical-align: middle;
-    }
-    .textbox-handle:active { cursor: grabbing; }
-    .resize-handle {
-      position: absolute;
-      width: 14px;
-      height: 14px;
-      background: #7D8C6A;
-      border: 2px solid #ffffff;
-      border-radius: 3px;
-      cursor: nwse-resize;
-      z-index: 110;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
-      user-select: none;
-      -webkit-user-drag: none;
-    }
-    .resize-handle:hover { background: #5f6f4d; }
-    .editor-content:empty::before {
-      content: attr(data-placeholder);
-      color: #999;
-      pointer-events: none;
-      font-style: italic;
-    }
-    .editor-toolbar-btn { border: none !important; background: none !important; cursor: pointer !important; padding: 4px 6px !important; border-radius: 4px !important; color: #555 !important; font-size: 13px !important; line-height: 1 !important; min-width: 28px !important; min-height: 28px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; }
-    .editor-toolbar-btn:hover { background: #e8e8e8 !important; }
-    .editor-toolbar-sep { width: 1px; background: #ddd; margin: 0 4px; align-self: stretch; }
-    .editor-select { border: 1px solid #ddd; border-radius: 4px; padding: 2px 4px; font-size: 12px; color: #555; background: #fff; cursor: pointer; min-height: 28px; }
-    .editor-select:hover { background: #f0f0f0; }
-    .font-family-picker { position: relative; display: inline-flex; }
-    .font-family-options { position: absolute; top: calc(100% + 2px); left: 0; z-index: 130; min-width: 220px; max-height: 300px; overflow-y: auto; padding: 4px; background: #fff; border: 1px solid #ddd; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
-    .font-family-option { display: block; width: 100%; padding: 6px 8px; border: 0; border-radius: 4px; background: transparent; color: #333; text-align: left; cursor: pointer; }
-    .font-family-option:hover, .font-family-option[aria-selected="true"] { background: #f0f0f0; }
-    .editor-content blockquote { border-left: 3px solid #7D8C6A; margin: 0; padding: 8px 16px; background: rgba(125,140,106,0.05); color: #555; font-style: italic; clear: both; }
-    .editor-content h1, .editor-content h2, .editor-content h3, .editor-content h4, .editor-content h5, .editor-content h6 { font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; margin: 0; padding: 0; line-height: 1.2; }
-    .editor-content p { margin: 0; padding: 0; line-height: 1.3; }
-    .editor-content p:first-child { margin-top: 0; padding-top: 0; }
-    .editor-content p:last-child { margin-bottom: 0; padding-bottom: 0; }
-    .editor-content div { margin: 0; padding: 0; }
-    .editor-content span { margin: 0; padding: 0; }
-    .editor-content.banner-text-preview p { margin: 0 0 1rem; line-height: 1.6; color: #3F4A43; }
-    .editor-content.banner-text-preview h1,
-    .editor-content.banner-text-preview h2,
-    .editor-content.banner-text-preview h3,
-    .editor-content.banner-text-preview h4,
-    .editor-content.banner-text-preview h5,
-    .editor-content.banner-text-preview h6 {
-      font-family: 'Fraunces', Georgia, 'Times New Roman', serif;
-      font-weight: 600;
-      line-height: 1.2;
-      color: #14201A;
-      margin: 0 0 0.5rem;
-    }
-    .editor-content.banner-text-preview h1 { font-size: 3rem; }
-    .editor-content.banner-text-preview h2 { font-size: 2.5rem; }
-    .editor-content.banner-text-preview h3 { font-size: 2rem; }
-    .editor-content.banner-text-preview h4 { font-size: 1.5rem; }
-    .editor-content.banner-text-preview h5 { font-size: 1.25rem; }
-    .editor-content.banner-text-preview h6 { font-size: 1.125rem; }
-  `
-  document.head.appendChild(style)
-}
-
-// ─── CONSTANTS ────────────────────────────────────────────────────
-const FONT_FAMILIES = [
-  { label: 'Aptos', value: 'Aptos, "Segoe UI", Arial, sans-serif' },
-  { label: 'Aptos Display', value: '"Aptos Display", Aptos, "Segoe UI", Arial, sans-serif' },
-  { label: 'Consolas', value: 'Consolas, "Courier New", monospace' },
-  { label: 'Fraunces', value: 'Fraunces, Georgia, "Times New Roman", serif' },
-  { label: 'Georgia', value: 'Georgia, "Times New Roman", serif' },
-  { label: 'Inter', value: 'Inter, Arial, sans-serif' },
-  { label: 'Montserrat', value: "'Montserrat', Arial, sans-serif" },
-  { label: 'Open Sans', value: "'Open Sans', Arial, sans-serif" },
-  { label: 'Playfair Display', value: "'Playfair Display', Georgia, 'Times New Roman', serif" },
-  { label: 'Poppins', value: 'Poppins, Arial, sans-serif' },
-  { label: 'Roboto', value: 'Roboto, Arial, sans-serif' },
-  { label: 'sans-serif', value: 'sans-serif' },
-  { label: 'Segoe UI', value: '"Segoe UI", Arial, sans-serif' },
-  { label: 'serif', value: 'serif' },
-  { label: 'Verdana', value: 'Verdana, Geneva, sans-serif' },
-]
-
-// Tamanhos em pontos tipográficos, como no Word (1pt = 4/3 CSS px).
-const FONT_SIZES = [8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 26, 28, 36, 48, 72].map((pt) => ({
-  label: `${pt} pt`,
-  value: String(pt),
-}))
+// ─── FONTES ───────────────────────────────────────────────────────
+const GOOGLE_FONTS_LINK_ID = 'versaedit-google-fonts'
 
 function cssFontSizeToPoints(value: string): number | null {
   const match = value.trim().match(/^([\d.]+)\s*(pt|px)?$/i)
@@ -208,13 +82,12 @@ function cssFontSizeToPoints(value: string): number | null {
   return Number.isFinite(points) && points >= 6 && points <= 72 ? points : null
 }
 
-function closestFontSizeOption(points: number): string {
-  return FONT_SIZES.reduce(
-    (closest, option) =>
-      Math.abs(Number(option.value) - points) < Math.abs(Number(closest) - points)
-        ? option.value
-        : closest,
-    FONT_SIZES[0].value,
+function closestFontSizeOption(points: number, sizes: number[]): string {
+  return String(
+    sizes.reduce(
+      (closest, size) => (Math.abs(size - points) < Math.abs(closest - points) ? size : closest),
+      sizes[0],
+    ),
   )
 }
 
@@ -233,7 +106,7 @@ function clipboardFontSizePoints(html: string): number | null {
   return legacyPoints[legacySize] ?? null
 }
 
-function clipboardFontFamily(html: string): string | null {
+function clipboardFontFamily(html: string, fontFamilies: FontFamilyOption[]): string | null {
   if (!html) return null
   const clipboardDoc = new DOMParser().parseFromString(html, 'text/html')
   const styledElement = clipboardDoc.body.querySelector<HTMLElement>('[style*="font-family"]')
@@ -247,7 +120,7 @@ function clipboardFontFamily(html: string): string | null {
   }
 
   for (const family of families) {
-    const matchingFont = FONT_FAMILIES.find(
+    const matchingFont = fontFamilies.find(
       (font) => font.value.split(',')[0].replace(/['"]/g, '').trim().toLowerCase() === family,
     )
     if (matchingFont) return matchingFont.value
@@ -255,11 +128,11 @@ function clipboardFontFamily(html: string): string | null {
   return null
 }
 
-function sanitizeRichPaste(html: string): string {
+function sanitizeRichPaste(html: string, fontFamilies: FontFamilyOption[]): string {
   const pasted = new DOMParser().parseFromString(purifyHtml(html), 'text/html')
   // Word costuma definir Aptos em regras CSS de classes Mso*, não inline.
   // Lemos a família antes de remover a folha de estilos do clipboard.
-  const inheritedClipboardFamily = clipboardFontFamily(html)
+  const inheritedClipboardFamily = clipboardFontFamily(html, fontFamilies)
   pasted.body
     .querySelectorAll('script,style,meta,link,iframe,object,embed')
     .forEach((node) => node.remove())
@@ -367,33 +240,22 @@ function sanitizeRichPaste(html: string): string {
 }
 
 type TbBorderStyle = 'solid' | 'dashed' | 'dotted' | 'double'
-const TB_BORDER_STYLES: { label: string; value: TbBorderStyle }[] = [
-  { label: 'Linha sólida', value: 'solid' },
-  { label: 'Linha tracejada', value: 'dashed' },
-  { label: 'Linha pontilhada', value: 'dotted' },
-  { label: 'Linha dupla', value: 'double' },
+const TB_BORDER_STYLES: { label: keyof VersaEditLabels; value: TbBorderStyle }[] = [
+  { label: 'lineSolid', value: 'solid' },
+  { label: 'lineDashed', value: 'dashed' },
+  { label: 'lineDotted', value: 'dotted' },
+  { label: 'lineDouble', value: 'double' },
 ]
+const TB_BORDER_WIDTHS = ['1', '2', '3', '4', '6', '8']
+const RESIZE_STEPS = [25, 50, 75, 100]
 
-const HEADING_BLOCKS = [
-  { label: 'Parágrafo', tag: 'p' },
-  { label: 'Título H2', tag: 'h2' },
-  { label: 'Título H3', tag: 'h3' },
-  { label: 'Título H4', tag: 'h4' },
-  { label: 'Citação', tag: 'blockquote' },
+const HEADING_BLOCKS: { label: keyof VersaEditLabels; tag: string }[] = [
+  { label: 'paragraph', tag: 'p' },
+  { label: 'heading2', tag: 'h2' },
+  { label: 'heading3', tag: 'h3' },
+  { label: 'heading4', tag: 'h4' },
+  { label: 'quote', tag: 'blockquote' },
 ]
-
-// ─── DIMENSÕES DA ÁREA DE BLOG DO SITE (WYSIWYG) ─────────────────
-// Medidas reais do bloco de Blog do site (scripts/measure-blog-area.mjs):
-// bloco de 564 × 704 px com moldura verde de 6px e cantos de 16px,
-// superfície branca de 552 × 692 px com respiro de 32px → coluna de
-// texto de 488 × 628 px. O editor reproduz o bloco exatamente, para
-// que a formatação encaixe perfeitamente ao publicar.
-const BLOG_BLOCK_W = 564 // largura padrão do bloco (moldura incluída)
-const BLOG_BLOCK_H = 704 // altura padrão do bloco (moldura incluída)
-const BLOCK_BORDER = 6 // moldura verde do bloco (6px em cada lado)
-// Fontes do site (iguais às de SITE_A_MESA/src/scss/_tokens.scss)
-const SITE_FONT_BODY =
-  "'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
 
 // ─── POSITION HELPERS ─────────────────────────────────────────────
 // Ponto de inserção do conteúdo sob o mouse (Blink/WebKit e Firefox)
@@ -415,20 +277,52 @@ function getCaretRangeFromPoint(x: number, y: number): Range | null {
 
 // ─── PROPS ────────────────────────────────────────────────────────
 export interface VersaEditProps {
+  /** HTML inicial. Mudanças vindas de fora recarregam o editor; o eco do próprio onChange não. */
   initialContent?: string
   onChange?: (html: string) => void
+  /** Avisa quando o conteúdo passa (ou deixa de passar) da altura do editor */
   onOverflowChange?: (isOverflowing: boolean) => void
+  /** Classe extra na área de edição (para estilos do site que vai exibir o conteúdo) */
   contentClassName?: string
   contentStyle?: React.CSSProperties
+  /** Texto exibido com o editor vazio (padrão: o do idioma) */
   placeholder?: string
+  /** Colagem: junta linhas em branco seguidas em uma só */
   singleLineBreaks?: boolean
+  /** Corta o conteúdo que passar da altura do editor */
   truncateOnOverflow?: boolean
-  // Largura e altura totais do bloco (moldura incluída). Permite que o editor
-  // assuma a mesma largura do cabeçalho e da área de exibição do site.
+  /** Largura total do bloco em px, moldura incluída */
   width?: number
+  /** Altura total do bloco em px, moldura incluída */
   height?: number
-  // Largura das ferramentas (padrão: a mesma do bloco), centralizadas sobre o bloco
+  /** Largura da barra de ferramentas (padrão: a do bloco), centralizada sobre ele */
   toolbarWidth?: number
+  /** Moldura da área de edição; false remove */
+  frame?: Partial<FrameOptions> | false
+  /** Cor de destaque: seleção, caixas de texto, alças */
+  accentColor?: string
+  /** Fonte do texto */
+  fontFamily?: string
+  /** Fonte dos títulos (padrão: a mesma do texto) */
+  headingFontFamily?: string
+  /** Fontes do menu */
+  fontFamilies?: FontFamilyOption[]
+  /** Tamanhos do menu, em pontos */
+  fontSizes?: number[]
+  /** Cores do texto e do papel */
+  colorPalette?: string[]
+  /** Cores do marca-texto ('transparent' = sem cor) */
+  highlightColors?: string[]
+  /** Famílias a carregar do Google Fonts (ex.: ['Inter', 'Fraunces:opsz,wght@9..144,400;9..144,700']) */
+  loadGoogleFonts?: string[]
+  /** Mostra os botões Salvar/Abrir arquivo (padrão: true) */
+  showFileButtons?: boolean
+  /** Botão Salvar: recebe o HTML no lugar de baixar o arquivo .html */
+  onSave?: (html: string) => void
+  /** Idioma da interface (padrão: 'en') */
+  locale?: VersaEditLocale
+  /** Troca qualquer texto da interface */
+  labels?: Partial<VersaEditLabels>
 }
 
 function escapeHtml(text: string): string {
@@ -546,11 +440,14 @@ function sanitizeHtml(html: string): string {
 }
 
 // Arquivos .html salvos/abertos pelo botão de arquivo
-const FILE_GENERATOR = 'AMesa RichEditor'
+const FILE_GENERATOR = 'VersaEdit'
 const MAX_OPEN_FILE_BYTES = 20 * 1024 * 1024
 
-// Separa a cor do papel (fundo do editor) do HTML salvo
-const PAPER_MARK = /^<div class="amesa-paper" data-paper="([^"]+)"[^>]*>([\s\S]*)<\/div>$/
+// Separa a cor do papel (fundo do editor) do HTML salvo. Lê também o nome
+// antigo (amesa-paper), usado pelo conteúdo gravado antes do VersaEdit.
+const PAPER_MARK = /^<div class="(?:ve|amesa)-paper" data-paper="([^"]+)"[^>]*>([\s\S]*)<\/div>$/
+const paperWrap = (paper: string, inner: string) =>
+  `<div class="ve-paper" data-paper="${paper}" style="background-color:${paper};">${inner}</div>`
 function splitPaper(html: string): { paper: string; inner: string } {
   const m = PAPER_MARK.exec(html)
   return m ? { paper: safeCssColor(m[1]), inner: m[2] } : { paper: '', inner: html }
@@ -597,9 +494,7 @@ function setPreviewWrapperStyle(
 
 // Conteúdo a salvar: envolve o HTML com a cor do papel, quando definida
 function serializeEditorContent(el: HTMLElement, paper: string): string {
-  return paper
-    ? `<div class="amesa-paper" data-paper="${paper}" style="background-color:${paper};">${el.innerHTML}</div>`
-    : el.innerHTML
+  return paper ? paperWrap(paper, el.innerHTML) : el.innerHTML
 }
 
 // HTML do editor para o histórico: sem classes de seleção e com a cor do papel
@@ -608,9 +503,7 @@ function snapshotEditor(el: HTMLElement, paper: string): string {
   clone.querySelectorAll('.selected, .dragging').forEach((node) => {
     node.classList.remove('selected', 'dragging')
   })
-  return paper
-    ? `<div class="amesa-paper" data-paper="${paper}" style="background-color:${paper};">${clone.innerHTML}</div>`
-    : clone.innerHTML
+  return paper ? paperWrap(paper, clone.innerHTML) : clone.innerHTML
 }
 
 function measureEditorContentHeight(editor: HTMLElement): number {
@@ -709,13 +602,34 @@ const VersaEdit: React.FC<VersaEditProps> = ({
   onOverflowChange,
   contentClassName = '',
   contentStyle,
-  placeholder = 'Digite o conteúdo aqui...',
+  placeholder,
   singleLineBreaks = false,
   truncateOnOverflow = false,
-  width = BLOG_BLOCK_W,
-  height = BLOG_BLOCK_H,
+  width = DEFAULT_WIDTH,
+  height = DEFAULT_HEIGHT,
   toolbarWidth = width,
+  frame,
+  accentColor = DEFAULT_ACCENT,
+  fontFamily = DEFAULT_FONT,
+  headingFontFamily,
+  fontFamilies = DEFAULT_FONT_FAMILIES,
+  fontSizes = DEFAULT_FONT_SIZES,
+  colorPalette: colorPalette_ = DEFAULT_COLOR_PALETTE,
+  highlightColors = DEFAULT_HIGHLIGHT_COLORS,
+  loadGoogleFonts,
+  showFileButtons = true,
+  onSave,
+  locale = 'en',
+  labels,
 }) => {
+  const L = useMemo(() => resolveLabels(locale, labels), [locale, labels])
+  const frameOpts: FrameOptions =
+    frame === false ? { width: 0, color: 'transparent', radius: 0 } : { ...DEFAULT_FRAME, ...frame }
+  const fontSizeOptions = fontSizes.length ? fontSizes : DEFAULT_FONT_SIZES
+  // Valores atuais para os ouvintes registrados uma única vez
+  const fontFamiliesRef = useRef(fontFamilies)
+  const fontSizesRef = useRef(fontSizeOptions)
+  const onSaveRef = useRef(onSave)
   const editorRef = useRef<HTMLDivElement>(null)
   // Callbacks sempre atualizados: a tela pode recriar onChange a cada renderização
   // sem que o editor recarregue o conteúdo nem chame uma versão antiga da função
@@ -724,6 +638,9 @@ const VersaEdit: React.FC<VersaEditProps> = ({
   useLayoutEffect(() => {
     onChangeRef.current = onChange
     onOverflowChangeRef.current = onOverflowChange
+    onSaveRef.current = onSave
+    fontFamiliesRef.current = fontFamilies
+    fontSizesRef.current = fontSizeOptions
   })
   // Último HTML enviado pelo onChange — identifica quando initialContent é
   // apenas o eco do próprio editor (modo controlado, ex.: texto do banner)
@@ -761,39 +678,16 @@ const VersaEdit: React.FC<VersaEditProps> = ({
     if (editorRef.current) editorRef.current.style.backgroundColor = paper
     triggerChange()
   }
-  const COLOR_PALETTE = [
-    '#000000',
-    '#434343',
-    '#666666',
-    '#999999',
-    '#CCCCCC',
-    '#FFFFFF',
-    '#B00020',
-    '#E74C3C',
-    '#F39C12',
-    '#F1C40F',
-    '#27AE60',
-    '#2E7D32',
-    '#1ABC9C',
-    '#2980B9',
-    '#1B4F72',
-    '#8E44AD',
-    '#7D8C6A',
-    '#B8924A', // Dourado da landing page ($amesa-gold)
-    '#A68B4A',
-    '#1E3D31', // Verde do banner da landing page ($amesa-olive-dark)
-    '#2F5D4A', // Verde secundário ($amesa-olive)
-  ]
 
   // Borda da caixa de texto (menu do editor)
-  const [tbBorderColor, setTbBorderColor] = useState('#7D8C6A')
+  const [tbBorderColor, setTbBorderColor] = useState(accentColor)
   const [tbBorderWidth, setTbBorderWidth] = useState('1')
   const [tbBorderStyle, setTbBorderStyle] = useState<TbBorderStyle>('dashed')
   const tbBorderColorInputRef = useRef<HTMLInputElement>(null)
   const isTextboxSelected = selectionType === 'textbox'
 
   // Font state
-  const [currentFont, setCurrentFont] = useState('Arial, Helvetica, sans-serif')
+  const [currentFont, setCurrentFont] = useState(fontFamily)
   const [currentFontSize, setCurrentFontSize] = useState('12')
   // Paleta de cores do texto tarjado (marca-texto)
   const [highlightPalette, setHighlightPalette] = useState<boolean | null>(null)
@@ -810,16 +704,23 @@ const VersaEdit: React.FC<VersaEditProps> = ({
   const [resizeHandlePos, setResizeHandlePos] = useState<{ top: number; left: number } | null>(null)
 
   useEffect(() => {
-    injectImageEditorStyles()
-    if (!document.getElementById('rich-editor-landing-fonts')) {
-      const fontLink = document.createElement('link')
-      fontLink.id = 'rich-editor-landing-fonts'
-      fontLink.rel = 'stylesheet'
-      fontLink.href =
-        'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;600;700&display=swap'
-      document.head.appendChild(fontLink)
-    }
+    injectStyles()
   }, [])
+
+  // Google Fonts: só quando pedido pela prop (desligado por padrão)
+  const googleFontsKey = loadGoogleFonts?.join('|') ?? ''
+  useEffect(() => {
+    if (!googleFontsKey) return
+    const href = googleFontsUrl(googleFontsKey.split('|'))
+    let link = document.getElementById(GOOGLE_FONTS_LINK_ID) as HTMLLinkElement | null
+    if (!link) {
+      link = document.createElement('link')
+      link.id = GOOGLE_FONTS_LINK_ID
+      link.rel = 'stylesheet'
+      document.head.appendChild(link)
+    }
+    if (link.href !== href) link.href = href
+  }, [googleFontsKey])
 
   // Histórico próprio de desfazer/refazer (mantido fora do estado do React)
   const [history] = useState(() => createEditorHistory())
@@ -890,7 +791,7 @@ const VersaEdit: React.FC<VersaEditProps> = ({
       // CSS pixels → pontos tipográficos (mesma unidade e escala do Word).
       const sizePx = parseFloat(computed.fontSize)
       if (Number.isFinite(sizePx)) {
-        setCurrentFontSize(closestFontSizeOption((sizePx * 72) / 96))
+        setCurrentFontSize(closestFontSizeOption((sizePx * 72) / 96, fontSizesRef.current))
       }
       // Cor do texto selecionado → atualiza o círculo de cor do texto
       const rgb = computed.color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
@@ -902,10 +803,11 @@ const VersaEdit: React.FC<VersaEditProps> = ({
       const family = computed.fontFamily.split(',')[0].replace(/['"]/g, '').trim().toLowerCase()
       const firstFamily = (value: string) =>
         value.split(',')[0].replace(/['"]/g, '').trim().toLowerCase()
+      const families = fontFamiliesRef.current
       const match =
-        FONT_FAMILIES.find((font) => firstFamily(font.value) === family) ||
-        FONT_FAMILIES.find((font) => font.value.toLowerCase().includes(family)) ||
-        FONT_FAMILIES.find((font) => family.includes(firstFamily(font.value)))
+        families.find((font) => firstFamily(font.value) === family) ||
+        families.find((font) => font.value.toLowerCase().includes(family)) ||
+        families.find((font) => family.includes(firstFamily(font.value)))
       if (match) setCurrentFont(match.value)
     }
     document.addEventListener('selectionchange', handleSelectionChange)
@@ -1312,7 +1214,7 @@ const VersaEdit: React.FC<VersaEditProps> = ({
       reader.onload = (ev) => {
         const src = typeof ev.target?.result === 'string' ? ev.target.result : ''
         if (!isSafeUrl('src', src)) return
-        const img = `<img src="${escapeHtml(src)}" alt="Imagem" class="pos-left" draggable="false" style="max-width:50%;height:auto;border-radius:4px;" />`
+        const img = `<img src="${escapeHtml(src)}" alt="${escapeHtml(L.imageAlt)}" class="pos-left" draggable="false" style="max-width:50%;height:auto;border-radius:4px;" />`
         editorRef.current?.focus()
         document.execCommand('insertHTML', false, img)
         triggerChange()
@@ -1411,43 +1313,48 @@ const VersaEdit: React.FC<VersaEditProps> = ({
   const renderColorPicker = (kind: 'text' | 'bg') => {
     const color = kind === 'text' ? textColor : bgColor
     const command = kind === 'text' ? 'foreColor' : 'hiliteColor'
-    const label = kind === 'text' ? 'Cor do texto' : 'Cor do papel'
-    const icon = kind === 'text' ? '🎨' : '🪣'
+    const label = kind === 'text' ? L.textColor : L.paperColor
+    const applyLabel = format(L.applyColor, { label, color })
     const keepSelection = (e: React.MouseEvent) => {
       e.preventDefault()
       saveSelection()
     }
     return (
-      <div className="color-picker-wrapper">
+      <div className="ve-color-picker">
         <button
           type="button"
-          className="editor-toolbar-btn"
+          className="ve-btn"
           title={label}
+          aria-label={label}
+          aria-haspopup="true"
+          aria-expanded={colorPalette === kind}
           onMouseDown={keepSelection}
           onClick={() => setColorPalette(colorPalette === kind ? null : kind)}
         >
-          <span style={{ fontSize: '14px', lineHeight: 1 }}>{icon}</span>
+          {kind === 'text' ? <IconTextColor /> : <IconPaper />}
         </button>
         <button
           type="button"
-          className="editor-toolbar-btn"
-          title={`${label}: aplicar ${color} e fechar`}
+          className="ve-btn"
+          title={applyLabel}
+          aria-label={applyLabel}
           onMouseDown={keepSelection}
           onClick={() => {
             applyColor(command, color)
             setColorPalette(null)
           }}
         >
-          <span className="color-indicator" style={{ backgroundColor: color }} />
+          <span className="ve-color-indicator" style={{ backgroundColor: color }} />
         </button>
         {colorPalette === kind && (
-          <div className="color-palette" onMouseLeave={restoreSelectionPreview}>
-            {COLOR_PALETTE.map((c) => (
+          <div className="ve-palette" onMouseLeave={restoreSelectionPreview}>
+            {colorPalette_.map((c) => (
               <button
                 key={c}
                 type="button"
-                className="color-swatch"
+                className="ve-swatch"
                 title={c}
+                aria-label={c}
                 style={{ backgroundColor: c }}
                 onMouseDown={keepSelection}
                 onMouseEnter={() => {
@@ -1457,12 +1364,13 @@ const VersaEdit: React.FC<VersaEditProps> = ({
               />
             ))}
             <label
-              className="color-swatch color-swatch--custom"
-              title="Cor personalizada"
+              className="ve-swatch ve-swatch--custom"
+              title={L.customColor}
               onMouseDown={saveSelection}
             >
               <input
                 type="color"
+                aria-label={L.customColor}
                 value={color}
                 onChange={(e) => pickCustomColor(kind, e.target.value)}
               />
@@ -1536,15 +1444,15 @@ const VersaEdit: React.FC<VersaEditProps> = ({
   const handleInsertLink = () => {
     const editor = editorRef.current
     const range = editor ? getCurrentEditorRange(editor) : null
-    const typedUrl = prompt('Digite a URL do link:', 'https://')
+    const typedUrl = prompt(L.linkUrlPrompt, 'https://')
     if (!typedUrl) return
     const url = normalizeLinkUrl(typedUrl)
     if (!url) {
-      alert('Link inválido. Use um endereço http://, https:// ou mailto:.')
+      alert(L.linkInvalid)
       return
     }
     const selectedText = range?.toString() || ''
-    const linkText = prompt('Texto do link:', selectedText || url) || url
+    const linkText = prompt(L.linkTextPrompt, selectedText || url) || url
     const html = `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(linkText)}</a>`
     if (editor && range) restoreEditorRange(editor, range)
     else editor?.focus()
@@ -1567,7 +1475,7 @@ const VersaEdit: React.FC<VersaEditProps> = ({
   }
 
   const handleInsertTextBox = () => {
-    const html = `<div class="rich-textbox" contenteditable="true"><span class="textbox-handle" contenteditable="false" title="Arrastar caixa de texto">⠿</span>Caixa de texto</div>`
+    const html = `<div class="rich-textbox" contenteditable="true"><span class="textbox-handle" contenteditable="false" title="${escapeHtml(L.textboxHandle)}">⠿</span>${escapeHtml(L.textboxDefault)}</div>`
     editorRef.current?.focus()
     document.execCommand('insertHTML', false, html)
     triggerChange()
@@ -1580,20 +1488,25 @@ const VersaEdit: React.FC<VersaEditProps> = ({
   const handleSaveToFile = () => {
     const editor = editorRef.current
     if (!editor) return
+    const html = snapshotEditor(editor, paperRef.current)
+    if (onSaveRef.current) {
+      onSaveRef.current(html)
+      return
+    }
     const page = [
       '<!doctype html>',
-      '<html lang="pt-BR">',
+      `<html lang="${locale}">`,
       '<head>',
       '<meta charset="utf-8">',
       `<meta name="generator" content="${FILE_GENERATOR}">`,
-      '<title>Conteúdo do editor</title>',
+      `<title>${escapeHtml(L.fileTitle)}</title>`,
       '</head>',
-      `<body>${snapshotEditor(editor, paperRef.current)}</body>`,
+      `<body>${html}</body>`,
       '</html>',
     ].join('\n')
     const now = new Date()
     const pad = (n: number) => String(n).padStart(2, '0')
-    const fileName = `conteudo-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.html`
+    const fileName = `${L.fileNamePrefix}-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}.html`
     const url = URL.createObjectURL(new Blob([page], { type: 'text/html;charset=utf-8' }))
     const link = document.createElement('a')
     link.href = url
@@ -1602,8 +1515,6 @@ const VersaEdit: React.FC<VersaEditProps> = ({
     link.click()
     link.remove()
     window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-    // Mantido para telas que queiram reagir ao salvar
-    document.dispatchEvent(new CustomEvent('amesa-editor-save'))
   }
 
   // Abrir: carrega um arquivo .html no editor, com a mesma limpeza de segurança
@@ -1615,7 +1526,7 @@ const VersaEdit: React.FC<VersaEditProps> = ({
     const { paper, inner } = splitPaper(body)
     const cleanInner = sanitizeHtml(inner)
     if (!cleanInner.replace(/<[^>]*>/g, '').trim() && !/<img\b/i.test(cleanInner)) {
-      alert('O arquivo não tem conteúdo que possa ser aberto no editor.')
+      alert(L.fileEmpty)
       return
     }
     deselectImage()
@@ -1624,7 +1535,7 @@ const VersaEdit: React.FC<VersaEditProps> = ({
     editor.style.backgroundColor = paper
     editor.innerHTML = cleanInner
     if (truncateOnOverflow && truncateEditableToFit(editor)) {
-      alert('O conteúdo do arquivo era maior que a área do editor e foi cortado no limite.')
+      alert(L.fileTruncated)
     }
     editor.focus()
     triggerChange()
@@ -1638,23 +1549,23 @@ const VersaEdit: React.FC<VersaEditProps> = ({
       const file = input.files?.[0]
       if (!file) return
       if (!/\.html?$/i.test(file.name) && file.type !== 'text/html') {
-        alert('Escolha um arquivo .html salvo pelo editor.')
+        alert(L.fileWrongType)
         return
       }
       if (file.size > MAX_OPEN_FILE_BYTES) {
-        alert('O arquivo é grande demais (máximo de 20 MB).')
+        alert(L.fileTooLarge)
         return
       }
       const editor = editorRef.current
       const hasContent = Boolean(editor?.textContent?.trim() || editor?.querySelector('img'))
-      if (hasContent && !confirm('Substituir o conteúdo atual pelo arquivo? (Ctrl+Z desfaz)')) {
+      if (hasContent && !confirm(L.fileReplaceConfirm)) {
         return
       }
       const reader = new FileReader()
       reader.onload = () => {
         if (typeof reader.result === 'string') loadFileContent(reader.result)
       }
-      reader.onerror = () => alert('Não foi possível ler o arquivo.')
+      reader.onerror = () => alert(L.fileReadError)
       reader.readAsText(file, 'utf-8')
     }
     input.click()
@@ -1686,7 +1597,7 @@ const VersaEdit: React.FC<VersaEditProps> = ({
     el.setAttribute('contenteditable', 'true')
     // Sincroniza os controles de borda do menu com o estilo atual da caixa
     const wpx = Math.round(parseFloat(el.style.borderWidth || '0'))
-    setTbBorderColor(el.style.borderColor || '#7D8C6A')
+    setTbBorderColor(el.style.borderColor || accentColor)
     setTbBorderWidth(Number.isFinite(wpx) ? String(wpx) : '1')
     const styleNow = el.style.borderStyle
     setTbBorderStyle(styleNow && styleNow !== 'none' ? (styleNow as TbBorderStyle) : 'dashed')
@@ -2009,10 +1920,10 @@ const VersaEdit: React.FC<VersaEditProps> = ({
     const clipboardHtml = e.clipboardData.getData('text/html')
     const clipboardText = e.clipboardData.getData('text/plain').replace(/\r\n?/g, '\n')
     const pastedText = singleLineBreaks ? clipboardText.replace(/\n{2,}/g, '\n') : clipboardText
-    const richHtml = sanitizeRichPaste(clipboardHtml)
+    const richHtml = sanitizeRichPaste(clipboardHtml, fontFamilies)
     const hasRichText = Boolean(richHtml.replace(/<[^>]*>/g, '').trim())
     const pastedFontSizePt = clipboardFontSizePoints(clipboardHtml)
-    const pastedFontFamily = clipboardFontFamily(clipboardHtml)
+    const pastedFontFamily = clipboardFontFamily(clipboardHtml, fontFamilies)
     const safeHtml = pastedText
       .split('\n')
       .map((line) =>
@@ -2080,7 +1991,7 @@ const VersaEdit: React.FC<VersaEditProps> = ({
     }
     editor.focus()
     if (pastedFontSizePt && !pendingStyle.fontSize) {
-      setCurrentFontSize(closestFontSizeOption(pastedFontSizePt))
+      setCurrentFontSize(closestFontSizeOption(pastedFontSizePt, fontSizeOptions))
     }
     if (pastedFontFamily && !pendingStyle.fontFamily) setCurrentFont(pastedFontFamily)
     enforcePhysicalHeightOnInput()
@@ -2189,41 +2100,51 @@ const VersaEdit: React.FC<VersaEditProps> = ({
   }
 
   // ─── RENDER ──────────────────────────────────────────────────────
+  const rootStyle = {
+    '--ve-accent': accentColor,
+    ...(headingFontFamily ? { '--ve-heading-font': headingFontFamily } : {}),
+  } as React.CSSProperties
+  const innerW = width - frameOpts.width * 2
+  const innerH = height - frameOpts.width * 2
+  const textboxClass = isTextboxSelected ? undefined : 've-disabled'
+
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="ve-root" style={rootStyle}>
       {/* ═══ FORMATTING TOOLBAR ═══ */}
       <div
-        className="d-flex gap-1 mb-2 p-2 rounded"
+        className="ve-toolbar"
+        role="toolbar"
+        aria-label={L.toolbar}
         style={{
-          backgroundColor: '#f5f5f5',
-          border: '1px solid #ddd',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          // Ferramentas com a largura do cabeçalho, centralizadas sobre o bloco de edição
+          // Barra centralizada sobre o bloco de edição (pode ser mais larga que ele)
           width: toolbarWidth,
           marginLeft: -(toolbarWidth - width) / 2,
-          boxSizing: 'border-box',
         }}
       >
-        <ToolbarBtn onClick={handleSaveToFile} title="Salvar em arquivo (.html)">
-          💾
+        {showFileButtons && (
+          <>
+            <ToolbarBtn onClick={handleSaveToFile} title={L.saveFile}>
+              <IconSave />
+            </ToolbarBtn>
+            <ToolbarBtn onClick={handleOpenFile} title={L.openFile}>
+              <IconOpen />
+            </ToolbarBtn>
+            <ToolbarSep />
+          </>
+        )}
+        <ToolbarBtn onClick={handleUndo} title={L.undo}>
+          <IconUndo />
         </ToolbarBtn>
-        <ToolbarBtn onClick={handleOpenFile} title="Abrir arquivo (.html)">
-          📂
+        <ToolbarBtn onClick={handleRedo} title={L.redo}>
+          <IconRedo />
         </ToolbarBtn>
         <ToolbarSep />
-        <ToolbarBtn onClick={handleUndo} title="Desfazer (Ctrl+Z)">
-          <CIcon icon={cilActionUndo} />
-        </ToolbarBtn>
-        <ToolbarBtn onClick={handleRedo} title="Refazer (Ctrl+Y)">
-          <CIcon icon={cilActionRedo} />
-        </ToolbarBtn>
-        <ToolbarSep />
-        <div className="font-family-picker" ref={fontMenuRef}>
+        <div className="ve-font-picker" ref={fontMenuRef}>
           <button
             type="button"
-            className="editor-select"
-            title="Família da fonte"
+            className="ve-select ve-font-button"
+            title={L.fontFamily}
+            aria-label={L.fontFamily}
             aria-haspopup="listbox"
             aria-expanded={fontMenuOpen}
             onMouseDown={(e) => {
@@ -2238,18 +2159,17 @@ const VersaEdit: React.FC<VersaEditProps> = ({
                 setFontMenuOpen(true)
               }
             }}
-            style={{ minWidth: 158, display: 'flex', justifyContent: 'space-between', gap: 8 }}
           >
             <span>
-              {FONT_FAMILIES.find((font) => font.value === currentFont)?.label ?? 'Fonte'}
+              {fontFamilies.find((font) => font.value === currentFont)?.label ?? L.fontFallback}
             </span>
             <span aria-hidden="true">▾</span>
           </button>
           {fontMenuOpen && (
             <div
-              className="font-family-options"
+              className="ve-font-options"
               role="listbox"
-              aria-label="Família da fonte"
+              aria-label={L.fontFamily}
               onMouseLeave={restoreSelectionPreview}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') {
@@ -2258,11 +2178,11 @@ const VersaEdit: React.FC<VersaEditProps> = ({
                 }
               }}
             >
-              {FONT_FAMILIES.map((font) => (
+              {fontFamilies.map((font) => (
                 <button
                   key={font.value}
                   type="button"
-                  className="font-family-option"
+                  className="ve-font-option"
                   role="option"
                   aria-selected={currentFont === font.value}
                   style={{ fontFamily: font.value }}
@@ -2280,111 +2200,76 @@ const VersaEdit: React.FC<VersaEditProps> = ({
           )}
         </div>
         <select
-          className="editor-select"
+          className="ve-select"
           value={currentFontSize}
           onMouseDown={saveSelection}
           onChange={handleFontSizeChange}
-          title="Tamanho da fonte"
+          title={L.fontSize}
+          aria-label={L.fontSize}
         >
-          {FONT_SIZES.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
+          {fontSizeOptions.map((pt) => (
+            <option key={pt} value={String(pt)}>
+              {pt} pt
             </option>
           ))}
         </select>
         <ToolbarSep />
         {HEADING_BLOCKS.map((h) => (
-          <ToolbarBtn key={h.tag} onClick={() => handleHeadingChange(h.tag)} title={h.label}>
+          <ToolbarBtn key={h.tag} onClick={() => handleHeadingChange(h.tag)} title={L[h.label]}>
             {h.tag === 'p' ? '¶' : h.tag === 'blockquote' ? '❝' : h.tag.toUpperCase()}
           </ToolbarBtn>
         ))}
         <ToolbarSep />
-        <ToolbarBtn onClick={() => execCommand('bold')} title="Negrito (Ctrl+B)">
-          <CIcon icon={cilBold} />
+        <ToolbarBtn onClick={() => execCommand('bold')} title={L.bold}>
+          <IconBold />
         </ToolbarBtn>
-        <ToolbarBtn onClick={() => execCommand('italic')} title="Itálico (Ctrl+I)">
-          <CIcon icon={cilItalic} />
+        <ToolbarBtn onClick={() => execCommand('italic')} title={L.italic}>
+          <IconItalic />
         </ToolbarBtn>
-        <ToolbarBtn onClick={() => execCommand('underline')} title="Sublinhado (Ctrl+U)">
-          <CIcon icon={cilUnderline} />
+        <ToolbarBtn onClick={() => execCommand('underline')} title={L.underline}>
+          <IconUnderline />
         </ToolbarBtn>
-        <div style={{ position: 'relative', display: 'inline-flex' }}>
+        <div className="ve-highlight-wrap">
           <ToolbarBtn
             onClick={() => setHighlightPalette(highlightPalette ? null : true)}
-            title="Texto tarjado (marca-texto)"
+            title={L.highlight}
           >
-            <span
-              style={{ fontWeight: 600, background: '#FFFF00', padding: '0 3px', borderRadius: 2 }}
-            >
-              S
-            </span>
+            <span className="ve-highlight-sample">S</span>
           </ToolbarBtn>
           {highlightPalette && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 'calc(100% + 6px)',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                zIndex: 200,
-                display: 'flex',
-                gap: 6,
-                padding: '8px 10px',
-                background: '#fff',
-                border: '1px solid #ddd',
-                borderRadius: 6,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.18)',
-              }}
-            >
-              {[
-                '#FFFF00',
-                '#FF6B6B',
-                '#51CF66',
-                '#339AF0',
-                '#FF922B',
-                '#CC5DE8',
-                '#F8F9FA',
-                '#CDD2CA',
-                '#7A8279',
-                '#14201A',
-                'transparent',
-              ].map((c) => (
-                <button
-                  key={c}
-                  style={{
-                    width: 24,
-                    height: 24,
-                    border: '1px solid #ccc',
-                    borderRadius: 4,
-                    background: c === 'transparent' ? '#fff' : c,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 10,
-                  }}
-                  // Mantém a seleção do texto ao clicar na cor
-                  onMouseDown={(e) => {
-                    e.preventDefault()
-                    saveSelection()
-                  }}
-                  onClick={() => {
-                    const editor = editorRef.current
-                    const range = editor ? getCurrentEditorRange(editor) : null
-                    if (editor && range && !range.collapsed) {
-                      restoreEditorRange(editor, range)
-                      document.execCommand('styleWithCSS', false, 'true')
-                      document.execCommand('hiliteColor', false, c)
-                      triggerChange()
-                    }
-                    setHighlightPalette(null)
-                    editor?.focus()
-                  }}
-                  title={c === 'transparent' ? 'Sem cor' : c}
-                >
-                  {c === 'transparent' && '✕'}
-                </button>
-              ))}
+            <div className="ve-highlight-palette">
+              {highlightColors.map((c) => {
+                const title = c === 'transparent' ? L.highlightNone : c
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    className="ve-highlight-swatch"
+                    style={{ background: c === 'transparent' ? '#fff' : c }}
+                    // Mantém a seleção do texto ao clicar na cor
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      saveSelection()
+                    }}
+                    onClick={() => {
+                      const editor = editorRef.current
+                      const range = editor ? getCurrentEditorRange(editor) : null
+                      if (editor && range && !range.collapsed) {
+                        restoreEditorRange(editor, range)
+                        document.execCommand('styleWithCSS', false, 'true')
+                        document.execCommand('hiliteColor', false, c)
+                        triggerChange()
+                      }
+                      setHighlightPalette(null)
+                      editor?.focus()
+                    }}
+                    title={title}
+                    aria-label={title}
+                  >
+                    {c === 'transparent' && '✕'}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
@@ -2398,138 +2283,124 @@ const VersaEdit: React.FC<VersaEditProps> = ({
             }
             editorRef.current?.focus()
           }}
-          title="Remover tarja (Sem tarja)"
+          title={L.removeHighlight}
         >
-          <span style={{ fontWeight: 600, opacity: 0.5, textDecoration: 'line-through' }}>S</span>
+          <span className="ve-highlight-remove">S</span>
         </ToolbarBtn>
         <ToolbarSep />
-        <div ref={colorPanelRef} className="d-inline-flex align-items-center gap-1">
+        <div ref={colorPanelRef} className="ve-inline">
           {renderColorPicker('text')}
           {renderColorPicker('bg')}
         </div>
         <ToolbarSep />
-        <ToolbarBtn onClick={() => execCommand('justifyLeft')} title="Alinhar à esquerda">
-          <CIcon icon={cilAlignLeft} />
+        <ToolbarBtn onClick={() => execCommand('justifyLeft')} title={L.alignLeft}>
+          <IconAlignLeft />
         </ToolbarBtn>
-        <ToolbarBtn onClick={() => execCommand('justifyCenter')} title="Centralizar">
-          <CIcon icon={cilAlignCenter} />
+        <ToolbarBtn onClick={() => execCommand('justifyCenter')} title={L.alignCenter}>
+          <IconAlignCenter />
         </ToolbarBtn>
-        <ToolbarBtn onClick={() => execCommand('justifyRight')} title="Alinhar à direita">
-          <CIcon icon={cilAlignRight} />
+        <ToolbarBtn onClick={() => execCommand('justifyRight')} title={L.alignRight}>
+          <IconAlignRight />
         </ToolbarBtn>
         <ToolbarSep />
-        <ToolbarBtn onClick={() => execCommand('insertUnorderedList')} title="Lista com marcadores">
-          <CIcon icon={cilList} />
+        <ToolbarBtn onClick={() => execCommand('insertUnorderedList')} title={L.bulletList}>
+          <IconBulletList />
         </ToolbarBtn>
-        <ToolbarBtn onClick={() => execCommand('insertOrderedList')} title="Lista numerada">
+        <ToolbarBtn onClick={() => execCommand('insertOrderedList')} title={L.numberedList}>
           <span style={{ fontWeight: 600 }}>1.</span>
         </ToolbarBtn>
         <ToolbarSep />
-        <ToolbarBtn onClick={() => execCommand('indent')} title="Aumentar recuo">
-          <CIcon icon={cilIndentIncrease} />
+        <ToolbarBtn onClick={() => execCommand('indent')} title={L.indent}>
+          <IconIndent />
         </ToolbarBtn>
-        <ToolbarBtn onClick={() => execCommand('outdent')} title="Diminuir recuo">
-          <CIcon icon={cilIndentDecrease} />
-        </ToolbarBtn>
-        <ToolbarSep />
-        <ToolbarBtn onClick={handleInsertLink} title="Inserir link">
-          <CIcon icon={cilLink} />
-        </ToolbarBtn>
-        <ToolbarBtn onClick={handleRemoveLink} title="Remover link">
-          <CIcon icon={cilX} />
+        <ToolbarBtn onClick={() => execCommand('outdent')} title={L.outdent}>
+          <IconOutdent />
         </ToolbarBtn>
         <ToolbarSep />
-        <ToolbarBtn onClick={handleInsertHR} title="Inserir linha separadora">
-          <CIcon icon={cilMinus} />
+        <ToolbarBtn onClick={handleInsertLink} title={L.insertLink}>
+          <IconLink />
         </ToolbarBtn>
-        <ToolbarBtn onClick={handleInsertImage} title="Inserir imagem">
-          <CIcon icon={cilImage} />
+        <ToolbarBtn onClick={handleRemoveLink} title={L.removeLink}>
+          <IconUnlink />
+        </ToolbarBtn>
+        <ToolbarSep />
+        <ToolbarBtn onClick={handleInsertHR} title={L.insertHr}>
+          <IconHr />
+        </ToolbarBtn>
+        <ToolbarBtn onClick={handleInsertImage} title={L.insertImage}>
+          <IconImage />
         </ToolbarBtn>
         {/* Todas as funções de caixa de texto reunidas em um único grupo */}
-        <div
-          className="d-flex align-items-center gap-1"
-          title="Funções da caixa de texto"
-          style={{
-            border: '1px dashed #7D8C6A',
-            borderRadius: 6,
-            padding: '2px 6px',
-            backgroundColor: 'rgba(125,140,106,0.06)',
-          }}
-        >
-          <ToolbarBtn onClick={handleInsertTextBox} title="Inserir caixa de texto">
-            📝
+        <div className="ve-group" role="group" aria-label={L.textboxTools} title={L.textboxTools}>
+          <ToolbarBtn onClick={handleInsertTextBox} title={L.insertTextbox}>
+            <IconTextbox />
           </ToolbarBtn>
-          <div className="color-picker-wrapper" style={{ opacity: isTextboxSelected ? 1 : 0.45 }}>
+          <div className={`ve-color-picker ${textboxClass ?? ''}`.trim()}>
             <ToolbarBtn
               onClick={() => isTextboxSelected && tbBorderColorInputRef.current?.click()}
-              title="Cor da borda da caixa de texto"
+              title={L.textboxBorderColor}
             >
-              <span style={{ fontSize: '14px', lineHeight: 1 }}>🖊</span>
-              <span className="color-indicator" style={{ backgroundColor: tbBorderColor }} />
+              <IconBorderColor />
+              <span className="ve-color-indicator" style={{ backgroundColor: tbBorderColor }} />
             </ToolbarBtn>
             <input
               ref={tbBorderColorInputRef}
               type="color"
+              tabIndex={-1}
+              aria-label={L.textboxBorderColor}
               value={tbBorderColor}
               onChange={(e) => applyTbBorderColor(e.target.value)}
             />
           </div>
           <select
-            className="editor-select"
+            className="ve-select"
             value={tbBorderWidth}
             onChange={(e) => applyTbBorderWidth(e.target.value)}
-            title="Espessura da borda da caixa de texto"
+            title={L.textboxBorderWidth}
+            aria-label={L.textboxBorderWidth}
             disabled={!isTextboxSelected}
-            style={{ opacity: isTextboxSelected ? 1 : 0.45 }}
           >
-            <option value="0">Sem borda</option>
-            <option value="1">Borda 1px</option>
-            <option value="2">Borda 2px</option>
-            <option value="3">Borda 3px</option>
-            <option value="4">Borda 4px</option>
-            <option value="6">Borda 6px</option>
-            <option value="8">Borda 8px</option>
-          </select>
-          <select
-            className="editor-select"
-            value={tbBorderStyle}
-            onChange={(e) => applyTbBorderStyle(e.target.value as TbBorderStyle)}
-            title="Tipo de linha da borda da caixa de texto"
-            disabled={!isTextboxSelected}
-            style={{ opacity: isTextboxSelected ? 1 : 0.45 }}
-          >
-            {TB_BORDER_STYLES.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
+            <option value="0">{L.borderNone}</option>
+            {TB_BORDER_WIDTHS.map((w) => (
+              <option key={w} value={w}>
+                {format(L.borderPx, { n: w })}
               </option>
             ))}
           </select>
-          <ToolbarBtn onClick={deleteSelectedTextbox} title="Excluir caixa de texto">
-            🗑
+          <select
+            className="ve-select"
+            value={tbBorderStyle}
+            onChange={(e) => applyTbBorderStyle(e.target.value as TbBorderStyle)}
+            title={L.textboxBorderStyle}
+            aria-label={L.textboxBorderStyle}
+            disabled={!isTextboxSelected}
+          >
+            {TB_BORDER_STYLES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {L[s.label]}
+              </option>
+            ))}
+          </select>
+          <ToolbarBtn onClick={deleteSelectedTextbox} title={L.deleteTextbox}>
+            <IconTrash />
           </ToolbarBtn>
         </div>
         <ToolbarSep />
-        <ToolbarBtn
-          onClick={handleClearAll}
-          title="Limpar a área de edição (apaga todo o conteúdo)"
-        >
-          🗑 Limpar
+        <ToolbarBtn onClick={handleClearAll} title={L.clearAll}>
+          <IconTrash /> {L.clearAllButton}
         </ToolbarBtn>
-        <ToolbarBtn onClick={handleClearFormatting} title="Limpar formatação">
-          <CIcon icon={cilCheckCircle} />
+        <ToolbarBtn onClick={handleClearFormatting} title={L.clearFormatting}>
+          <IconClearFormat />
         </ToolbarBtn>
       </div>
 
-      {/* ═══ CONTENT EDITOR — réplica do bloco do site (largura/altura configuráveis) ═══ */}
+      {/* ═══ CONTENT EDITOR — largura, altura e moldura configuráveis ═══ */}
       <div
+        className="ve-frame"
         style={{
-          position: 'relative',
           width,
-          maxWidth: '100%',
-          margin: 0,
-          boxSizing: 'border-box',
-          border: `${BLOCK_BORDER}px solid #8fbc8f`,
-          borderRadius: '1rem',
+          border: frameOpts.width ? `${frameOpts.width}px solid ${frameOpts.color}` : 'none',
+          borderRadius: frameOpts.radius,
         }}
       >
         <div
@@ -2537,25 +2408,15 @@ const VersaEdit: React.FC<VersaEditProps> = ({
           contentEditable
           draggable={false}
           suppressContentEditableWarning
-          className={`form-control editor-content ${contentClassName}`.trim()}
-          data-placeholder={placeholder}
+          role="textbox"
+          aria-multiline="true"
+          className={`ve-content ${contentClassName}`.trim()}
+          data-placeholder={placeholder ?? L.placeholder}
           style={{
-            width: width - BLOCK_BORDER * 2,
-            height: height - BLOCK_BORDER * 2,
-            maxWidth: '100%',
-            boxSizing: 'border-box',
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '10px',
-            overflow: 'hidden',
-            overflowX: 'hidden',
-            overflowY: 'hidden',
-            resize: 'none',
-            lineHeight: 1.6,
-            fontSize: '12pt',
-            fontFamily: SITE_FONT_BODY,
-            caretColor: 'currentColor',
-            outline: 'none',
+            width: innerW,
+            height: innerH,
+            borderRadius: Math.max(0, frameOpts.radius - frameOpts.width),
+            fontFamily,
             ...contentStyle,
           }}
           onMouseDown={handleEditorMouseDown}
@@ -2578,36 +2439,39 @@ const VersaEdit: React.FC<VersaEditProps> = ({
         {imgToolbarVisible && selectionType === 'image' && (
           <div
             ref={imgToolbarRef}
-            className="img-toolbar"
+            className="ve-float-toolbar"
             // Não rouba o foco do editor ao usar os botões flutuantes
             onMouseDown={(e) => e.preventDefault()}
             style={{ top: imgToolbarPos.top, left: imgToolbarPos.left }}
           >
-            <button onClick={() => resizeSelectedImage(25)} title="25%">
-              25%
+            {RESIZE_STEPS.map((pct) => (
+              <button
+                key={pct}
+                type="button"
+                onClick={() => resizeSelectedImage(pct)}
+                title={`${pct}%`}
+              >
+                {pct}%
+              </button>
+            ))}
+            <div className="ve-float-sep" />
+            <button type="button" onClick={() => floatImage('left')} title={L.alignLeft}>
+              ⬅ {L.left}
             </button>
-            <button onClick={() => resizeSelectedImage(50)} title="50%">
-              50%
+            <button type="button" onClick={() => floatImage('right')} title={L.alignRight}>
+              {L.right} ➡
             </button>
-            <button onClick={() => resizeSelectedImage(75)} title="75%">
-              75%
+            <button type="button" onClick={() => floatImage('none')} title={L.alignCenter}>
+              ⬛ {L.center}
             </button>
-            <button onClick={() => resizeSelectedImage(100)} title="100%">
-              100%
-            </button>
-            <div style={{ width: 1, backgroundColor: '#ddd' }} />
-            <button onClick={() => floatImage('left')} title="Alinhar à esquerda">
-              ⬅ Esq
-            </button>
-            <button onClick={() => floatImage('right')} title="Alinhar à direita">
-              Dir ➡
-            </button>
-            <button onClick={() => floatImage('none')} title="Centralizar">
-              ⬛ Centro
-            </button>
-            <div style={{ width: 1, backgroundColor: '#ddd' }} />
-            <button className="danger" onClick={deleteSelectedImage} title="Excluir imagem">
-              🗑 Excluir
+            <div className="ve-float-sep" />
+            <button
+              type="button"
+              className="ve-danger"
+              onClick={deleteSelectedImage}
+              title={L.deleteImage}
+            >
+              <IconTrash /> {L.deleteButton}
             </button>
           </div>
         )}
@@ -2616,40 +2480,47 @@ const VersaEdit: React.FC<VersaEditProps> = ({
         {tbToolbarVisible && selectionType === 'textbox' && (
           <div
             ref={tbToolbarRef}
-            className="img-toolbar"
+            className="ve-float-toolbar"
             // Não rouba o foco do editor ao usar os botões flutuantes
             onMouseDown={(e) => e.preventDefault()}
             style={{ top: tbToolbarPos.top, left: tbToolbarPos.left }}
           >
-            <button onClick={() => resizeSelectedTextbox(25)} title="25%">
-              25%
+            {RESIZE_STEPS.map((pct) => (
+              <button
+                key={pct}
+                type="button"
+                onClick={() => resizeSelectedTextbox(pct)}
+                title={`${pct}%`}
+              >
+                {pct}%
+              </button>
+            ))}
+            <div className="ve-float-sep" />
+            <button type="button" onClick={() => alignSelectedTextbox('left')} title={L.alignLeft}>
+              ⬅ {L.left}
             </button>
-            <button onClick={() => resizeSelectedTextbox(50)} title="50%">
-              50%
-            </button>
-            <button onClick={() => resizeSelectedTextbox(75)} title="75%">
-              75%
-            </button>
-            <button onClick={() => resizeSelectedTextbox(100)} title="100%">
-              100%
-            </button>
-            <div style={{ width: 1, backgroundColor: '#ddd' }} />
-            <button onClick={() => alignSelectedTextbox('left')} title="Alinhar à esquerda">
-              ⬅ Esq
-            </button>
-            <button onClick={() => alignSelectedTextbox('center')} title="Centralizar">
-              ☰ Centro
-            </button>
-            <button onClick={() => alignSelectedTextbox('right')} title="Alinhar à direita">
-              Dir ➡
-            </button>
-            <div style={{ width: 1, backgroundColor: '#ddd' }} />
             <button
-              className="danger"
-              onClick={deleteSelectedTextbox}
-              title="Excluir caixa de texto"
+              type="button"
+              onClick={() => alignSelectedTextbox('center')}
+              title={L.alignCenter}
             >
-              🗑 Excluir
+              ☰ {L.center}
+            </button>
+            <button
+              type="button"
+              onClick={() => alignSelectedTextbox('right')}
+              title={L.alignRight}
+            >
+              {L.right} ➡
+            </button>
+            <div className="ve-float-sep" />
+            <button
+              type="button"
+              className="ve-danger"
+              onClick={deleteSelectedTextbox}
+              title={L.deleteTextbox}
+            >
+              <IconTrash /> {L.deleteButton}
             </button>
           </div>
         )}
@@ -2657,8 +2528,8 @@ const VersaEdit: React.FC<VersaEditProps> = ({
         {/* ═══ FREE RESIZE HANDLE ═══ */}
         {selectionType && resizeHandlePos && (
           <div
-            className="resize-handle"
-            title="Redimensionar livremente"
+            className="ve-resize-handle"
+            title={L.resizeFree}
             style={{ top: resizeHandlePos.top, left: resizeHandlePos.left }}
             onMouseDown={startFreeResize}
           />

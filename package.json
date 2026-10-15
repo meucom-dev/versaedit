@@ -26,9 +26,6 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"playground/**/*.{ts,tsx}\""
   },
   "peerDependencies": {
-    "@coreui/icons": "^3.1.0",
-    "@coreui/icons-react": "^2.3.0",
-    "@coreui/react": "^5.13.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
@@ -36,10 +33,6 @@
     "dompurify": "^3.2.0"
   },
   "devDependencies": {
-    "@coreui/coreui": "5.9.0",
-    "@coreui/icons": "3.1.0",
-    "@coreui/icons-react": "2.3.0",
-    "@coreui/react": "5.13.0",
     "@eslint/js": "^9.39.0",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
