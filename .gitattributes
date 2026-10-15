@@ -1,0 +1,4 @@
+# Quebras de linha LF em todos os arquivos de texto (inclusive os resultados
+# de referência dos testes, comparados byte a byte no Windows e no Linux)
+* text=auto eol=lf
+*.png binary
