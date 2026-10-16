@@ -6,8 +6,6 @@ import { VersaEdit, VersaEditDictation, type VersaEditHandle, type VersaEditLoca
 const TEXT = {
   en: {
     locale: 'Language',
-    accent: 'Accent color',
-    fileButtons: 'File buttons',
     sample: '<p>Hello, <b>VersaEdit</b>! Edit this text.</p>',
     second: '<p>Second editor with <i>onSave</i>.</p>',
     useOnSave: 'Show editor with onSave',
@@ -15,8 +13,6 @@ const TEXT = {
   },
   'pt-BR': {
     locale: 'Idioma',
-    accent: 'Cor de destaque',
-    fileButtons: 'Botões de arquivo',
     sample: '<p>Olá, <b>VersaEdit</b>! Edite este texto.</p>',
     second: '<p>Segundo editor com <i>onSave</i>.</p>',
     useOnSave: 'Mostrar editor com onSave',
@@ -29,8 +25,6 @@ function App() {
   const T = TEXT[locale]
   const [content, setContent] = useState(T.sample)
   const [html, setHtml] = useState(T.sample)
-  const [accent, setAccent] = useState('#2563eb')
-  const [showFiles, setShowFiles] = useState(true)
   const [saved, setSaved] = useState<string | null>(null)
   const editorRef = useRef<VersaEditHandle>(null)
 
@@ -57,18 +51,6 @@ function App() {
             <option value="pt-BR">Português (Brasil)</option>
           </select>
         </label>
-        <label>
-          {T.accent}{' '}
-          <input type="color" value={accent} onChange={(e) => setAccent(e.target.value)} />
-        </label>
-        <label>
-          <input
-            type="checkbox"
-            checked={showFiles}
-            onChange={(e) => setShowFiles(e.target.checked)}
-          />{' '}
-          {T.fileButtons}
-        </label>
         {/* Microfone em destaque, fora da barra de ferramentas */}
         <VersaEditDictation editor={editorRef} locale={locale} />
       </div>
@@ -78,8 +60,6 @@ function App() {
         initialContent={content}
         onChange={setHtml}
         locale={locale}
-        accentColor={accent}
-        showFileButtons={showFiles}
         width={900}
         height={420}
       />
