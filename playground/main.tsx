@@ -7,7 +7,6 @@ const TEXT = {
   en: {
     locale: 'Language',
     showHtml: 'Show HTML',
-    sample: '<p>Hello, <b>VersaEdit</b>! Edit this text.</p>',
     second: '<p>Second editor with <i>onSave</i>.</p>',
     useOnSave: 'Show editor with onSave',
     hideOnSave: 'Hide editor with onSave',
@@ -15,7 +14,6 @@ const TEXT = {
   'pt-BR': {
     locale: 'Idioma',
     showHtml: 'Ver HTML',
-    sample: '<p>Olá, <b>VersaEdit</b>! Edite este texto.</p>',
     second: '<p>Segundo editor com <i>onSave</i>.</p>',
     useOnSave: 'Mostrar editor com onSave',
     hideOnSave: 'Esconder editor com onSave',
@@ -43,19 +41,9 @@ const codeStyle = {
 function App() {
   const [locale, setLocale] = useState<VersaEditLocale>('en')
   const T = TEXT[locale]
-  const [content, setContent] = useState(T.sample)
-  const [html, setHtml] = useState(T.sample)
+  const [html, setHtml] = useState('')
   const [saved, setSaved] = useState<string | null>(null)
   const editorRef = useRef<VersaEditHandle>(null)
-
-  const changeLocale = (next: VersaEditLocale) => {
-    // Troca o texto de exemplo só se ele ainda não foi editado
-    if (html === T.sample) {
-      setContent(TEXT[next].sample)
-      setHtml(TEXT[next].sample)
-    }
-    setLocale(next)
-  }
 
   return (
     <div
@@ -66,7 +54,7 @@ function App() {
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
         <label>
           {T.locale}{' '}
-          <select value={locale} onChange={(e) => changeLocale(e.target.value as VersaEditLocale)}>
+          <select value={locale} onChange={(e) => setLocale(e.target.value as VersaEditLocale)}>
             <option value="en">English</option>
             <option value="pt-BR">Português (Brasil)</option>
           </select>
@@ -77,7 +65,6 @@ function App() {
       <VersaEdit
         ref={editorRef}
         showDictation={false}
-        initialContent={content}
         onChange={setHtml}
         locale={locale}
         width={900}
