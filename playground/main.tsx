@@ -6,6 +6,7 @@ import { VersaEdit, VersaEditDictation, type VersaEditHandle, type VersaEditLoca
 const TEXT = {
   en: {
     locale: 'Language',
+    showHtml: 'Show HTML',
     sample: '<p>Hello, <b>VersaEdit</b>! Edit this text.</p>',
     second: '<p>Second editor with <i>onSave</i>.</p>',
     useOnSave: 'Show editor with onSave',
@@ -13,6 +14,7 @@ const TEXT = {
   },
   'pt-BR': {
     locale: 'Idioma',
+    showHtml: 'Ver HTML',
     sample: '<p>Olá, <b>VersaEdit</b>! Edite este texto.</p>',
     second: '<p>Segundo editor com <i>onSave</i>.</p>',
     useOnSave: 'Mostrar editor com onSave',
@@ -63,33 +65,38 @@ function App() {
         width={900}
         height={420}
       />
-      <h2 style={{ fontSize: 16, marginTop: 24 }}>HTML</h2>
-      <pre style={{ whiteSpace: 'pre-wrap', background: '#f4f4f4', padding: 12, fontSize: 12 }}>
-        {html}
-      </pre>
-      {saved !== null && (
-        <>
-          <h2 style={{ fontSize: 16 }}>onSave</h2>
-          <pre style={{ whiteSpace: 'pre-wrap', background: '#eef6ee', padding: 12, fontSize: 12 }}>
-            {saved}
-          </pre>
-        </>
-      )}
-      <p style={{ fontSize: 12, color: '#666' }}>
-        <button type="button" onClick={() => setSaved(saved === null ? '' : null)}>
-          {saved === null ? T.useOnSave : T.hideOnSave}
-        </button>
-      </p>
-      {saved !== null && (
-        <VersaEdit
-          initialContent={T.second}
-          onSave={setSaved}
-          locale={locale}
-          width={600}
-          height={200}
-          frame={{ width: 6, color: '#8fbc8f', radius: 16 }}
-        />
-      )}
+      {/* Área de desenvolvimento: HTML gerado e teste do onSave, recolhidos */}
+      <details style={{ marginTop: 24 }}>
+        <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{T.showHtml}</summary>
+        <pre style={{ whiteSpace: 'pre-wrap', background: '#f4f4f4', padding: 12, fontSize: 12 }}>
+          {html}
+        </pre>
+        {saved !== null && (
+          <>
+            <h2 style={{ fontSize: 16 }}>onSave</h2>
+            <pre
+              style={{ whiteSpace: 'pre-wrap', background: '#eef6ee', padding: 12, fontSize: 12 }}
+            >
+              {saved}
+            </pre>
+          </>
+        )}
+        <p style={{ fontSize: 12, color: '#666' }}>
+          <button type="button" onClick={() => setSaved(saved === null ? '' : null)}>
+            {saved === null ? T.useOnSave : T.hideOnSave}
+          </button>
+        </p>
+        {saved !== null && (
+          <VersaEdit
+            initialContent={T.second}
+            onSave={setSaved}
+            locale={locale}
+            width={600}
+            height={200}
+            frame={{ width: 6, color: '#8fbc8f', radius: 16 }}
+          />
+        )}
+      </details>
     </div>
   )
 }
