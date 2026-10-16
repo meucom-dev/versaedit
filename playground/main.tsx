@@ -22,6 +22,24 @@ const TEXT = {
   },
 } satisfies Record<VersaEditLocale, Record<string, string>>
 
+// Só para exibir: imagens embutidas (base64) aparecem abreviadas, com o tamanho
+const shortenDataUris = (html: string) =>
+  html.replace(
+    /(data:[\w/+.-]+;base64,)([A-Za-z0-9+/=]{40,})/g,
+    (_m, head: string, data: string) => {
+      const kb = Math.max(1, Math.round((data.length * 3) / 4 / 1024))
+      return `${head}${data.slice(0, 16)}… (${kb} KB)`
+    },
+  )
+
+// Caixa de código: quebra linhas longas em qualquer ponto, sem vazar da área
+const codeStyle = {
+  whiteSpace: 'pre-wrap',
+  overflowWrap: 'anywhere',
+  padding: 12,
+  fontSize: 12,
+} as const
+
 function App() {
   const [locale, setLocale] = useState<VersaEditLocale>('en')
   const T = TEXT[locale]
@@ -68,17 +86,11 @@ function App() {
       {/* Área de desenvolvimento: HTML gerado e teste do onSave, recolhidos */}
       <details style={{ marginTop: 24 }}>
         <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{T.showHtml}</summary>
-        <pre style={{ whiteSpace: 'pre-wrap', background: '#f4f4f4', padding: 12, fontSize: 12 }}>
-          {html}
-        </pre>
+        <pre style={{ ...codeStyle, background: '#f4f4f4' }}>{shortenDataUris(html)}</pre>
         {saved !== null && (
           <>
             <h2 style={{ fontSize: 16 }}>onSave</h2>
-            <pre
-              style={{ whiteSpace: 'pre-wrap', background: '#eef6ee', padding: 12, fontSize: 12 }}
-            >
-              {saved}
-            </pre>
+            <pre style={{ ...codeStyle, background: '#eef6ee' }}>{shortenDataUris(saved)}</pre>
           </>
         )}
         <p style={{ fontSize: 12, color: '#666' }}>
