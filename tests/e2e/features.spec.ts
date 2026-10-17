@@ -242,7 +242,13 @@ test.describe('API por ref', () => {
 test.describe('toque', () => {
   test.use({ hasTouch: true })
 
-  test('arrastar imagem com o dedo e redimensionar pela alça', async ({ page, context }) => {
+  test('arrastar imagem com o dedo e redimensionar pela alça', async ({
+    page,
+    context,
+    browserName,
+  }) => {
+    // O toque é simulado pelo protocolo do Chromium (CDP)
+    test.skip(browserName !== 'chromium', 'toque simulado só no Chromium')
     const t = await mount(page, {
       initialContent: `<p>texto de exemplo para a imagem</p><img src="data:image/png;base64,${PNG}" class="pos-left" style="width:60px">`,
     })
@@ -282,11 +288,23 @@ test.describe('desempenho', () => {
       )
     }, 'A'.repeat(3_000_000))
     await t.content.locator('p').click()
-    const start = Date.now()
-    await page.keyboard.type('0123456789')
-    const perKey = (Date.now() - start) / 10
+    // Tempo medido dentro da página: só o trabalho do editor a cada caractere
+    // (inserção + input + onChange + verificação de altura), sem a comunicação
+    // do Playwright com o navegador, que oscila com vários testes em paralelo.
+    // A mediana de 10 caracteres descarta picos isolados.
+    const perKey = await page.evaluate(() => {
+      const times: number[] = []
+      for (let i = 0; i < 10; i++) {
+        const start = performance.now()
+        document.execCommand('insertText', false, String(i))
+        times.push(performance.now() - start)
+      }
+      times.sort((a, b) => a - b)
+      return (times[4] + times[5]) / 2
+    })
+    expect(await t.html()).toContain('0123456789')
     // Máquinas do CI são mais lentas e variáveis: limite maior lá
-    expect(perKey).toBeLessThan(process.env.CI ? 250 : 80)
+    expect(perKey).toBeLessThan(process.env.CI ? 150 : 50)
   })
 })
 
@@ -299,4 +317,39 @@ test('nenhum erro de página nas ações básicas', async ({ page }) => {
   await t.btn('Bold (Ctrl+B)').click()
   await t.btn('Undo (Ctrl+Z)').click()
   expect(errors).toEqual([])
+})
+
+test.describe('onChange só quando o HTML muda', () => {
+  test('focar e sair sem editar não avisa; cada alteração avisa uma vez', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>abc</p>' })
+    const changes = async () => (await t.out()).changes
+
+    // Clicar no editor e sair dele, sem editar
+    await t.content.click()
+    await page.mouse.click(5, 880)
+    expect(await changes()).toBe(0)
+
+    // Uma tecla = um aviso
+    await t.caretToEnd()
+    await page.keyboard.type('x')
+    expect(await changes()).toBe(1)
+    expect(await t.html()).toBe('<p>abcx</p>')
+    // Passos separados no histórico (a digitação é agrupada por ~400 ms)
+    await page.waitForTimeout(500)
+
+    // Cor do papel: um aviso só (o papel e a cor eram avisados separadamente)
+    await page.locator('#host button[aria-label="Paper color"]').click()
+    await page.locator('#host .ve-swatch[title="#F1C40F"]').click()
+    expect(await changes()).toBe(2)
+
+    // Sair de novo sem editar: nada
+    await page.mouse.click(5, 880)
+    expect(await changes()).toBe(2)
+
+    // Desfazer avisa (o conteúdo mudou)
+    await page.waitForTimeout(500)
+    await t.btn('Undo (Ctrl+Z)').click()
+    expect(await changes()).toBe(3)
+    expect(await t.html()).toBe('<p>abcx</p>')
+  })
 })

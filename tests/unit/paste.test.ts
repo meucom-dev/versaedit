@@ -34,10 +34,27 @@ describe('colagem do Word', () => {
   })
 })
 
+describe('colagem sem atributos vazios', () => {
+  it('não deixa style="" quando nenhum estilo é permitido', () => {
+    const out = sanitizeRichPaste(
+      '<h2 style="margin:4px">T</h2><ul><li style="padding:2px">a<ul><li>b</li></ul></li></ul><p class="x">ver <a href="https://ok.com" style="mso-x:1">s</a></p>',
+      FAMILIES,
+    )
+    expect(out).toBe(
+      '<h2>T</h2><ul><li>a<ul><li>b</li></ul></li></ul><p>ver <a href="https://ok.com">s</a></p>',
+    )
+  })
+  it('mantém o estilo quando há propriedade permitida', () => {
+    expect(sanitizeRichPaste('<p style="color:red;margin:3px">x</p>', FAMILIES)).toBe(
+      '<p style="color: red;">x</p>',
+    )
+  })
+})
+
 describe('buildPasteHtml', () => {
   it('prefere o HTML rico quando ele tem texto', () => {
     const r = buildPasteHtml('<p><b>rico</b></p>', 'rico', false, FAMILIES)
-    expect(r.html).toMatch(/^<p[^>]*><b[^>]*>rico<\/b><\/p>$/)
+    expect(r.html).toBe('<p><b>rico</b></p>')
   })
   it('texto simples: escapa HTML e troca quebras por <br>', () => {
     const r = buildPasteHtml('', 'a <b>\nlinha 2', false, FAMILIES)

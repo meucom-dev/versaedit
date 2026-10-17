@@ -21,6 +21,14 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'], channel: process.env.CI ? undefined : 'msedge' },
     },
+    // Diagnóstico de compatibilidade (fora do CI por enquanto):
+    //   VE_ALL_BROWSERS=1 npx playwright test --project=firefox --project=webkit
+    ...(process.env.VE_ALL_BROWSERS
+      ? [
+          { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+          { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+        ]
+      : []),
   ],
   webServer: {
     command: `npx vite --config vite.playground.config.ts --port ${PORT} --strictPort`,

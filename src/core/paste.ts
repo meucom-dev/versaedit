@@ -138,6 +138,8 @@ export function sanitizeRichPaste(html: string, fontFamilies: FontFamilyOption[]
       if (Number.isFinite(lineHeight) && lineHeight >= 0.8 && lineHeight <= 3) {
         style.lineHeight = String(lineHeight)
       }
+      // Nenhum estilo permitido: tira o atributo vazio (style="")
+      if (!element.getAttribute('style')?.trim()) element.removeAttribute('style')
     }
 
     if (element.tagName === 'A') {

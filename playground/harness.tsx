@@ -152,5 +152,16 @@ window.__mount = async (props, options = {}) => {
       />
     </>,
   )
-  await new Promise((resolve) => setTimeout(resolve, 150))
+  // Espera o editor ficar pronto (núcleo criado e conteúdo inicial carregado),
+  // em vez de um tempo fixo — em navegador lento, 150 ms não bastavam
+  const expectsContent = Boolean(props.initialContent)
+  const started = performance.now()
+  while (performance.now() - started < 5000) {
+    const content = document.querySelector('#host .ve-content')
+    const ready = ref.current?.core && (!expectsContent || content?.innerHTML)
+    if (ready) break
+    await new Promise((resolve) => setTimeout(resolve, 20))
+  }
+  // Uma volta a mais para os efeitos do React terminarem
+  await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
 }

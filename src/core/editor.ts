@@ -147,6 +147,9 @@ export class VersaEditCore {
   // Último HTML enviado pelo onChange — identifica quando o conteúdo recebido é
   // apenas o eco do próprio editor (modo controlado)
   private lastEmitted: string | null = null
+  // Último conteúdo conhecido (emitido ou carregado): onChange só dispara quando
+  // o HTML for diferente dele
+  private lastKnown: string | null = null
   private readonly history = createEditorHistory()
   private observer: MutationObserver | null = null
 
@@ -261,11 +264,13 @@ export class VersaEditCore {
       editor.innerHTML = cleanInner
     }
     const wasTruncated = this.opts.truncateOnOverflow && truncateEditableToFit(editor)
+    this.lastKnown = serializeEditorContent(editor, paper)
     this.history.reset(snapshotEditor(editor, paper))
     this.cb.onOverflowChange?.(editorContentExceedsHeight(editor))
     if (wasTruncated && this.cb.onChange) {
       const out = serializeEditorContent(editor, paper)
       this.lastEmitted = out
+      // Corte na carga: o conteúdo mudou em relação ao recebido e precisa ser avisado
       this.cb.onChange(out)
     }
   }
@@ -276,11 +281,17 @@ export class VersaEditCore {
     this.load(html)
   }
 
-  /** Avisa a mudança: atualiza o estado de altura e chama onChange */
+  /**
+   * Avisa a mudança: atualiza o estado de altura e chama onChange — só quando o
+   * HTML for diferente do último conhecido (perder o foco, por exemplo, não
+   * gera aviso se nada mudou).
+   */
   emitChange = (): void => {
     if (this.cb.onOverflowChange) this.cb.onOverflowChange(editorContentExceedsHeight(this.el))
     if (this.cb.onChange) {
       const html = this.getHTML()
+      if (html === this.lastKnown) return
+      this.lastKnown = html
       this.lastEmitted = html
       this.cb.onChange(html)
     }
