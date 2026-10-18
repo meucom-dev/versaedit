@@ -125,6 +125,36 @@ export interface CoreCallbacks {
   onFocus?: () => void
   /** O foco saiu do editor (para fora dele) */
   onBlur?: () => void
+  /** Erros e avisos do editor; sem ele, alert() */
+  onError?: (error: VersaEditError) => void
+  /** Confirmações (sim/não, ou promessa); sem ele, confirm() */
+  onConfirm?: (request: VersaEditConfirm) => boolean | Promise<boolean>
+}
+
+/** Código de cada aviso do editor (estável: use para traduzir ou tratar) */
+export type VersaEditErrorCode =
+  | 'file-wrong-type'
+  | 'file-too-large'
+  | 'file-read'
+  | 'file-empty'
+  | 'file-truncated'
+  | 'image-upload'
+
+/** Aviso entregue ao onError (sem ele, o editor usa alert) */
+export interface VersaEditError {
+  code: VersaEditErrorCode
+  /** Texto já traduzido (labels do idioma) */
+  message: string
+  /** 'warning': a ação aconteceu com ressalva (ex.: conteúdo cortado) */
+  level: 'error' | 'warning'
+  /** Erro original, quando houver (ex.: rejeição do onImageUpload) */
+  cause?: unknown
+}
+
+/** Pedido de confirmação entregue ao onConfirm (sem ele, o editor usa confirm) */
+export interface VersaEditConfirm {
+  code: 'file-replace'
+  message: string
 }
 
 /** Dados para o formulário de link */
@@ -674,7 +704,11 @@ export class VersaEditCore {
       }
       // Com onImageUpload, a imagem é enviada e entra pela URL devolvida
       if (this.cb.onImageUpload) {
-        this.cb.onImageUpload(file).then(insert, () => alert(this.opts.labels.imageUploadError))
+        this.cb
+          .onImageUpload(file)
+          .then(insert, (cause) =>
+            this.report('image-upload', this.opts.labels.imageUploadError, 'error', cause),
+          )
         return
       }
       const reader = new FileReader()
@@ -832,7 +866,7 @@ export class VersaEditCore {
     const { paper, inner } = splitPaper(body)
     const cleanInner = sanitizeHtml(inner)
     if (!cleanInner.replace(/<[^>]*>/g, '').trim() && !/<img\b/i.test(cleanInner)) {
-      alert(L.fileEmpty)
+      this.report('file-empty', L.fileEmpty)
       return
     }
     this.deselectImage()
@@ -842,7 +876,7 @@ export class VersaEditCore {
     editor.innerHTML = this.prepareMedia(cleanInner)
     this.suspendExternalMedia()
     if (this.opts.truncateOnOverflow && truncateEditableToFit(editor)) {
-      alert(L.fileTruncated)
+      this.report('file-truncated', L.fileTruncated, 'warning')
     }
     editor.focus()
     this.emitChange()
@@ -850,27 +884,50 @@ export class VersaEditCore {
 
   openFile = (): void => {
     const L = this.opts.labels
-    pickFile('.html,.htm,text/html', (file) => {
+    pickFile('.html,.htm,text/html', async (file) => {
       if (!isHtmlFile(file)) {
-        alert(L.fileWrongType)
+        this.report('file-wrong-type', L.fileWrongType)
         return
       }
       if (file.size > MAX_OPEN_FILE_BYTES) {
-        alert(L.fileTooLarge)
+        this.report('file-too-large', L.fileTooLarge)
         return
       }
       const editor = this.el
       const hasContent = Boolean(editor.textContent?.trim() || editor.querySelector('img'))
-      if (hasContent && !confirm(L.fileReplaceConfirm)) {
+      if (hasContent && !(await this.ask('file-replace', L.fileReplaceConfirm))) {
         return
       }
       const reader = new FileReader()
       reader.onload = () => {
         if (typeof reader.result === 'string') this.loadFileContent(reader.result)
       }
-      reader.onerror = () => alert(L.fileReadError)
+      reader.onerror = () => this.report('file-read', L.fileReadError, 'error', reader.error)
       reader.readAsText(file, 'utf-8')
     })
+  }
+
+  // Avisos e confirmações: pela aplicação (onError/onConfirm) ou, sem eles,
+  // pelas caixas do navegador (alert/confirm), como antes
+  private report(
+    code: VersaEditErrorCode,
+    message: string,
+    level: 'error' | 'warning' = 'error',
+    cause?: unknown,
+  ): void {
+    if (this.cb.onError) this.cb.onError({ code, message, level, cause })
+    else alert(message)
+  }
+
+  private async ask(code: VersaEditConfirm['code'], message: string): Promise<boolean> {
+    if (this.cb.onConfirm) {
+      try {
+        return Boolean(await this.cb.onConfirm({ code, message }))
+      } catch {
+        return false
+      }
+    }
+    return confirm(message)
   }
 
   // ─── CAIXA DE TEXTO ──────────────────────────────────────────────

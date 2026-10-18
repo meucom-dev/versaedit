@@ -28,6 +28,10 @@ export interface HarnessOptions {
   dictationOutside?: boolean
   /** CSS do editor: injetado (padrão), importado como folha de estilo, ou nenhum */
   css?: 'inject' | 'import' | 'none'
+  /** Liga o onError (sem ele, o editor usa alert) */
+  captureErrors?: boolean
+  /** Liga o onConfirm com a resposta dada (sem ele, o editor usa confirm) */
+  confirm?: 'yes' | 'no' | 'async-yes' | 'async-no'
 }
 
 /** Controle do reconhecimento de voz falso usado nos testes */
@@ -49,6 +53,8 @@ export interface HarnessOutput {
   changes: number
   focus: number
   blur: number
+  errors: { code: string; level: string; message: string }[]
+  confirms: string[]
 }
 
 declare global {
@@ -113,6 +119,8 @@ window.__mount = async (props, options = {}) => {
     changes: 0,
     focus: 0,
     blur: 0,
+    errors: [],
+    confirms: [],
   }
   window.__out = out
   const ref = createRef<VersaEditHandle>()
@@ -162,6 +170,22 @@ window.__mount = async (props, options = {}) => {
           options.overflow !== false ? (value) => (out.overflow = value) : undefined
         }
         onSave={options.onSave ? (html) => (out.saved = html) : undefined}
+        onError={
+          options.captureErrors
+            ? (e) => out.errors.push({ code: e.code, level: e.level, message: e.message })
+            : undefined
+        }
+        onConfirm={
+          options.confirm
+            ? (request) => {
+                out.confirms.push(request.code)
+                const yes = options.confirm!.endsWith('yes')
+                return options.confirm!.startsWith('async')
+                  ? new Promise<boolean>((resolve) => setTimeout(() => resolve(yes), 50))
+                  : yes
+              }
+            : undefined
+        }
         onFocus={() => out.focus++}
         onBlur={() => out.blur++}
         onImageUpload={

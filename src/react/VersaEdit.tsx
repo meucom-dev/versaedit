@@ -22,7 +22,13 @@ import {
   type FontFamilyOption,
   type FrameOptions,
 } from '../core/defaults'
-import { VersaEditCore, type LinkDraft, type ObjectState } from '../core/editor'
+import {
+  VersaEditCore,
+  type LinkDraft,
+  type ObjectState,
+  type VersaEditConfirm,
+  type VersaEditError,
+} from '../core/editor'
 import { resolveLabels, type VersaEditLabels, type VersaEditLocale } from '../core/i18n'
 import {
   browserSpeechRecognition,
@@ -50,6 +56,16 @@ export interface VersaEditProps {
   onFocus?: () => void
   /** O foco saiu do editor (os botões da barra não tiram o foco) */
   onBlur?: () => void
+  /**
+   * Erros e avisos (arquivo inválido, conteúdo cortado, falha no envio de
+   * imagem…). Sem ele, o editor mostra alert() do navegador.
+   */
+  onError?: (error: VersaEditError) => void
+  /**
+   * Confirmações (ex.: substituir o conteúdo ao abrir arquivo): devolva true/false
+   * ou uma promessa (para usar a janela da aplicação). Sem ele, confirm().
+   */
+  onConfirm?: (request: VersaEditConfirm) => boolean | Promise<boolean>
   /** Classe extra na área de edição (para estilos do site que vai exibir o conteúdo) */
   contentClassName?: string
   contentStyle?: React.CSSProperties
@@ -155,6 +171,8 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     onOverflowChange,
     onFocus,
     onBlur,
+    onError,
+    onConfirm,
     contentClassName = '',
     contentStyle,
     placeholder,
@@ -211,9 +229,27 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
 
   // Callbacks da tela sempre atualizados: a tela pode recriar onChange a cada
   // renderização sem que o editor recarregue o conteúdo
-  const latest = useRef({ onChange, onOverflowChange, onSave, onImageUpload, onFocus, onBlur })
+  const latest = useRef({
+    onChange,
+    onOverflowChange,
+    onSave,
+    onImageUpload,
+    onFocus,
+    onBlur,
+    onError,
+    onConfirm,
+  })
   useIsomorphicLayoutEffect(() => {
-    latest.current = { onChange, onOverflowChange, onSave, onImageUpload, onFocus, onBlur }
+    latest.current = {
+      onChange,
+      onOverflowChange,
+      onSave,
+      onImageUpload,
+      onFocus,
+      onBlur,
+      onError,
+      onConfirm,
+    }
   })
 
   // Formulário de link: aberto pelo botão ou por Ctrl+K
@@ -261,6 +297,12 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
           return latest.current.onImageUpload
         },
         onLinkRequest: openLink,
+        get onError() {
+          return latest.current.onError
+        },
+        get onConfirm() {
+          return latest.current.onConfirm
+        },
         onFocus: () => latest.current.onFocus?.(),
         onBlur: () => latest.current.onBlur?.(),
         onObjectChange: setObject,

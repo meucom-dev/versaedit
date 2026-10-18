@@ -81,13 +81,13 @@ export function downloadHtml(page: string, fileName: string): void {
 }
 
 // Abre o seletor de arquivos do sistema e chama onFile com o arquivo escolhido
-export function pickFile(accept: string, onFile: (file: File) => void): void {
+export function pickFile(accept: string, onFile: (file: File) => void | Promise<void>): void {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = accept
   input.onchange = () => {
     const file = input.files?.[0]
-    if (file) onFile(file)
+    if (file) void onFile(file)
   }
   input.click()
 }

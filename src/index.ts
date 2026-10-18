@@ -19,6 +19,7 @@ export type {
   SpeechRecognitionConstructor,
   SpeechRecognitionLike,
 } from './core/speech'
+export type { VersaEditConfirm, VersaEditError, VersaEditErrorCode } from './core/editor'
 export type {
   CoreCallbacks,
   CoreOptions,
