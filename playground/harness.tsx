@@ -10,6 +10,7 @@ import {
   type VersaEditHandle,
   type VersaEditProps,
 } from '../src'
+import { CONTENT_CSS, EDITOR_CSS } from '../src/core/styles'
 
 export interface HarnessOptions {
   /** onImageUpload: 'ok' devolve https://cdn.example.com/<nome>; 'fail' rejeita */
@@ -25,6 +26,8 @@ export interface HarnessOptions {
   speech?: 'fake' | 'none'
   /** Microfone fora da barra (VersaEditDictation), acima do editor */
   dictationOutside?: boolean
+  /** CSS do editor: injetado (padrão), importado como folha de estilo, ou nenhum */
+  css?: 'inject' | 'import' | 'none'
 }
 
 /** Controle do reconhecimento de voz falso usado nos testes */
@@ -125,6 +128,13 @@ window.__mount = async (props, options = {}) => {
     delete w.SpeechRecognition
     delete w.webkitSpeechRecognition
   }
+  // CSS importado: mesmo texto de dist/versaedit.css, como folha de estilo própria
+  if (options.css === 'import' && !document.getElementById('imported-css')) {
+    const style = document.createElement('style')
+    style.id = 'imported-css'
+    style.textContent = EDITOR_CSS
+    document.head.appendChild(style)
+  }
   root = createRoot(document.getElementById('host')!)
   root.render(
     <>
@@ -140,6 +150,7 @@ window.__mount = async (props, options = {}) => {
       <VersaEdit
         ref={ref}
         speechRecognition={speechRecognition}
+        injectStyles={options.css === undefined || options.css === 'inject'}
         width={900}
         height={420}
         {...props}
@@ -175,4 +186,20 @@ window.__mount = async (props, options = {}) => {
   }
   // Uma volta a mais para os efeitos do React terminarem
   await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 0)))
+}
+
+// Mostra HTML salvo como um site faria, com o CSS de exibição (versaedit-content.css)
+declare global {
+  interface Window {
+    __showContent: (html: string) => void
+  }
+}
+window.__showContent = (html) => {
+  root?.unmount()
+  root = null
+  const style = document.createElement('style')
+  style.textContent = CONTENT_CSS
+  document.head.appendChild(style)
+  document.getElementById('host')!.innerHTML =
+    `<div class="versaedit-content" style="width:800px">${html}</div>`
 }

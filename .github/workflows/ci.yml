@@ -30,6 +30,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:unit
       - run: npm run build
+      - name: Arquivos de CSS gerados
+        run: test -s dist/versaedit.css && test -s dist/versaedit-content.css
 
   e2e:
     name: Testes no navegador (Chromium)

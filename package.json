@@ -5,7 +5,9 @@
   "license": "MIT",
   "type": "module",
   "private": true,
-  "sideEffects": false,
+  "sideEffects": [
+    "*.css"
+  ],
   "files": [
     "dist"
   ],
@@ -16,7 +18,9 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/versaedit.js"
-    }
+    },
+    "./versaedit.css": "./dist/versaedit.css",
+    "./versaedit-content.css": "./dist/versaedit-content.css"
   },
   "scripts": {
     "dev": "vite --config vite.playground.config.ts",

@@ -114,6 +114,12 @@ export interface VersaEditProps {
   speechLang?: string
   /** Outro mecanismo de reconhecimento com a interface do SpeechRecognition */
   speechRecognition?: SpeechRecognitionConstructor
+  /**
+   * Injeta o CSS do editor no <head> (padrão: true). Com false, importe
+   * 'versaedit/versaedit.css' — necessário em sites com CSP que bloqueia
+   * estilos injetados por script.
+   */
+  injectStyles?: boolean
   /** Idioma da interface (padrão: 'en') */
   locale?: VersaEditLocale
   /** Troca qualquer texto da interface */
@@ -165,6 +171,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     highlightColors = DEFAULT_HIGHLIGHT_COLORS,
     loadGoogleFonts,
     showFileButtons = true,
+    injectStyles: shouldInjectStyles = true,
     onSave,
     onImageUpload,
     showDictation = true,
@@ -291,8 +298,8 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
   }, [initialContent, truncateOnOverflow])
 
   useEffect(() => {
-    injectStyles()
-  }, [])
+    if (shouldInjectStyles) injectStyles()
+  }, [shouldInjectStyles])
 
   // Google Fonts: só quando pedido pela prop (desligado por padrão)
   const googleFontsKey = loadGoogleFonts?.join('|') ?? ''

@@ -1,7 +1,15 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    "allowImportingTsExtensions": true
   },
-  "include": ["tests", "playground", "playwright.config.ts", "vitest.config.ts", "vite.config.ts", "vite.playground.config.ts"]
+  "include": [
+    "tests",
+    "playground",
+    "playwright.config.ts",
+    "vitest.config.ts",
+    "vite.config.ts",
+    "vite.playground.config.ts"
+  ]
 }

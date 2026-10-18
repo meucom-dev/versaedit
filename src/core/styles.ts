@@ -1,5 +1,7 @@
 // ─── ESTILOS DO EDITOR ────────────────────────────────────────────
-// Injetados uma única vez no <head>. A interface usa o prefixo ve-; as classes
+// EDITOR_CSS: injetado uma única vez no <head> (prop injectStyles) ou importado
+// de dist/versaedit.css. CONTENT_CSS (dist/versaedit-content.css): para
+// exibir o conteúdo salvo fora do editor (o site que publica o texto). A interface usa o prefixo ve-; as classes
 // dentro do conteúdo (pos-left, rich-textbox…) fazem parte do HTML salvo e
 // ficam restritas a .ve-content.
 // Variáveis definidas no elemento raiz pelas props:
@@ -10,7 +12,7 @@ const STYLE_ID = 'versaedit-styles'
 
 const accent = (percent: number) => `color-mix(in srgb, var(--ve-accent) ${percent}%, transparent)`
 
-const CSS = `
+export const EDITOR_CSS = `
 .ve-root { position: relative; --ve-accent: #2563eb; }
 .ve-icon { display: block; }
 
@@ -125,6 +127,32 @@ export function injectStyles() {
   if (typeof document === 'undefined' || document.getElementById(STYLE_ID)) return
   const style = document.createElement('style')
   style.id = STYLE_ID
-  style.textContent = CSS
+  style.textContent = EDITOR_CSS
   document.head.appendChild(style)
 }
+
+// Conteúdo publicado: envolva o HTML salvo em <div class="versaedit-content">.
+// Reproduz o que o editor mostra para as classes que o próprio editor grava
+// (posição de imagens, caixas de texto, tabelas, código, citação e recuo) e
+// esconde a alça de arrasto das caixas de texto. Cores e fontes do texto vêm
+// do estilo gravado em cada trecho; o resto fica com o CSS do site.
+export const CONTENT_CSS = `
+.versaedit-content { --ve-accent: #2563eb; }
+.versaedit-content::after { content: ''; display: block; clear: both; }
+.versaedit-content img { display: block; max-width: 100%; height: auto; }
+.versaedit-content img.pos-left { float: left; margin: 40px; max-width: 50%; }
+.versaedit-content img.pos-right { float: right; margin: 40px; max-width: 50%; }
+.versaedit-content img.pos-center { margin: 40px auto; clear: both; }
+.versaedit-content .rich-textbox { border: 1px dashed var(--ve-accent); padding: 10px; margin: 40px; min-height: 40px; min-width: 100px; box-sizing: border-box; overflow: auto; clear: both; }
+.versaedit-content .rich-textbox.tb-float-left { float: left; max-width: 50%; }
+.versaedit-content .rich-textbox.tb-float-right { float: right; max-width: 50%; }
+.versaedit-content .textbox-handle { display: none; }
+.versaedit-content table { border-collapse: collapse; max-width: 100%; margin: 4px 0; }
+.versaedit-content th, .versaedit-content td { border: 1px solid #c8ccd0; padding: 4px 8px; vertical-align: top; }
+.versaedit-content th { background-color: #f3f4f6; font-weight: 600; text-align: left; }
+.versaedit-content caption { caption-side: top; padding: 4px 0; font-weight: 600; text-align: left; }
+.versaedit-content pre { margin: 4px 0; padding: 8px 12px; background: #f6f8fa; border-radius: 4px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
+.versaedit-content code { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
+.versaedit-content blockquote { border-left: 3px solid var(--ve-accent); margin: 0; padding: 8px 16px; font-style: italic; }
+.versaedit-content blockquote[style*="margin: 0 0 0 40px"] { font-style: normal; }
+`
