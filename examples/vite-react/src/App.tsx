@@ -1,34 +1,42 @@
-import { useRef, useState } from 'react'
-import { VersaEdit, type VersaEditHandle } from 'versaedit'
-// Stylesheet for displaying saved content (wrap it in .versaedit-content)
-import 'versaedit/versaedit-content.css'
+import { useEffect, useState, type ComponentType } from 'react'
+import { Basic } from './examples/Basic'
+import { Customized } from './examples/Customized'
+import { DisplayContent } from './examples/DisplayContent'
+import { ExternalDictation } from './examples/ExternalDictation'
+import { Integration } from './examples/Integration'
+import { StrictCsp } from './examples/StrictCsp'
 
-const INITIAL =
-  '<h2>Hello, VersaEdit</h2><p>Type here. <b>Bold</b>, <i>italic</i> and a text box:</p>' +
-  '<div class="rich-textbox"><span contenteditable="false" class="textbox-handle">⠿</span>A text box</div>'
+// One tab per example; the address (#basic, #integration…) opens a tab directly
+const EXAMPLES: { id: string; title: string; Component: ComponentType }[] = [
+  { id: 'basic', title: 'Basic', Component: Basic },
+  { id: 'integration', title: 'Integration', Component: Integration },
+  { id: 'customized', title: 'Customized', Component: Customized },
+  { id: 'csp', title: 'Strict CSP', Component: StrictCsp },
+  { id: 'display', title: 'Display content', Component: DisplayContent },
+  { id: 'dictation', title: 'External dictation', Component: ExternalDictation },
+]
+
+const current = () => EXAMPLES.find((e) => `#${e.id}` === location.hash) ?? EXAMPLES[0]
 
 export function App() {
-  const editor = useRef<VersaEditHandle>(null)
-  const [html, setHtml] = useState(INITIAL)
-  const [saved, setSaved] = useState('')
+  const [example, setExample] = useState(current)
+  useEffect(() => {
+    const onHash = () => setExample(current())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
 
   return (
     <main>
       <h1>VersaEdit — Vite + React</h1>
-      <VersaEdit ref={editor} initialContent={html} onChange={setHtml} width="100%" height={320} />
-      <div className="actions">
-        <button type="button" onClick={() => setSaved(editor.current?.getHTML() ?? '')}>
-          Save draft
-        </button>
-        <span data-testid="length">{html.length} characters</span>
-      </div>
-      {/* Content produced by the editor. In a real site, sanitize it on the server
-          before storing or displaying it (see the integration guide). */}
-      <section
-        className="preview versaedit-content"
-        data-testid="preview"
-        dangerouslySetInnerHTML={{ __html: saved }}
-      />
+      <nav className="tabs">
+        {EXAMPLES.map((e) => (
+          <a key={e.id} href={`#${e.id}`} aria-current={e.id === example.id ? 'page' : undefined}>
+            {e.title}
+          </a>
+        ))}
+      </nav>
+      <example.Component key={example.id} />
     </main>
   )
 }

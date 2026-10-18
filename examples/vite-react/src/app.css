@@ -11,8 +11,24 @@ main {
 h1 {
   font-size: 1.4rem;
 }
-.actions {
+.tabs {
   display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-bottom: 16px;
+}
+.tabs a {
+  color: #0969da;
+}
+.tabs a[aria-current='page'] {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+.actions,
+.option {
+  display: flex;
+  align-items: center;
   gap: 8px;
   margin: 12px 0;
 }
@@ -20,4 +36,24 @@ h1 {
   border-top: 1px solid #d0d7de;
   margin-top: 16px;
   padding-top: 8px;
+}
+.notice {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #ffebe9;
+}
+.notice--warning {
+  background: #fff8c5;
+}
+.dialog {
+  position: fixed;
+  inset: 30% auto auto 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
