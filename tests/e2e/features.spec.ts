@@ -552,7 +552,7 @@ test('onFocus e onBlur: só quando o foco entra ou sai do editor', async ({ page
   await t.content.locator('img').click()
   expect((await counts()).blur).toBe(0)
   // Sair do editor
-  await page.mouse.click(5, 880)
+  await page.mouse.click(5, 710) // dentro da janela (1280×720), fora do editor
   expect(await counts()).toEqual({ focus: 1, blur: 1 })
   // Formulário de link: o foco vai para o campo de endereço (saída do editor)
   await t.content.click()

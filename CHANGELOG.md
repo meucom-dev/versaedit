@@ -76,5 +76,7 @@ yet (version `0.0.0`); work is grouped by the internal stabilization batches.
 
 - Restore the cursor position after undo/redo.
 - Keep `<b>` for bold after the highlighter / custom color (CSS mode left on).
-- Manual validation of paste in Firefox; validation with real Microsoft Word documents.
+- Manual validation in Firefox of paste and of Ctrl+B/I/U (the editor relies on the browser;
+  Playwright's Firefox does not apply them even in a plain `contenteditable`).
+- Validation of paste with real Microsoft Word documents.
 - WebKit: avoid the extra `<span style="font-size">` in lists.
