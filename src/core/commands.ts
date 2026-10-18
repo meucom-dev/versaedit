@@ -6,6 +6,39 @@ export function exec(command: string, value?: string): void {
   document.execCommand(command, false, value)
 }
 
+// Alinhamento e recuo em modo CSS: o Firefox, fora desse modo, gera align="…"
+// e recua com um <blockquote> sem estilo (que aparece como citação). Chromium e
+// WebKit geram o mesmo HTML nos dois modos. O modo anterior é devolvido em
+// seguida, para não mudar o negrito/itálico dos comandos seguintes.
+const CSS_MODE_COMMANDS = new Set([
+  'justifyLeft',
+  'justifyCenter',
+  'justifyRight',
+  'justifyFull',
+  'indent',
+  'outdent',
+])
+
+function cssModeOn(): boolean {
+  try {
+    return document.queryCommandState('styleWithCSS')
+  } catch {
+    return false
+  }
+}
+
+/** Executa o comando; alinhamento e recuo usam o modo CSS só durante o comando */
+export function execFormatting(command: string, value?: string): void {
+  if (!CSS_MODE_COMMANDS.has(command)) {
+    exec(command, value)
+    return
+  }
+  const wasOn = cssModeOn()
+  if (!wasOn) exec('styleWithCSS', 'true')
+  exec(command, value)
+  if (!wasOn) exec('styleWithCSS', 'false')
+}
+
 export function insertHtml(html: string): void {
   document.execCommand('insertHTML', false, html)
 }

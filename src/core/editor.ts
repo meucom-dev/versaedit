@@ -7,6 +7,7 @@
 // ============================================================
 import {
   exec,
+  execFormatting,
   HR_HTML,
   imageHtml,
   insertHtml,
@@ -517,7 +518,7 @@ export class VersaEditCore {
 
   // ─── FORMATAÇÃO ──────────────────────────────────────────────────
   execCommand = (command: string, value?: string): void => {
-    exec(command, value)
+    execFormatting(command, value)
     if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
       unwrapListsFromParagraphs(this.el)
     }

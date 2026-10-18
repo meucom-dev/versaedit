@@ -390,3 +390,44 @@ test.describe('foco ao clicar em imagem', () => {
     expect(await img.evaluate((el: HTMLElement) => el.offsetWidth)).toBeGreaterThan(w0)
   })
 })
+
+test.describe('alinhamento e recuo iguais em todos os navegadores', () => {
+  test('centralizar usa text-align, sem o atributo align', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>alpha beta</p>' })
+    await selectText(page, 'alpha')
+    await t.btn('Center').click()
+    const html = (await t.html())!
+    expect(html).not.toContain('align=')
+    expect(await t.content.locator('p').evaluate((el) => getComputedStyle(el).textAlign)).toBe(
+      'center',
+    )
+  })
+
+  test('recuo de 40px sem aparência de citação; retirar volta ao original; negrito continua <b>', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: '<p>alpha beta</p>' })
+    await selectText(page, 'alpha')
+    await t.btn('Increase indent').click()
+    const html = (await t.html())!
+    expect(html).not.toMatch(/<blockquote>/) // blockquote sem estilo = citação
+    const block = t.content.locator('p, blockquote').first()
+    const box = await block.evaluate((el) => {
+      const cs = getComputedStyle(el)
+      return { margin: cs.marginLeft, border: cs.borderLeftWidth }
+    })
+    expect(box).toEqual({ margin: '40px', border: '0px' })
+    // Pendente de aprovação (relatório v0.2.x): no Chromium/WebKit o recuo é um
+    // <blockquote> com margem, e o CSS de citação ainda o deixa em itálico e com
+    // fundo. Não corrigido aqui para não mudar a aparência atual sem aprovação.
+
+    await selectText(page, 'alpha')
+    await t.btn('Decrease indent').click()
+    expect(await t.html()).toBe('<p>alpha beta</p>')
+
+    // O modo CSS não fica ligado: o negrito seguinte continua sendo <b>
+    await selectText(page, 'beta')
+    await t.btn('Bold (Ctrl+B)').click()
+    expect(await t.html()).toContain('<b>beta</b>')
+  })
+})
