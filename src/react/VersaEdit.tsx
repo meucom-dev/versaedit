@@ -91,12 +91,18 @@ export interface VersaEditProps {
   allowExternalMedia?: boolean
   /** Corta o conteúdo que passar da altura do editor */
   truncateOnOverflow?: boolean
-  /** Largura total do bloco em px, moldura incluída */
-  width?: number
+  /**
+   * Largura total do bloco, moldura incluída: número em px (padrão 640) ou
+   * medida CSS, como '100%' (o editor acompanha a largura do container)
+   */
+  width?: number | string
   /** Altura total do bloco em px, moldura incluída */
   height?: number
-  /** Largura da barra de ferramentas (padrão: a do bloco), centralizada sobre ele */
-  toolbarWidth?: number
+  /**
+   * Largura da barra de ferramentas (padrão: a do bloco). Com números, a barra
+   * fica centralizada sobre o bloco; com medida CSS, alinhada à esquerda.
+   */
+  toolbarWidth?: number | string
   /** Moldura da área de edição; false remove */
   frame?: Partial<FrameOptions> | false
   /** Cor de destaque: seleção, caixas de texto, alças */
@@ -436,7 +442,8 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
           className={`ve-content ${contentClassName}`.trim()}
           data-placeholder={placeholder ?? L.placeholder}
           style={{
-            width: width - frameOpts.width * 2,
+            // Número: medida exata em px (como sempre); medida CSS: ocupa a moldura
+            width: typeof width === 'number' ? width - frameOpts.width * 2 : '100%',
             height: height - frameOpts.width * 2,
             borderRadius: Math.max(0, frameOpts.radius - frameOpts.width),
             fontFamily,

@@ -100,8 +100,8 @@ export function Toolbar({
 }: {
   core: () => VersaEditCore | null
   labels: VersaEditLabels
-  width: number
-  editorWidth: number
+  width: number | string
+  editorWidth: number | string
   showFileButtons: boolean
   fontFamilies: FontFamilyOption[]
   fontSizes: number[]
@@ -216,9 +216,13 @@ export function Toolbar({
       onKeyDown={handleKeyDown}
       onFocus={handleFocus}
       style={{
-        // Barra centralizada sobre o bloco de edição (pode ser mais larga que ele)
+        // Barra centralizada sobre o bloco de edição (pode ser mais larga que ele);
+        // com medida CSS (ex.: '100%') não há centralização
         width,
-        marginLeft: -(width - editorWidth) / 2,
+        marginLeft:
+          typeof width === 'number' && typeof editorWidth === 'number'
+            ? -(width - editorWidth) / 2
+            : 0,
       }}
     >
       {renderSections([
