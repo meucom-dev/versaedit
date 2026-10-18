@@ -1,12 +1,9 @@
 import { useEffect, useMemo, useState, type RefObject } from 'react'
 import { resolveLabels, type VersaEditLabels, type VersaEditLocale } from '../core/i18n'
-import {
-  browserSpeechRecognition,
-  SPEECH_LANG,
-  type SpeechRecognitionConstructor,
-} from '../core/speech'
+import { SPEECH_LANG, type SpeechRecognitionConstructor } from '../core/speech'
 import { injectStyles } from '../core/styles'
 import { DictationButton } from './toolbar/DictationButton'
+import { useBrowserSpeechRecognition } from './useBrowserSpeechRecognition'
 import type { VersaEditHandle } from './VersaEdit'
 
 export interface VersaEditDictationProps {
@@ -37,7 +34,7 @@ export function VersaEditDictation({
   showText = true,
 }: VersaEditDictationProps) {
   const L = useMemo(() => resolveLabels(locale, labels), [locale, labels])
-  const [browserRecognition] = useState(browserSpeechRecognition)
+  const browserRecognition = useBrowserSpeechRecognition()
   const recognition = speechRecognition ?? browserRecognition
   // Leitura do núcleo do editor no momento do uso (a ref é preenchida depois)
   const [core] = useState(() => () => editor.current?.core ?? null)

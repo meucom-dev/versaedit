@@ -30,14 +30,11 @@ import {
   type VersaEditError,
 } from '../core/editor'
 import { resolveLabels, type VersaEditLabels, type VersaEditLocale } from '../core/i18n'
-import {
-  browserSpeechRecognition,
-  SPEECH_LANG,
-  type SpeechRecognitionConstructor,
-} from '../core/speech'
+import { SPEECH_LANG, type SpeechRecognitionConstructor } from '../core/speech'
 import { injectStyles } from '../core/styles'
 import { ObjectToolbar } from './floating/ObjectToolbar'
 import { ResizeHandle } from './floating/ResizeHandle'
+import { useBrowserSpeechRecognition } from './useBrowserSpeechRecognition'
 import { Toolbar, TOOLBAR_GROUPS, type ToolbarGroup, type ToolbarState } from './toolbar/Toolbar'
 
 const GOOGLE_FONTS_LINK_ID = 'versaedit-google-fonts'
@@ -386,7 +383,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
   )
 
   // Ditado: só com mecanismo de reconhecimento disponível
-  const [browserRecognition] = useState(browserSpeechRecognition)
+  const browserRecognition = useBrowserSpeechRecognition()
   const recognition = speechRecognition ?? browserRecognition
   const dictationLang = speechLang ?? SPEECH_LANG[locale] ?? 'en-US'
   const dictation = useMemo(

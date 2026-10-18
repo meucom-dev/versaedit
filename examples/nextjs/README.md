@@ -9,6 +9,3 @@ Covered by `tests/package/nextjs.spec.ts` (production build served by `next star
 the repository root with `npm run test:package -- nextjs`; the script copies this folder to a
 temporary directory and installs the packed `.tgz` there.
 
-Known issue: in browsers with speech recognition (Chrome, Edge, Safari) hydration reports a
-mismatch (React error #418) because the dictation button is only rendered in the browser. The
-editor works (React re-renders it on the client).

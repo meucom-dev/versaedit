@@ -13,11 +13,8 @@ test('o servidor entrega o editor e o conteúdo já renderizados no HTML', async
 })
 
 test('hidrata sem erros e edita no navegador', async ({ page }) => {
-  // DEFEITO CONHECIDO (v0.4.x, aguardando autorização para corrigir): onde há
-  // reconhecimento de voz (Chrome, Edge, Safari), o botão de ditado aparece no
-  // primeiro render do navegador mas não no do servidor — React #418. Quando
-  // corrigido, este test.fail passa a falhar e deve ser retirado.
-  test.fail()
+  // Com reconhecimento de voz (Chrome, Edge, Safari): o microfone só entra
+  // depois da hidratação — antes, React #418
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   page.on('console', (m) => {
@@ -37,6 +34,8 @@ test('hidrata sem erros e edita no navegador', async ({ page }) => {
   await expect(page.getByTestId('published').locator('.textbox-handle')).toBeHidden()
   // CSS do editor injetado no navegador
   await expect(page.locator('#versaedit-styles')).toHaveCount(1)
+  // Microfone presente depois da hidratação
+  await expect(page.getByRole('toolbar').getByRole('button', { name: /^Dictate/ })).toBeVisible()
   expect(errors).toEqual([])
 })
 
