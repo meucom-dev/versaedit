@@ -118,6 +118,18 @@ import 'versaedit/versaedit-content.css'
 Formatting such as colors and font sizes is stored in inline `style` attributes; a CSP that blocks
 inline style attributes (`style-src-attr`) will not render it.
 
+## Examples and guides
+
+- [Integration guide](docs/integration.md): server sanitization, saving, Supabase (public key + RLS),
+  image upload, Next.js, CSP, displaying content.
+- [`examples/vite-react`](examples/vite-react): one tab per use case (basic, integration callbacks,
+  customized toolbar, strict CSP, display, external dictation).
+- [`examples/nextjs`](examples/nextjs): Next.js 16 App Router with server rendering.
+- Playground (`npm run dev`): open **Show HTML → Properties** to change props live, load sample
+  content, watch events and copy the equivalent JSX.
+
+Both examples run against the packed package (`npm pack`), installed outside the repository, in CI.
+
 ## Dictation
 
 A microphone button converts speech to text using the browser's Web Speech API (Chrome, Edge,
@@ -133,7 +145,8 @@ anywhere on the page (`<VersaEditDictation editor={ref} />`).
   own allow-lists; scripts, event handlers, `javascript:` links and SVG are removed. A battery of 42
   XSS vectors runs in CI.
 - **Sanitize again on your server** before storing or publishing: the editor runs in the user's
-  browser and can be bypassed.
+  browser and can be bypassed. The [integration guide](docs/integration.md#sanitization-browser-and-server)
+  has a tested server recipe.
 - `pasteImages` (default `true`): pasted images keep pointing to the original site — readers'
   browsers will request them from there, and that site may change or remove them. Use
   `onImageUpload`, or `pasteImages={false}`.
@@ -183,6 +196,7 @@ npm run build      # library build (dist/)
 npm run lint
 npm run typecheck
 npm test           # unit tests (Vitest) + browser tests (Playwright)
+npm run test:package  # npm pack → install in examples/ copies → type check, build, browser tests
 ```
 
 Browser tests use `playground/harness.html`. Locally they run in the installed Microsoft Edge; in CI,

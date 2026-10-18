@@ -8,4 +8,3 @@
 Covered by `tests/package/nextjs.spec.ts` (production build served by `next start`). Run it from
 the repository root with `npm run test:package -- nextjs`; the script copies this folder to a
 temporary directory and installs the packed `.tgz` there.
-

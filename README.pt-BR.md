@@ -118,6 +118,18 @@ import 'versaedit/versaedit-content.css'
 Cores e tamanhos de fonte ficam em atributos `style` no próprio HTML; uma CSP que bloqueie estilos
 em atributos (`style-src-attr`) não vai mostrá-los.
 
+## Exemplos e guias
+
+- [Guia de integração](docs/integration.pt-BR.md): sanitização no servidor, salvar, Supabase (chave
+  pública + RLS), envio de imagens, Next.js, CSP, exibir o conteúdo.
+- [`examples/vite-react`](examples/vite-react): uma aba por caso de uso (básico, callbacks de
+  integração, barra personalizada, CSP restrita, exibição, ditado externo).
+- [`examples/nextjs`](examples/nextjs): Next.js 16 App Router com renderização no servidor.
+- Playground (`npm run dev`): abra **Ver HTML → Propriedades** para mudar props ao vivo, carregar
+  conteúdos de exemplo, ver os eventos e copiar o JSX equivalente.
+
+Os dois exemplos rodam no CI com o pacote gerado (`npm pack`), instalado fora do repositório.
+
 ## Ditado
 
 O botão de microfone transforma fala em texto com a Web Speech API do navegador (Chrome, Edge,
@@ -134,7 +146,8 @@ outro mecanismo com a mesma interface, ou `showDictation={false}` para tirar o b
   do próprio editor; scripts, eventos, links `javascript:` e SVG são removidos. Uma bateria de 42
   vetores de XSS roda no CI.
 - **Sanitize de novo no servidor** antes de gravar ou publicar: o editor roda no navegador do usuário
-  e pode ser contornado.
+  e pode ser contornado. O [guia de integração](docs/integration.pt-BR.md#sanitização-navegador-e-servidor)
+  tem uma receita testada para o servidor.
 - `pasteImages` (padrão `true`): imagens coladas continuam apontando para o site de origem — o
   navegador de quem lê vai buscá-las lá, e esse site pode trocá-las ou tirá-las. Use `onImageUpload`
   ou `pasteImages={false}`.
@@ -184,6 +197,7 @@ npm run build      # biblioteca (dist/)
 npm run lint
 npm run typecheck
 npm test           # testes do núcleo (Vitest) + navegador (Playwright)
+npm run test:package  # npm pack → instala em cópias de examples/ → tipos, build, navegador
 ```
 
 Os testes de navegador usam `playground/harness.html`. Localmente rodam no Microsoft Edge instalado; no

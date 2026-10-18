@@ -24,6 +24,7 @@ export default tseslint.config(
       'tests/**/*.ts',
       'examples/*/src/**/*.{ts,tsx}',
       'examples/*/app/**/*.{ts,tsx}',
+      'docs/recipes/**/*.ts',
     ],
     extends: [
       js.configs.recommended,
