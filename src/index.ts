@@ -1,6 +1,7 @@
 export { default as VersaEdit, default } from './react/VersaEdit'
 export type { VersaEditHandle, VersaEditProps } from './react/VersaEdit'
 export { VersaEditDictation } from './react/VersaEditDictation'
+export { TOOLBAR_GROUPS, type ToolbarGroup } from './react/toolbar/Toolbar'
 export type { VersaEditDictationProps } from './react/VersaEditDictation'
 export type { VersaEditLabels, VersaEditLocale } from './core/i18n'
 export type { FontFamilyOption, FrameOptions } from './core/defaults'

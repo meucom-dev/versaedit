@@ -38,7 +38,7 @@ import {
 import { injectStyles } from '../core/styles'
 import { ObjectToolbar } from './floating/ObjectToolbar'
 import { ResizeHandle } from './floating/ResizeHandle'
-import { Toolbar, type ToolbarState } from './toolbar/Toolbar'
+import { Toolbar, TOOLBAR_GROUPS, type ToolbarGroup, type ToolbarState } from './toolbar/Toolbar'
 
 const GOOGLE_FONTS_LINK_ID = 'versaedit-google-fonts'
 
@@ -115,6 +115,14 @@ export interface VersaEditProps {
   highlightColors?: string[]
   /** Famílias a carregar do Google Fonts (ex.: ['Inter', 'Fraunces:opsz,wght@9..144,400;9..144,700']) */
   loadGoogleFonts?: string[]
+  /**
+   * Grupos de ferramentas da barra (padrão: todos), na ordem fixa da barra:
+   * 'dictation', 'file', 'history', 'font', 'block', 'format', 'highlight',
+   * 'color', 'align', 'list', 'indent', 'link', 'insert', 'textbox', 'clear'.
+   * Sem 'format', Ctrl+B/I/U não formatam; sem 'link', Ctrl+K não abre o link.
+   * Desfazer/refazer pelo teclado funcionam sempre.
+   */
+  toolbar?: readonly ToolbarGroup[]
   /** Mostra os botões Salvar/Abrir arquivo (padrão: true) */
   showFileButtons?: boolean
   /** Botão Salvar: recebe o HTML no lugar de baixar o arquivo .html */
@@ -193,6 +201,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     highlightColors = DEFAULT_HIGHLIGHT_COLORS,
     loadGoogleFonts,
     showFileButtons = true,
+    toolbar = TOOLBAR_GROUPS,
     injectStyles: shouldInjectStyles = true,
     onSave,
     onImageUpload,
@@ -330,6 +339,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
       singleLineBreaks,
       pasteImages,
       allowExternalMedia,
+      shortcuts: { link: groups.has('link'), format: groups.has('format') },
       fontFamilies,
       fontSizes: fontSizeOptions,
       locale,
@@ -362,6 +372,13 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     if (link.href !== href) link.href = href
   }, [googleFontsKey])
 
+  // Grupos ligados (a lista pode ser recriada a cada render: compara pelo conteúdo)
+  const toolbarKey = toolbar.join('|')
+  const groups = useMemo(
+    () => new Set((toolbarKey ? toolbarKey.split('|') : []) as ToolbarGroup[]),
+    [toolbarKey],
+  )
+
   // Ditado: só com mecanismo de reconhecimento disponível
   const [browserRecognition] = useState(browserSpeechRecognition)
   const recognition = speechRecognition ?? browserRecognition
@@ -378,24 +395,27 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
 
   return (
     <div className="ve-root" style={rootStyle}>
-      <Toolbar
-        core={getCore}
-        labels={L}
-        width={toolbarWidth}
-        editorWidth={width}
-        showFileButtons={showFileButtons}
-        fontFamilies={fontFamilies}
-        fontSizes={fontSizeOptions}
-        colorPalette={colorPalette}
-        highlightColors={highlightColors}
-        isTextboxSelected={object?.type === 'textbox'}
-        state={toolbarState}
-        setState={patchToolbar}
-        linkDraft={linkDraft}
-        openLink={openLink}
-        closeLink={closeLink}
-        dictation={dictation}
-      />
+      {groups.size > 0 && (
+        <Toolbar
+          core={getCore}
+          labels={L}
+          width={toolbarWidth}
+          editorWidth={width}
+          showFileButtons={showFileButtons}
+          fontFamilies={fontFamilies}
+          fontSizes={fontSizeOptions}
+          colorPalette={colorPalette}
+          highlightColors={highlightColors}
+          isTextboxSelected={object?.type === 'textbox'}
+          state={toolbarState}
+          setState={patchToolbar}
+          linkDraft={linkDraft}
+          openLink={openLink}
+          closeLink={closeLink}
+          dictation={dictation}
+          groups={groups}
+        />
+      )}
 
       {/* ═══ ÁREA DE EDIÇÃO — largura, altura e moldura configuráveis ═══ */}
       <div

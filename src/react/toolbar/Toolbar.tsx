@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { Fragment, useEffect, useRef, useState } from 'react'
 import type { FontFamilyOption } from '../../core/defaults'
 import type { LinkDraft, TextboxBorder, VersaEditCore } from '../../core/editor'
 import type { SpeechRecognitionConstructor } from '../../core/speech'
@@ -40,6 +40,37 @@ const HEADING_BLOCKS: { label: keyof VersaEditLabels; tag: string }[] = [
   { label: 'quote', tag: 'blockquote' },
 ]
 
+/** Grupos de ferramentas da barra, na ordem em que aparecem */
+export const TOOLBAR_GROUPS = [
+  'dictation',
+  'file',
+  'history',
+  'font',
+  'block',
+  'format',
+  'highlight',
+  'color',
+  'align',
+  'list',
+  'indent',
+  'link',
+  'insert',
+  'textbox',
+  'clear',
+] as const
+export type ToolbarGroup = (typeof TOOLBAR_GROUPS)[number]
+
+// Seções com o conteúdo ligado, separadas por um traço só entre elas
+function renderSections(sections: React.ReactNode[][]): React.ReactNode {
+  const visible = sections.map((items) => items.filter(Boolean)).filter((items) => items.length > 0)
+  return visible.map((items, i) => (
+    <Fragment key={i}>
+      {i > 0 && <ToolbarSep />}
+      {items}
+    </Fragment>
+  ))
+}
+
 export interface ToolbarState {
   currentFont: string
   currentFontSize: string
@@ -65,6 +96,7 @@ export function Toolbar({
   openLink,
   closeLink,
   dictation,
+  groups,
 }: {
   core: () => VersaEditCore | null
   labels: VersaEditLabels
@@ -84,7 +116,10 @@ export function Toolbar({
   closeLink: () => void
   /** Ditado: mecanismo de reconhecimento e idioma; null esconde o botão */
   dictation: { recognition: SpeechRecognitionConstructor; lang: string } | null
+  /** Grupos ligados (os outros não aparecem) */
+  groups: ReadonlySet<ToolbarGroup>
 }) {
+  const on = (group: ToolbarGroup) => groups.has(group)
   const toolbarRef = useRef<HTMLDivElement>(null)
   const activeIndex = useRef(0)
   // Paleta aberta ('text' | 'bg')
@@ -186,163 +221,233 @@ export function Toolbar({
         marginLeft: -(width - editorWidth) / 2,
       }}
     >
-      {dictation && (
-        <>
-          <DictationButton
-            core={core}
-            labels={L}
-            lang={dictation.lang}
-            recognition={dictation.recognition}
-          />
-          <ToolbarSep />
-        </>
-      )}
-      {showFileButtons && (
-        <>
-          <ToolbarBtn onClick={() => core()?.saveToFile()} title={L.saveFile}>
-            <IconSave />
-          </ToolbarBtn>
-          <ToolbarBtn onClick={() => core()?.openFile()} title={L.openFile}>
-            <IconOpen />
-          </ToolbarBtn>
-          <ToolbarSep />
-        </>
-      )}
-      <ToolbarBtn onClick={() => core()?.undo()} title={L.undo}>
-        <IconUndo />
-      </ToolbarBtn>
-      <ToolbarBtn onClick={() => core()?.redo()} title={L.redo}>
-        <IconRedo />
-      </ToolbarBtn>
-      <ToolbarSep />
-      <FontPicker
-        core={core}
-        labels={L}
-        fontFamilies={fontFamilies}
-        currentFont={state.currentFont}
-        onChoose={(font) => {
-          setState({ currentFont: font })
-          core()?.chooseFontFamily(font)
-        }}
-      />
-      <select
-        className="ve-select"
-        value={state.currentFontSize}
-        onMouseDown={() => core()?.saveSelection()}
-        onChange={(e) => {
-          const pt = e.target.value
-          setState({ currentFontSize: pt })
-          core()?.applyFontSizePt(pt)
-        }}
-        title={L.fontSize}
-        aria-label={L.fontSize}
-      >
-        {fontSizes.map((pt) => (
-          <option key={pt} value={String(pt)}>
-            {pt} pt
-          </option>
-        ))}
-      </select>
-      <ToolbarSep />
-      {HEADING_BLOCKS.map((h) => (
-        <ToolbarBtn key={h.tag} onClick={() => core()?.formatBlock(h.tag)} title={L[h.label]}>
-          {h.tag === 'p' ? '¶' : h.tag === 'blockquote' ? '❝' : h.tag.toUpperCase()}
-        </ToolbarBtn>
-      ))}
-      <ToolbarSep />
-      <ToolbarBtn onClick={run('bold')} title={L.bold}>
-        <IconBold />
-      </ToolbarBtn>
-      <ToolbarBtn onClick={run('italic')} title={L.italic}>
-        <IconItalic />
-      </ToolbarBtn>
-      <ToolbarBtn onClick={run('underline')} title={L.underline}>
-        <IconUnderline />
-      </ToolbarBtn>
-      <HighlightPicker core={core} labels={L} colors={highlightColors} />
-      <ToolbarBtn onClick={() => core()?.removeHighlight()} title={L.removeHighlight}>
-        <span className="ve-highlight-remove">S</span>
-      </ToolbarBtn>
-      <ToolbarSep />
-      <div ref={colorPanelRef} className="ve-inline">
-        {(['text', 'bg'] as const).map((kind) => (
-          <ColorPicker
-            key={kind}
-            kind={kind}
-            core={core}
-            labels={L}
-            color={kind === 'text' ? state.textColor : state.bgColor}
-            palette={colorPalette}
-            openPalette={openPalette}
-            setOpenPalette={setOpenPalette}
-            onPick={pickColor}
-            onPickCustom={pickCustomColor}
-          />
-        ))}
-      </div>
-      <ToolbarSep />
-      <ToolbarBtn onClick={run('justifyLeft')} title={L.alignLeft}>
-        <IconAlignLeft />
-      </ToolbarBtn>
-      <ToolbarBtn onClick={run('justifyCenter')} title={L.alignCenter}>
-        <IconAlignCenter />
-      </ToolbarBtn>
-      <ToolbarBtn onClick={run('justifyRight')} title={L.alignRight}>
-        <IconAlignRight />
-      </ToolbarBtn>
-      <ToolbarSep />
-      <ToolbarBtn onClick={run('insertUnorderedList')} title={L.bulletList}>
-        <IconBulletList />
-      </ToolbarBtn>
-      <ToolbarBtn onClick={run('insertOrderedList')} title={L.numberedList}>
-        <span style={{ fontWeight: 600 }}>1.</span>
-      </ToolbarBtn>
-      <ToolbarSep />
-      <ToolbarBtn onClick={run('indent')} title={L.indent}>
-        <IconIndent />
-      </ToolbarBtn>
-      <ToolbarBtn onClick={run('outdent')} title={L.outdent}>
-        <IconOutdent />
-      </ToolbarBtn>
-      <ToolbarSep />
-      <div className="ve-link-wrap">
-        <ToolbarBtn
-          onClick={() => {
-            if (linkDraft) {
-              core()?.cancelLink()
-              closeLink()
-            } else openLink()
-          }}
-          title={L.insertLink}
-        >
-          <IconLink />
-        </ToolbarBtn>
-        {linkDraft && <LinkPopover core={core} labels={L} draft={linkDraft} onClose={closeLink} />}
-      </div>
-      <ToolbarBtn onClick={() => core()?.removeLink()} title={L.removeLink}>
-        <IconUnlink />
-      </ToolbarBtn>
-      <ToolbarSep />
-      <ToolbarBtn onClick={() => core()?.insertHorizontalRule()} title={L.insertHr}>
-        <IconHr />
-      </ToolbarBtn>
-      <ToolbarBtn onClick={() => core()?.insertImage()} title={L.insertImage}>
-        <IconImage />
-      </ToolbarBtn>
-      <TextboxControls
-        core={core}
-        labels={L}
-        border={state.textboxBorder}
-        setBorder={(textboxBorder) => setState({ textboxBorder })}
-        isSelected={isTextboxSelected}
-      />
-      <ToolbarSep />
-      <ToolbarBtn onClick={() => core()?.clearAll()} title={L.clearAll}>
-        <IconTrash /> {L.clearAllButton}
-      </ToolbarBtn>
-      <ToolbarBtn onClick={() => core()?.clearFormatting()} title={L.clearFormatting}>
-        <IconClearFormat />
-      </ToolbarBtn>
+      {renderSections([
+        [
+          dictation && on('dictation') && (
+            <DictationButton
+              key="dictation"
+              core={core}
+              labels={L}
+              lang={dictation.lang}
+              recognition={dictation.recognition}
+            />
+          ),
+        ],
+        [
+          showFileButtons && on('file') && (
+            <Fragment key="file">
+              <ToolbarBtn onClick={() => core()?.saveToFile()} title={L.saveFile}>
+                <IconSave />
+              </ToolbarBtn>
+              <ToolbarBtn onClick={() => core()?.openFile()} title={L.openFile}>
+                <IconOpen />
+              </ToolbarBtn>
+            </Fragment>
+          ),
+        ],
+        [
+          on('history') && (
+            <Fragment key="history">
+              <ToolbarBtn onClick={() => core()?.undo()} title={L.undo}>
+                <IconUndo />
+              </ToolbarBtn>
+              <ToolbarBtn onClick={() => core()?.redo()} title={L.redo}>
+                <IconRedo />
+              </ToolbarBtn>
+            </Fragment>
+          ),
+        ],
+        [
+          on('font') && (
+            <Fragment key="font">
+              <FontPicker
+                core={core}
+                labels={L}
+                fontFamilies={fontFamilies}
+                currentFont={state.currentFont}
+                onChoose={(font) => {
+                  setState({ currentFont: font })
+                  core()?.chooseFontFamily(font)
+                }}
+              />
+              <select
+                className="ve-select"
+                value={state.currentFontSize}
+                onMouseDown={() => core()?.saveSelection()}
+                onChange={(e) => {
+                  const pt = e.target.value
+                  setState({ currentFontSize: pt })
+                  core()?.applyFontSizePt(pt)
+                }}
+                title={L.fontSize}
+                aria-label={L.fontSize}
+              >
+                {fontSizes.map((pt) => (
+                  <option key={pt} value={String(pt)}>
+                    {pt} pt
+                  </option>
+                ))}
+              </select>
+            </Fragment>
+          ),
+        ],
+        [
+          on('block') && (
+            <Fragment key="block">
+              {HEADING_BLOCKS.map((h) => (
+                <ToolbarBtn
+                  key={h.tag}
+                  onClick={() => core()?.formatBlock(h.tag)}
+                  title={L[h.label]}
+                >
+                  {h.tag === 'p' ? '¶' : h.tag === 'blockquote' ? '❝' : h.tag.toUpperCase()}
+                </ToolbarBtn>
+              ))}
+            </Fragment>
+          ),
+        ],
+        [
+          on('format') && (
+            <Fragment key="format">
+              <ToolbarBtn onClick={run('bold')} title={L.bold}>
+                <IconBold />
+              </ToolbarBtn>
+              <ToolbarBtn onClick={run('italic')} title={L.italic}>
+                <IconItalic />
+              </ToolbarBtn>
+              <ToolbarBtn onClick={run('underline')} title={L.underline}>
+                <IconUnderline />
+              </ToolbarBtn>
+            </Fragment>
+          ),
+          on('highlight') && (
+            <Fragment key="highlight">
+              <HighlightPicker core={core} labels={L} colors={highlightColors} />
+              <ToolbarBtn onClick={() => core()?.removeHighlight()} title={L.removeHighlight}>
+                <span className="ve-highlight-remove">S</span>
+              </ToolbarBtn>
+            </Fragment>
+          ),
+        ],
+        [
+          on('color') && (
+            <div key="color" ref={colorPanelRef} className="ve-inline">
+              {(['text', 'bg'] as const).map((kind) => (
+                <ColorPicker
+                  key={kind}
+                  kind={kind}
+                  core={core}
+                  labels={L}
+                  color={kind === 'text' ? state.textColor : state.bgColor}
+                  palette={colorPalette}
+                  openPalette={openPalette}
+                  setOpenPalette={setOpenPalette}
+                  onPick={pickColor}
+                  onPickCustom={pickCustomColor}
+                />
+              ))}
+            </div>
+          ),
+        ],
+        [
+          on('align') && (
+            <Fragment key="align">
+              <ToolbarBtn onClick={run('justifyLeft')} title={L.alignLeft}>
+                <IconAlignLeft />
+              </ToolbarBtn>
+              <ToolbarBtn onClick={run('justifyCenter')} title={L.alignCenter}>
+                <IconAlignCenter />
+              </ToolbarBtn>
+              <ToolbarBtn onClick={run('justifyRight')} title={L.alignRight}>
+                <IconAlignRight />
+              </ToolbarBtn>
+            </Fragment>
+          ),
+        ],
+        [
+          on('list') && (
+            <Fragment key="list">
+              <ToolbarBtn onClick={run('insertUnorderedList')} title={L.bulletList}>
+                <IconBulletList />
+              </ToolbarBtn>
+              <ToolbarBtn onClick={run('insertOrderedList')} title={L.numberedList}>
+                <span style={{ fontWeight: 600 }}>1.</span>
+              </ToolbarBtn>
+            </Fragment>
+          ),
+        ],
+        [
+          on('indent') && (
+            <Fragment key="indent">
+              <ToolbarBtn onClick={run('indent')} title={L.indent}>
+                <IconIndent />
+              </ToolbarBtn>
+              <ToolbarBtn onClick={run('outdent')} title={L.outdent}>
+                <IconOutdent />
+              </ToolbarBtn>
+            </Fragment>
+          ),
+        ],
+        [
+          on('link') && (
+            <Fragment key="link">
+              <div className="ve-link-wrap">
+                <ToolbarBtn
+                  onClick={() => {
+                    if (linkDraft) {
+                      core()?.cancelLink()
+                      closeLink()
+                    } else openLink()
+                  }}
+                  title={L.insertLink}
+                >
+                  <IconLink />
+                </ToolbarBtn>
+                {linkDraft && (
+                  <LinkPopover core={core} labels={L} draft={linkDraft} onClose={closeLink} />
+                )}
+              </div>
+              <ToolbarBtn onClick={() => core()?.removeLink()} title={L.removeLink}>
+                <IconUnlink />
+              </ToolbarBtn>
+            </Fragment>
+          ),
+        ],
+        [
+          on('insert') && (
+            <Fragment key="insert">
+              <ToolbarBtn onClick={() => core()?.insertHorizontalRule()} title={L.insertHr}>
+                <IconHr />
+              </ToolbarBtn>
+              <ToolbarBtn onClick={() => core()?.insertImage()} title={L.insertImage}>
+                <IconImage />
+              </ToolbarBtn>
+            </Fragment>
+          ),
+          on('textbox') && (
+            <TextboxControls
+              key="textbox"
+              core={core}
+              labels={L}
+              border={state.textboxBorder}
+              setBorder={(textboxBorder) => setState({ textboxBorder })}
+              isSelected={isTextboxSelected}
+            />
+          ),
+        ],
+        [
+          on('clear') && (
+            <Fragment key="clear">
+              <ToolbarBtn onClick={() => core()?.clearAll()} title={L.clearAll}>
+                <IconTrash /> {L.clearAllButton}
+              </ToolbarBtn>
+              <ToolbarBtn onClick={() => core()?.clearFormatting()} title={L.clearFormatting}>
+                <IconClearFormat />
+              </ToolbarBtn>
+            </Fragment>
+          ),
+        ],
+      ])}
     </div>
   )
 }

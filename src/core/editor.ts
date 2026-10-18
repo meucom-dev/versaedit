@@ -104,6 +104,8 @@ export interface CoreOptions {
   pasteImages: boolean
   /** Deixa áudio e vídeo externos carregarem dentro do editor. Ver a prop */
   allowExternalMedia: boolean
+  /** Atalhos ligados: Ctrl+K (link) e Ctrl+B/I/U (formatação) */
+  shortcuts: { link: boolean; format: boolean }
 }
 
 export interface CoreCallbacks {
@@ -175,6 +177,7 @@ const DEFAULT_OPTIONS: CoreOptions = {
   accentColor: '#2563eb',
   pasteImages: true,
   allowExternalMedia: false,
+  shortcuts: { link: true, format: true },
 }
 
 const toHex = (n: string) => Number(n).toString(16).padStart(2, '0')
@@ -1399,7 +1402,12 @@ export class VersaEditCore {
     // Desfazer / refazer próprios: Ctrl+Z, Ctrl+Y e Ctrl+Shift+Z; Ctrl+K: link
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
       const key = e.key.toLowerCase()
-      if (key === 'k' && this.cb.onLinkRequest) {
+      // Formatação desligada na barra: o atalho do navegador também não formata
+      if (!this.opts.shortcuts.format && ['b', 'i', 'u'].includes(key) && !e.shiftKey) {
+        e.preventDefault()
+        return
+      }
+      if (key === 'k' && this.cb.onLinkRequest && this.opts.shortcuts.link) {
         e.preventDefault()
         this.cb.onLinkRequest()
         return
