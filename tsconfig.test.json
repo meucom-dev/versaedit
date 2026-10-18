@@ -8,6 +8,7 @@
     "tests",
     "playground",
     "playwright.config.ts",
+    "playwright.package.config.ts",
     "vitest.config.ts",
     "vite.config.ts",
     "vite.playground.config.ts"

@@ -70,3 +70,26 @@ jobs:
       - run: npm run test:unit
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+
+  package:
+    name: Pacote instalado (npm pack) nos exemplos
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            examples/*/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:package
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: package-report
+          path: test-results/
+          retention-days: 7

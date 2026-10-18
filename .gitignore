@@ -8,3 +8,11 @@ dist/
 !.vscode/extensions.json
 test-results/
 playwright-report/
+
+# Amostras reais de conteúdo (não versionar)
+compat-samples/
+# Exemplos
+examples/*/node_modules/
+examples/*/dist/
+examples/*/.next/
+examples/*/next-env.d.ts

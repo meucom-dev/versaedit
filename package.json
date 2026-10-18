@@ -26,12 +26,13 @@
     "dev": "vite --config vite.playground.config.ts",
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
-    "lint": "eslint src playground tests",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"playground/**/*.{ts,tsx}\" \"tests/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"playground/**/*.{ts,tsx}\" \"tests/**/*.ts\"",
+    "lint": "eslint src playground tests examples",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"playground/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"examples/*/src/**/*.{ts,tsx}\" \"scripts/*.mjs\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx}\" \"playground/**/*.{ts,tsx}\" \"tests/**/*.ts\" \"examples/*/src/**/*.{ts,tsx}\" \"scripts/*.mjs\"",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:package": "node scripts/test-package.mjs"
   },
   "peerDependencies": {
     "react": "^18.3.0 || ^19.0.0",
