@@ -6,7 +6,10 @@ async function openPanel(page: Page) {
   await page.goto('/')
   await expect(page.locator('.ve-content')).toBeVisible()
   // Tudo recolhido na tela inicial
-  await expect(page.getByTestId('props-panel')).toBeHidden()
+  // (no WebKit, o que fica dentro de um <details> fechado ainda tem tamanho,
+  // então a conferência é pelo atributo open e pelo checkVisibility)
+  await expect(page.locator('#root details').first()).not.toHaveAttribute('open')
+  expect(await page.getByTestId('props-panel').evaluate((el) => el.checkVisibility())).toBe(false)
   await page.getByText('Show HTML', { exact: true }).click()
   await page.getByText('Properties', { exact: true }).click()
   await expect(page.getByTestId('events')).toBeVisible()

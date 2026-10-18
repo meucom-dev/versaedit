@@ -107,3 +107,5 @@ yet (version `0.0.0`); work is grouped by the internal stabilization batches.
 
 - Firefox diagnostic: `injectStyles={false}` test (`tests/e2e/css.spec.ts`) failed once in the full
   Firefox + WebKit run and passed 15/15 when repeated alone; suspected timing under parallel load.
+- Firefox diagnostic: `onConfirm "async-yes"` (`tests/e2e/dialogs.spec.ts`) failed once in the full
+  run (v0.4.x) and passed 40/40 when repeated alone — same pattern as above.
