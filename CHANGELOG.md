@@ -80,3 +80,8 @@ yet (version `0.0.0`); work is grouped by the internal stabilization batches.
   Playwright's Firefox does not apply them even in a plain `contenteditable`).
 - Validation of paste with real Microsoft Word documents.
 - WebKit: avoid the extra `<span style="font-size">` in lists.
+
+## Pending investigation
+
+- Firefox diagnostic: `injectStyles={false}` test (`tests/e2e/css.spec.ts`) failed once in the full
+  Firefox + WebKit run and passed 15/15 when repeated alone; suspected timing under parallel load.
