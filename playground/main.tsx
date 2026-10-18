@@ -1,6 +1,7 @@
-import { StrictMode, useRef, useState } from 'react'
+import { StrictMode, useCallback, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { VersaEdit, VersaEditDictation, type VersaEditHandle, type VersaEditLocale } from '../src'
+import { DEFAULT_SETTINGS, PropsPanel, settingsToProps } from './PropsPanel'
 
 // Textos do próprio playground (o editor tem os seus em src/core/i18n)
 const TEXT = {
@@ -44,6 +45,20 @@ function App() {
   const [html, setHtml] = useState('')
   const [saved, setSaved] = useState<string | null>(null)
   const editorRef = useRef<VersaEditHandle>(null)
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS)
+  // Registro de eventos do painel "Propriedades" (os 30 mais recentes)
+  const [events, setEvents] = useState<string[]>([])
+  const log = useCallback((line: string) => {
+    const time = new Date().toLocaleTimeString()
+    setEvents((list) => [`${time}  ${line}`, ...list].slice(0, 30))
+  }, [])
+  const onChange = useCallback(
+    (value: string) => {
+      setHtml(value)
+      log(`onChange (${value.length})`)
+    },
+    [log],
+  )
 
   return (
     <div
@@ -65,15 +80,32 @@ function App() {
       <VersaEdit
         ref={editorRef}
         showDictation={false}
-        onChange={setHtml}
+        onChange={onChange}
+        onFocus={() => log('onFocus')}
+        onBlur={() => log('onBlur')}
+        onOverflowChange={(overflow) => log(`onOverflowChange (${overflow})`)}
+        onError={settings.useOnError ? (e) => log(`onError ${e.code}: ${e.message}`) : undefined}
         locale={locale}
-        width={900}
-        height={420}
+        {...settingsToProps(settings)}
       />
-      {/* Área de desenvolvimento: HTML gerado e teste do onSave, recolhidos */}
+      {/* Área de desenvolvimento, recolhida: HTML gerado, propriedades e teste do onSave */}
       <details style={{ marginTop: 24 }}>
         <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{T.showHtml}</summary>
         <pre style={{ ...codeStyle, background: '#f4f4f4' }}>{shortenDataUris(html)}</pre>
+        <PropsPanel
+          locale={locale}
+          settings={settings}
+          onSettings={setSettings}
+          onLoadSample={(sample) => {
+            // setHTML não chama onChange: o HTML exibido é lido de volta
+            const editor = editorRef.current
+            if (!editor) return
+            editor.setHTML(sample)
+            setHtml(editor.getHTML())
+            log(`setHTML (${sample.length})`)
+          }}
+          events={events}
+        />
         {saved !== null && (
           <>
             <h2 style={{ fontSize: 16 }}>onSave</h2>
