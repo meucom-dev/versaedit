@@ -17,20 +17,30 @@ export function splitPaper(html: string): { paper: string; inner: string } {
   return m ? { paper: safeCssColor(m[1]), inner: m[2] } : { paper: '', inner: html }
 }
 
-// Conteúdo a salvar: envolve o HTML com a cor do papel, quando definida
+// Marcas temporárias da interface (imagem/caixa selecionada ou sendo arrastada)
+const UI_STATE = '.selected, .dragging'
+
+// Tira as marcas temporárias (numa cópia); class vazio sai junto
+function withoutUiState(el: HTMLElement): HTMLElement {
+  const clone = el.cloneNode(true) as HTMLElement
+  clone.querySelectorAll(UI_STATE).forEach((node) => {
+    node.classList.remove('selected', 'dragging')
+    if (!node.getAttribute('class')?.trim()) node.removeAttribute('class')
+  })
+  return clone
+}
+
+// Conteúdo a salvar (onChange, getHTML, arquivo): sem as marcas da interface,
+// com a mídia suspensa de volta ao original e a cor do papel, quando definida
 export function serializeEditorContent(el: HTMLElement, paper: string): string {
-  // Mídia suspensa no editor volta com os atributos originais
-  const inner = hasSuspendedMedia(el) ? restoreMediaInHtml(el.innerHTML) : el.innerHTML
+  const html = el.querySelector(UI_STATE) ? withoutUiState(el).innerHTML : el.innerHTML
+  const inner = hasSuspendedMedia(el) ? restoreMediaInHtml(html) : html
   return paper ? paperWrap(paper, inner) : inner
 }
 
-// HTML do editor para o histórico: sem classes de seleção e com a cor do papel
+// HTML do editor para o histórico: igual ao conteúdo a salvar
 export function snapshotEditor(el: HTMLElement, paper: string): string {
-  const clone = el.cloneNode(true) as HTMLElement
-  clone.querySelectorAll('.selected, .dragging').forEach((node) => {
-    node.classList.remove('selected', 'dragging')
-  })
-  const inner = restoreMediaInHtml(clone.innerHTML)
+  const inner = restoreMediaInHtml(withoutUiState(el).innerHTML)
   return paper ? paperWrap(paper, inner) : inner
 }
 

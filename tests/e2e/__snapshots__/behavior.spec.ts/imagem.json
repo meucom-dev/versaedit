@@ -2,7 +2,7 @@
   "inserted": "<p>alpha</p><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC\" alt=\"Image\" class=\"pos-left\" draggable=\"false\" style=\"height: auto; border-radius: 4px;\">",
   "toolbar": true,
   "handle": true,
-  "half": "<p>alpha</p><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC\" alt=\"Image\" class=\"pos-left selected\" draggable=\"false\" style=\"height: auto; border-radius: 4px; width: 50%; max-width: 50%;\">",
-  "centered": "<p>alpha</p><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC\" alt=\"Image\" class=\"selected pos-center\" draggable=\"false\" style=\"height: auto; border-radius: 4px; width: 50%; max-width: 50%;\">",
+  "half": "<p>alpha</p><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC\" alt=\"Image\" class=\"pos-left\" draggable=\"false\" style=\"height: auto; border-radius: 4px; width: 50%; max-width: 50%;\">",
+  "centered": "<p>alpha</p><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC\" alt=\"Image\" class=\"pos-center\" draggable=\"false\" style=\"height: auto; border-radius: 4px; width: 50%; max-width: 50%;\">",
   "deleted": "<p>alpha</p>"
 }

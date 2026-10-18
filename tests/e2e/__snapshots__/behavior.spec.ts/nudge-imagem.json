@@ -1,5 +1,5 @@
 {
-  "nudged": "<p>alpha</p><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC\" class=\"pos-left selected\" style=\"width: 40px; transform: translate(1px, 10px);\" draggable=\"false\">",
-  "floated": "<p>alpha</p><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC\" class=\"selected pos-right\" style=\"width: 40px; transform: translate(1px, 10px);\" draggable=\"false\">",
+  "nudged": "<p>alpha</p><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC\" class=\"pos-left\" style=\"width: 40px; transform: translate(1px, 10px);\" draggable=\"false\">",
+  "floated": "<p>alpha</p><img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC\" class=\"pos-right\" style=\"width: 40px; transform: translate(1px, 10px);\" draggable=\"false\">",
   "deleted": "<p>alpha</p>"
 }

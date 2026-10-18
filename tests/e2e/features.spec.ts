@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 // Funcionalidades do VersaEdit: props, idiomas, link, imagem, teclado, ref e toque
 import { expect, test } from '@playwright/test'
 import { mount, PNG, pngFile, selectText } from './helpers'
@@ -424,9 +425,12 @@ test.describe('alinhamento e recuo iguais em todos os navegadores', () => {
       return { margin: cs.marginLeft, border: cs.borderLeftWidth }
     })
     expect(box).toEqual({ margin: '40px', border: '0px' })
-    // Pendente de aprovação (relatório v0.2.x): no Chromium/WebKit o recuo é um
-    // <blockquote> com margem, e o CSS de citação ainda o deixa em itálico e com
-    // fundo. Não corrigido aqui para não mudar a aparência atual sem aprovação.
+    // Recuo não tem aparência de citação (aprovado no lote complementar v0.2.x)
+    const look = await block.evaluate((el) => {
+      const cs = getComputedStyle(el)
+      return { italic: cs.fontStyle, background: cs.backgroundColor }
+    })
+    expect(look).toEqual({ italic: 'normal', background: 'rgba(0, 0, 0, 0)' })
 
     await selectText(page, 'alpha')
     await t.btn('Decrease indent').click()
@@ -437,4 +441,90 @@ test.describe('alinhamento e recuo iguais em todos os navegadores', () => {
     await t.btn('Bold (Ctrl+B)').click()
     expect(await t.html()).toContain('<b>beta</b>')
   })
+})
+
+test.describe('histórico com imagem embutida', () => {
+  test('desfazer/refazer: HTML idêntico e cursor no mesmo lugar', async ({ page }) => {
+    const big = 'A'.repeat(200_000)
+    const t = await mount(page)
+    const original = `<p>texto</p><img src="data:image/png;base64,${big}" class="pos-left" style="width: 40px;">`
+    // Referência: o HTML como este navegador o entrega depois de carregar
+    // (o Firefox, por exemplo, grava style antes de class)
+    const loaded = await page.evaluate((h) => {
+      window.__ref.current!.setHTML(h)
+      return window.__ref.current!.getHTML()
+    }, original)
+    await t.content.locator('p').click()
+    await page.keyboard.press('End')
+    await page.keyboard.type('XY')
+    await page.waitForTimeout(500)
+    // Apagar a imagem (passo separado)
+    await page.locator('#host .ve-content img').click()
+    await page.keyboard.press('Delete')
+    await page.waitForTimeout(500)
+    const caret = () =>
+      page.evaluate(() => {
+        const s = getSelection()!
+        return {
+          node: s.anchorNode?.nodeName ?? null,
+          text: s.anchorNode?.textContent?.slice(0, 20) ?? null,
+          offset: s.anchorOffset,
+          collapsed: s.isCollapsed,
+        }
+      })
+    const html = () => page.evaluate(() => window.__ref.current!.getHTML())
+
+    await page.keyboard.press('Control+z')
+    expect(await html()).toBe(loaded.replace('texto', 'textoXY'))
+    const afterUndo1 = await caret()
+    await page.keyboard.press('Control+z')
+    expect(await html()).toBe(loaded)
+    const afterUndo2 = await caret()
+    await page.keyboard.press('Control+y')
+    await page.keyboard.press('Control+y')
+    expect(await html()).toBe('<p>textoXY</p>')
+    const afterRedo = await caret()
+    // Cursor igual ao do histórico anterior à otimização (medido com os dois):
+    // desfazer/refazer recolocam o cursor no início do editor
+    const atStart = { node: 'DIV', offset: 0, collapsed: true }
+    expect(afterUndo1).toEqual({ ...atStart, text: 'textoXY' })
+    expect(afterUndo2).toEqual({ ...atStart, text: 'texto' })
+    expect(afterRedo).toEqual({ ...atStart, text: 'textoXY' })
+  })
+})
+
+test('citação verdadeira mantém a aparência de citação', async ({ page }) => {
+  const t = await mount(page, { initialContent: '<p>alpha beta</p>' })
+  await selectText(page, 'alpha')
+  await t.btn('Quote').click()
+  expect(await t.html()).toBe('<blockquote>alpha beta</blockquote>')
+  const look = await t.content.locator('blockquote').evaluate((el) => {
+    const cs = getComputedStyle(el)
+    return {
+      italic: cs.fontStyle,
+      border: cs.borderLeftWidth,
+      hasBackground: cs.backgroundColor !== 'rgba(0, 0, 0, 0)',
+    }
+  })
+  expect(look).toEqual({ italic: 'italic', border: '3px', hasBackground: true })
+})
+
+test('marcas de seleção ficam só na tela, fora do HTML entregue', async ({ page }) => {
+  const content = `<p>alpha</p><img src="data:image/png;base64,${PNG}" class="pos-left" style="width:40px">`
+  const t = await mount(page, { initialContent: content })
+  await page.locator('#host .ve-content img').click()
+  await page.locator('#host .ve-float-toolbar button', { hasText: '50%' }).click()
+  // Na tela: selecionada, com menu
+  await expect(page.locator('#host .ve-content img')).toHaveClass(/selected/)
+  await expect(page.locator('#host .ve-float-toolbar')).toBeVisible()
+  // No HTML entregue: sem marcas da interface
+  const delivered = [await t.html(), await page.evaluate(() => window.__ref.current!.getHTML())]
+  for (const html of delivered) {
+    expect(html).not.toMatch(/selected|dragging|class=""/)
+    expect(html).toContain('class="pos-left"')
+  }
+  const downloading = page.waitForEvent('download')
+  await t.btn('Save to file (.html)').click()
+  const file = readFileSync((await (await downloading).path())!, 'utf-8')
+  expect(file).not.toContain('selected')
 })
