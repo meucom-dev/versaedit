@@ -17,15 +17,18 @@ export function splitPaper(html: string): { paper: string; inner: string } {
   return m ? { paper: safeCssColor(m[1]), inner: m[2] } : { paper: '', inner: html }
 }
 
-// Marcas temporárias da interface (imagem/caixa selecionada ou sendo arrastada)
-const UI_STATE = '.selected, .dragging'
+// Marcas da edição que não pertencem ao conteúdo publicado: imagem/caixa
+// selecionada ou sendo arrastada, e a caixa de texto tornada editável — no
+// site, contenteditable="true" deixaria o visitante editar a caixa
+const UI_STATE = '.selected, .dragging, .rich-textbox[contenteditable]'
 
-// Tira as marcas temporárias (numa cópia); class vazio sai junto
+// Tira essas marcas (numa cópia); class vazio sai junto
 function withoutUiState(el: HTMLElement): HTMLElement {
   const clone = el.cloneNode(true) as HTMLElement
   clone.querySelectorAll(UI_STATE).forEach((node) => {
     node.classList.remove('selected', 'dragging')
     if (!node.getAttribute('class')?.trim()) node.removeAttribute('class')
+    if (node.classList.contains('rich-textbox')) node.removeAttribute('contenteditable')
   })
   return clone
 }

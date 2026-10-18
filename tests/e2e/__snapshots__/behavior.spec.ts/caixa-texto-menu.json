@@ -1,7 +1,7 @@
 {
   "toolbar": true,
-  "w4": "<p>alpha</p><div class=\"rich-textbox\" contenteditable=\"true\" style=\"border-style: dashed; border-width: 4px;\"><span contenteditable=\"false\" class=\"textbox-handle\">⠿</span>tb</div>",
-  "dbl": "<p>alpha</p><div class=\"rich-textbox\" contenteditable=\"true\" style=\"border-style: double; border-width: 4px;\"><span contenteditable=\"false\" class=\"textbox-handle\">⠿</span>tb</div>",
-  "p75": "<p>alpha</p><div class=\"rich-textbox\" contenteditable=\"true\" style=\"border-style: double; border-width: 4px; max-width: 75%; width: 75%;\"><span contenteditable=\"false\" class=\"textbox-handle\">⠿</span>tb</div>",
+  "w4": "<p>alpha</p><div class=\"rich-textbox\" style=\"border-style: dashed; border-width: 4px;\"><span contenteditable=\"false\" class=\"textbox-handle\">⠿</span>tb</div>",
+  "dbl": "<p>alpha</p><div class=\"rich-textbox\" style=\"border-style: double; border-width: 4px;\"><span contenteditable=\"false\" class=\"textbox-handle\">⠿</span>tb</div>",
+  "p75": "<p>alpha</p><div class=\"rich-textbox\" style=\"border-style: double; border-width: 4px; max-width: 75%; width: 75%;\"><span contenteditable=\"false\" class=\"textbox-handle\">⠿</span>tb</div>",
   "del": "<p>alpha</p>"
 }
