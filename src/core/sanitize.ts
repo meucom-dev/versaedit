@@ -123,6 +123,8 @@ export function sanitizeHtml(html: string): string {
     el.removeAttribute('style')
     el.removeAttribute('class')
     el.removeAttribute('data-paper')
+    // Marcador interno da mídia suspensa (core/media.ts): nunca aceito de fora
+    el.removeAttribute('data-ve-media')
     el.removeAttribute('color')
     el.removeAttribute('bgcolor')
     el.removeAttribute('face')

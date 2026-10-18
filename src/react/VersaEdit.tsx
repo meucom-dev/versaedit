@@ -58,6 +58,13 @@ export interface VersaEditProps {
    * imagens embutidas raster (png, jpeg, gif, webp, bmp) são aceitos.
    */
   pasteImages?: boolean
+  /**
+   * Deixa áudio e vídeo externos do conteúdo carregarem dentro do editor
+   * (padrão: false). Desligado, a mídia não é baixada nem toca enquanto se
+   * edita, e o HTML entregue (onChange, getHTML, arquivo) continua idêntico ao
+   * recebido. A colagem nunca traz áudio ou vídeo.
+   */
+  allowExternalMedia?: boolean
   /** Corta o conteúdo que passar da altura do editor */
   truncateOnOverflow?: boolean
   /** Largura total do bloco em px, moldura incluída */
@@ -137,6 +144,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     placeholder,
     singleLineBreaks = false,
     pasteImages = true,
+    allowExternalMedia = false,
     truncateOnOverflow = false,
     width = DEFAULT_WIDTH,
     height = DEFAULT_HEIGHT,
@@ -260,6 +268,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
       truncateOnOverflow,
       singleLineBreaks,
       pasteImages,
+      allowExternalMedia,
       fontFamilies,
       fontSizes: fontSizeOptions,
       locale,

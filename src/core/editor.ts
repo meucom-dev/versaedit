@@ -49,6 +49,7 @@ import {
   type PointerListener,
   type TbBorderStyle,
 } from './objects'
+import { suspendMedia, suspendMediaInHtml } from './media'
 import { applyPendingStyleToFragment, buildPasteHtml } from './paste'
 import { applyVoiceCommands, formatDictatedText } from './speech'
 import { isSafeUrl, safeCssColor, sanitizeHtml } from './sanitize'
@@ -100,6 +101,8 @@ export interface CoreOptions {
   accentColor: string
   /** Colagem: mantém imagens (endereço validado). Ver a prop pasteImages */
   pasteImages: boolean
+  /** Deixa áudio e vídeo externos carregarem dentro do editor. Ver a prop */
+  allowExternalMedia: boolean
 }
 
 export interface CoreCallbacks {
@@ -136,6 +139,7 @@ const DEFAULT_OPTIONS: CoreOptions = {
   labels: resolveLabels('en'),
   accentColor: '#2563eb',
   pasteImages: true,
+  allowExternalMedia: false,
 }
 
 const toHex = (n: string) => Number(n).toString(16).padStart(2, '0')
@@ -260,12 +264,13 @@ export class VersaEditCore {
     // (remove estilos inline estranhos e código inseguro) e reinicia o histórico
     this.lastEmitted = null
     const { paper, inner } = splitPaper(html)
-    const cleanInner = sanitizeHtml(inner)
+    const cleanInner = this.prepareMedia(sanitizeHtml(inner))
     this.paper = paper
     editor.style.backgroundColor = paper
     if (cleanInner !== editor.innerHTML) {
       editor.innerHTML = cleanInner
     }
+    this.suspendExternalMedia()
     const wasTruncated = this.opts.truncateOnOverflow && truncateEditableToFit(editor)
     this.lastKnown = serializeEditorContent(editor, paper)
     this.history.reset(snapshotEditor(editor, paper))
@@ -276,6 +281,17 @@ export class VersaEditCore {
       // Corte na carga: o conteúdo mudou em relação ao recebido e precisa ser avisado
       this.cb.onChange(out)
     }
+  }
+
+  // Áudio e vídeo externos não carregam no editor (o HTML entregue continua
+  // igual). prepareMedia age no HTML antes de ele entrar na página; o
+  // suspendExternalMedia é a segunda verificação, já no editor.
+  private prepareMedia(html: string): string {
+    return this.opts.allowExternalMedia ? html : suspendMediaInHtml(html)
+  }
+
+  private suspendExternalMedia(): void {
+    if (!this.opts.allowExternalMedia) suspendMedia(this.el)
   }
 
   /** Troca o conteúdo (como um carregamento externo: reinicia o histórico) */
@@ -813,7 +829,8 @@ export class VersaEditCore {
     this.deselectTextbox()
     this.paper = paper
     editor.style.backgroundColor = paper
-    editor.innerHTML = cleanInner
+    editor.innerHTML = this.prepareMedia(cleanInner)
+    this.suspendExternalMedia()
     if (this.opts.truncateOnOverflow && truncateEditableToFit(editor)) {
       alert(L.fileTruncated)
     }
@@ -1347,7 +1364,8 @@ export class VersaEditCore {
     const { paper, inner } = splitPaper(html)
     this.paper = paper
     this.el.style.backgroundColor = paper
-    this.el.innerHTML = inner
+    this.el.innerHTML = this.prepareMedia(inner)
+    this.suspendExternalMedia()
     this.deselectImage()
     this.deselectTextbox()
     this.emitChange()

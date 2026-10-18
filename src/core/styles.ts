@@ -86,6 +86,9 @@ const CSS = `
 .ve-content pre { margin: 4px 0; padding: 8px 12px; background: #f6f8fa; border-radius: 4px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
 .ve-content code { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
 
+/* Áudio e vídeo externos suspensos no editor (core/media.ts) */
+.ve-content video[data-ve-media], .ve-content audio[data-ve-media] { outline: 1px dashed #999; outline-offset: 2px; }
+
 /* Imagens */
 .ve-content img { touch-action: none; -webkit-touch-callout: none; cursor: pointer; transition: outline 0.15s; outline: 2px solid transparent; outline-offset: 2px; display: block; -webkit-user-drag: none; }
 .ve-content img:hover { outline-color: ${accent(50)}; }

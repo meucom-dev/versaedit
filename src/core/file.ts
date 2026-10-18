@@ -1,4 +1,5 @@
 // ─── ARQUIVO .html E COR DO PAPEL ────────────────────────────────
+import { hasSuspendedMedia, restoreMediaInHtml } from './media'
 import { escapeHtml, safeCssColor } from './sanitize'
 
 // Arquivos .html salvos/abertos pelo botão de arquivo
@@ -18,7 +19,9 @@ export function splitPaper(html: string): { paper: string; inner: string } {
 
 // Conteúdo a salvar: envolve o HTML com a cor do papel, quando definida
 export function serializeEditorContent(el: HTMLElement, paper: string): string {
-  return paper ? paperWrap(paper, el.innerHTML) : el.innerHTML
+  // Mídia suspensa no editor volta com os atributos originais
+  const inner = hasSuspendedMedia(el) ? restoreMediaInHtml(el.innerHTML) : el.innerHTML
+  return paper ? paperWrap(paper, inner) : inner
 }
 
 // HTML do editor para o histórico: sem classes de seleção e com a cor do papel
@@ -27,7 +30,8 @@ export function snapshotEditor(el: HTMLElement, paper: string): string {
   clone.querySelectorAll('.selected, .dragging').forEach((node) => {
     node.classList.remove('selected', 'dragging')
   })
-  return paper ? paperWrap(paper, clone.innerHTML) : clone.innerHTML
+  const inner = restoreMediaInHtml(clone.innerHTML)
+  return paper ? paperWrap(paper, inner) : inner
 }
 
 // Página .html completa com o conteúdo do editor (pode ser aberta no navegador)
