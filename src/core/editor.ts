@@ -1062,6 +1062,7 @@ export class VersaEditCore {
     const target = e.target as HTMLElement
 
     if (target.tagName === 'IMG') {
+      this.focusWithoutSelecting()
       this.selectImage(target as HTMLImageElement)
       this.isDragging = true
       this.dragType = 'image'
@@ -1076,6 +1077,7 @@ export class VersaEditCore {
     if (target.classList.contains('textbox-handle')) {
       const tb = target.closest('.rich-textbox') as HTMLDivElement
       if (tb) {
+        this.focusWithoutSelecting()
         this.selectTextbox(tb)
         this.isDragging = true
         this.dragType = 'textbox'
@@ -1095,6 +1097,14 @@ export class VersaEditCore {
 
     this.deselectImage()
     this.deselectTextbox()
+  }
+
+  // O mousedown sobre imagem e alça é cancelado (abaixo) para não selecionar
+  // texto, o que também impedia o foco: sem ele, Delete, setas e Ctrl+Z não
+  // chegavam ao editor quando a pessoa clicava direto na imagem.
+  private focusWithoutSelecting(): void {
+    if (document.activeElement === this.el || this.el.contains(document.activeElement)) return
+    this.el.focus({ preventScroll: true })
   }
 
   // mousedown sobre imagem ou alça: impede a seleção de texto nativa do navegador

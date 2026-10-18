@@ -353,3 +353,40 @@ test.describe('onChange só quando o HTML muda', () => {
     expect(await t.html()).toBe('<p>abcx</p>')
   })
 })
+
+test.describe('foco ao clicar em imagem', () => {
+  const content = `<p>alpha beta</p><img src="data:image/png;base64,${PNG}" class="pos-left" style="width:40px">`
+
+  test('clique direto na imagem: teclado funciona sem selecionar texto', async ({ page }) => {
+    const t = await mount(page, { initialContent: content })
+    const img = page.locator('#host .ve-content img')
+    await img.click()
+    expect(
+      await page.evaluate(() => document.activeElement?.classList.contains('ve-content')),
+    ).toBe(true)
+    expect(await page.evaluate(() => getSelection()!.toString())).toBe('')
+    await page.keyboard.press('Control+ArrowRight')
+    expect(await img.evaluate((el: HTMLElement) => el.style.transform)).toBe('translate(1px, 0px)')
+    await page.keyboard.press('Delete')
+    await expect(img).toHaveCount(0)
+    expect(await t.html()).toBe('<p>alpha beta</p>')
+  })
+
+  test('arrasto e alça continuam funcionando depois do foco', async ({ page }) => {
+    await mount(page, { initialContent: content })
+    const img = page.locator('#host .ve-content img')
+    const box = (await img.boundingBox())!
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(box.x + 300, box.y + 10, { steps: 5 })
+    await page.mouse.up()
+    await expect(img).toHaveClass(/pos-left|pos-right/)
+    const handle = (await page.locator('#host .ve-resize-handle').boundingBox())!
+    const w0 = await img.evaluate((el: HTMLElement) => el.offsetWidth)
+    await page.mouse.move(handle.x + 7, handle.y + 7)
+    await page.mouse.down()
+    await page.mouse.move(handle.x + 47, handle.y + 37, { steps: 4 })
+    await page.mouse.up()
+    expect(await img.evaluate((el: HTMLElement) => el.offsetWidth)).toBeGreaterThan(w0)
+  })
+})
