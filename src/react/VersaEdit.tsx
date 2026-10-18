@@ -42,6 +42,10 @@ export interface VersaEditProps {
   onChange?: (html: string) => void
   /** Avisa quando o conteúdo passa (ou deixa de passar) da altura do editor */
   onOverflowChange?: (isOverflowing: boolean) => void
+  /** O foco entrou no editor */
+  onFocus?: () => void
+  /** O foco saiu do editor (os botões da barra não tiram o foco) */
+  onBlur?: () => void
   /** Classe extra na área de edição (para estilos do site que vai exibir o conteúdo) */
   contentClassName?: string
   contentStyle?: React.CSSProperties
@@ -139,6 +143,8 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     initialContent = '',
     onChange,
     onOverflowChange,
+    onFocus,
+    onBlur,
     contentClassName = '',
     contentStyle,
     placeholder,
@@ -194,9 +200,9 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
 
   // Callbacks da tela sempre atualizados: a tela pode recriar onChange a cada
   // renderização sem que o editor recarregue o conteúdo
-  const latest = useRef({ onChange, onOverflowChange, onSave, onImageUpload })
+  const latest = useRef({ onChange, onOverflowChange, onSave, onImageUpload, onFocus, onBlur })
   useLayoutEffect(() => {
-    latest.current = { onChange, onOverflowChange, onSave, onImageUpload }
+    latest.current = { onChange, onOverflowChange, onSave, onImageUpload, onFocus, onBlur }
   })
 
   // Formulário de link: aberto pelo botão ou por Ctrl+K
@@ -244,6 +250,8 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
           return latest.current.onImageUpload
         },
         onLinkRequest: openLink,
+        onFocus: () => latest.current.onFocus?.(),
+        onBlur: () => latest.current.onBlur?.(),
         onObjectChange: setObject,
         onSelectionStyle: (style) =>
           patchToolbar({

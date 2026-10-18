@@ -44,6 +44,8 @@ export interface HarnessOutput {
   overflow: boolean | null
   saved: string | null
   changes: number
+  focus: number
+  blur: number
 }
 
 declare global {
@@ -101,7 +103,14 @@ let root: Root | null = null
 
 window.__mount = async (props, options = {}) => {
   root?.unmount()
-  const out: HarnessOutput = { html: null, overflow: null, saved: null, changes: 0 }
+  const out: HarnessOutput = {
+    html: null,
+    overflow: null,
+    saved: null,
+    changes: 0,
+    focus: 0,
+    blur: 0,
+  }
   window.__out = out
   const ref = createRef<VersaEditHandle>()
   window.__ref = ref
@@ -142,6 +151,8 @@ window.__mount = async (props, options = {}) => {
           options.overflow !== false ? (value) => (out.overflow = value) : undefined
         }
         onSave={options.onSave ? (html) => (out.saved = html) : undefined}
+        onFocus={() => out.focus++}
+        onBlur={() => out.blur++}
         onImageUpload={
           options.upload === 'ok'
             ? (file) => Promise.resolve(`https://cdn.example.com/${file.name}`)

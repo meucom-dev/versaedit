@@ -121,6 +121,10 @@ export interface CoreCallbacks {
   onImageUpload?: (file: File) => Promise<string>
   /** Pedido de link pelo teclado (Ctrl+K): a interface abre o formulário de link */
   onLinkRequest?: () => void
+  /** O foco entrou no editor (vindo de fora dele) */
+  onFocus?: () => void
+  /** O foco saiu do editor (para fora dele) */
+  onBlur?: () => void
 }
 
 /** Dados para o formulário de link */
@@ -222,7 +226,8 @@ export class VersaEditCore {
     ['beforeinput', (e) => this.handleBeforeInput(e as InputEvent)],
     ['paste', (e) => this.handlePaste(e as ClipboardEvent)],
     ['input', () => this.handleInput()],
-    ['focusout', () => this.handleBlur()],
+    ['focusin', (e) => this.handleFocusIn(e as FocusEvent)],
+    ['focusout', (e) => this.handleBlur(e as FocusEvent)],
     ['dragstart', (e) => e.preventDefault()],
   ]
 
@@ -1172,9 +1177,20 @@ export class VersaEditCore {
     }
   }
 
-  private handleBlur = (): void => {
+  // Foco vindo de fora do editor (não de um elemento dentro dele)
+  private handleFocusIn = (e: FocusEvent): void => {
+    const from = e.relatedTarget as Node | null
+    if (from && this.el.contains(from)) return
+    this.cb.onFocus?.()
+  }
+
+  private handleBlur = (e?: FocusEvent): void => {
     if (this.preview) this.restorePreview()
     this.emitChange()
+    // Saída para fora do editor (não para um elemento dentro dele)
+    const to = (e?.relatedTarget as Node | null) ?? null
+    if (to && this.el.contains(to)) return
+    this.cb.onBlur?.()
   }
 
   private handleInput = (): void => {

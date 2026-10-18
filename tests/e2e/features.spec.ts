@@ -528,3 +528,34 @@ test('marcas de seleção ficam só na tela, fora do HTML entregue', async ({ pa
   const file = readFileSync((await (await downloading).path())!, 'utf-8')
   expect(file).not.toContain('selected')
 })
+
+test('onFocus e onBlur: só quando o foco entra ou sai do editor', async ({ page }) => {
+  const t = await mount(page, { initialContent: '<p>alpha beta</p>' })
+  const counts = async () => {
+    const o = await t.out()
+    return { focus: o.focus, blur: o.blur }
+  }
+  expect(await counts()).toEqual({ focus: 0, blur: 0 })
+  await t.content.click()
+  expect(await counts()).toEqual({ focus: 1, blur: 0 })
+  // Botões da barra mantêm o foco no editor
+  await selectText(page, 'alpha')
+  await t.btn('Bold (Ctrl+B)').click()
+  await t.btn('Italic (Ctrl+I)').click()
+  expect(await counts()).toEqual({ focus: 1, blur: 0 })
+  // Clicar numa imagem também não tira o foco
+  await page.evaluate((png) => {
+    window.__ref.current!.setHTML(
+      `<p>alpha</p><img src="data:image/png;base64,${png}" style="width:40px">`,
+    )
+  }, PNG)
+  await t.content.locator('img').click()
+  expect((await counts()).blur).toBe(0)
+  // Sair do editor
+  await page.mouse.click(5, 880)
+  expect(await counts()).toEqual({ focus: 1, blur: 1 })
+  // Formulário de link: o foco vai para o campo de endereço (saída do editor)
+  await t.content.click()
+  await page.keyboard.press('Control+k')
+  expect(await counts()).toEqual({ focus: 2, blur: 2 })
+})
