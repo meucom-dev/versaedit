@@ -23,6 +23,7 @@ export default tseslint.config(
       'playground/**/*.{ts,tsx}',
       'tests/**/*.ts',
       'examples/*/src/**/*.{ts,tsx}',
+      'examples/*/app/**/*.{ts,tsx}',
     ],
     extends: [
       js.configs.recommended,
