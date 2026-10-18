@@ -10,7 +10,8 @@ dictation and file save/open. It has no backend dependency: it gives you HTML an
 wherever you want (Supabase, Firebase, REST…).
 
 - React 18.3+ or 19 · works with server rendering (Next.js, Remix)
-- One runtime dependency: [DOMPurify](https://github.com/cure53/DOMPurify)
+- One runtime dependency: [DOMPurify](https://github.com/cure53/DOMPurify) · ES modules only (no
+  CommonJS build) · TypeScript types for bundlers and `moduleResolution: node16/nodenext`
 - English and Brazilian Portuguese interface (`locale`), every text replaceable (`labels`)
 
 ## Install

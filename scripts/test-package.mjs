@@ -92,7 +92,41 @@ for (const name of examples) {
 }
 console.log(`\n✔ exemplos compilados com o pacote instalado: ${examples.join(', ')}`)
 
-// 4. Navegador, sobre os builds de produção
+// 4. Tipos também para quem usa moduleResolution node16/nodenext (Node puro,
+//    sem bundler): as importações internas dos .d.ts precisam de extensão
+const typesDir = path.join(WORK, examples[0])
+fs.writeFileSync(
+  path.join(typesDir, 'nodenext-check.mts'),
+  [
+    "import { TOOLBAR_GROUPS, VersaEdit, VersaEditDictation } from 'versaedit'",
+    "import type { VersaEditError, VersaEditHandle, VersaEditProps } from 'versaedit'",
+    "export const props: VersaEditProps = { initialContent: '<p>x</p>', toolbar: [...TOOLBAR_GROUPS] }",
+    'export const handle: VersaEditHandle | null = null',
+    'export const error: VersaEditError | null = null',
+    'export { VersaEdit, VersaEditDictation }',
+    '',
+  ].join('\n'),
+)
+fs.writeFileSync(
+  path.join(typesDir, 'tsconfig.nodenext.json'),
+  JSON.stringify({
+    compilerOptions: {
+      module: 'nodenext',
+      moduleResolution: 'nodenext',
+      target: 'ES2022',
+      lib: ['ES2022', 'DOM', 'DOM.Iterable'],
+      jsx: 'react-jsx',
+      strict: true,
+      noEmit: true,
+      types: [],
+    },
+    files: ['nodenext-check.mts'],
+  }),
+)
+run('npx tsc -p tsconfig.nodenext.json', typesDir)
+console.log('✔ tipos com moduleResolution nodenext')
+
+// 5. Navegador, sobre os builds de produção
 if (runE2e) {
   const projects = examples.map((e) => `--project=${e}`).join(' ')
   execSync(`npx playwright test -c playwright.package.config.ts ${projects}`, {

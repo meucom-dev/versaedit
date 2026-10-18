@@ -6,6 +6,28 @@ yet (version `0.0.0`); work is grouped by the internal stabilization batches.
 
 ## [Unreleased]
 
+### Batch v0.4.x — playground, independent integration, distribution
+
+#### Added
+
+- `npm run test:package`: the packed package (`npm pack`) is installed in copies of the examples
+  outside the repository, type-checked (also with `moduleResolution: nodenext`), built and tested in
+  the browser. Checks the package contents (CSS, types, license, no local paths or keys in source
+  maps). New CI job `package`.
+- `examples/vite-react` (six use cases) and `examples/nextjs` (Next.js 16 App Router, server
+  rendering).
+- Playground: "Properties" panel inside "Show HTML" (toolbar groups, size, colors, frame, options,
+  sample content, event log, equivalent JSX). Initial view unchanged.
+- Integration guide (`docs/integration.md`, pt-BR too) with a server sanitization recipe tested in CI.
+- Package metadata (repository, homepage, bugs, keywords), `exports["./package.json"]`,
+  `RELEASING.md`.
+
+#### Fixed
+
+- Server rendering: hydration error (React #418) in browsers with speech recognition — the dictation
+  button now appears right after hydration.
+- Type declarations failed with `moduleResolution: node16/nodenext` (imports without extension).
+
 ### Batch v0.3.x — library preparation
 
 #### Added

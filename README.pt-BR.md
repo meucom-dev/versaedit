@@ -10,7 +10,8 @@ da web), imagens, caixas de texto, tabelas, ditado e abrir/salvar arquivo. Não 
 entrega HTML e você guarda onde quiser (Supabase, Firebase, REST…).
 
 - React 18.3+ ou 19 · funciona com renderização no servidor (Next.js, Remix)
-- Uma dependência: [DOMPurify](https://github.com/cure53/DOMPurify)
+- Uma dependência: [DOMPurify](https://github.com/cure53/DOMPurify) · só módulos ES (sem versão
+  CommonJS) · tipos TypeScript para bundlers e `moduleResolution: node16/nodenext`
 - Interface em inglês e português do Brasil (`locale`), com todos os textos trocáveis (`labels`)
 
 ## Instalação
