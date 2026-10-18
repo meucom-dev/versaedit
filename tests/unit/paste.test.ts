@@ -64,15 +64,89 @@ describe('buildPasteHtml', () => {
     const r = buildPasteHtml('', 'linha 1\n\n\nlinha 2', true, FAMILIES)
     expect(r.html).toBe('linha 1<br>linha 2')
   })
-  it('HTML sem texto (só imagem): cai no texto simples com o estilo de origem', () => {
+  it('só imagem, com pasteImages desligado: cai no texto simples com o estilo de origem', () => {
     const r = buildPasteHtml(
       '<span style="font-size:18pt"><img src="x"></span>',
       'abc',
       false,
       FAMILIES,
+      { images: false },
     )
     expect(r.fontSizePt).toBe(18)
     expect(r.html).toBe('<span style="font-size:18pt">abc</span>')
+  })
+  it('só imagem, com pasteImages ligado (padrão): a imagem é colada', () => {
+    const r = buildPasteHtml(
+      '<span style="font-size:18pt"><img src="https://site.com/a.png"></span>',
+      'abc',
+      false,
+      FAMILIES,
+    )
+    expect(r.html).toBe(
+      '<span style="font-size: 18pt;"><img src="https://site.com/a.png" style="max-width: 100%;"></span>',
+    )
+  })
+})
+
+describe('colagem de tabelas, imagens, linhas e código', () => {
+  const paste = (html: string, images = true) => sanitizeRichPaste(html, FAMILIES, { images })
+
+  it('tabela com cabeçalho, legenda e corpo mantém a estrutura', () => {
+    expect(
+      paste(
+        '<table border="1" class="x" style="width:500px"><caption>Idades</caption><thead><tr><th scope="col">Nome</th><th>Idade</th></tr></thead><tbody><tr><td>Ana</td><td>30</td></tr></tbody></table>',
+      ),
+    ).toBe(
+      '<table><caption>Idades</caption><thead><tr><th scope="col">Nome</th><th>Idade</th></tr></thead><tbody><tr><td>Ana</td><td>30</td></tr></tbody></table>',
+    )
+  })
+  it('células mescladas: colspan/rowspan válidos ficam; inválidos saem', () => {
+    expect(
+      paste(
+        '<table><tr><td colspan="2" rowspan="1">a</td><td colspan="x">b</td><td rowspan="99999">c</td></tr></table>',
+      ),
+    ).toBe('<table><tbody><tr><td colspan="2">a</td><td>b</td><td>c</td></tr></tbody></table>')
+  })
+  it('sombreamento e alinhamento de célula ficam; borda e largura saem', () => {
+    expect(
+      paste(
+        '<table><tr><td style="background-color:#ffeeaa;text-align:right;border:2px solid red;width:90px">x</td></tr></table>',
+      ),
+    ).toBe(
+      '<table><tbody><tr><td style="background-color: rgb(255, 238, 170); text-align: right;">x</td></tr></tbody></table>',
+    )
+  })
+  it('célula vazia não some (a tabela não se desalinha)', () => {
+    expect(paste('<table><tr><td>a</td><td></td></tr></table>')).toBe(
+      '<table><tbody><tr><td>a</td><td></td></tr></tbody></table>',
+    )
+  })
+  it('linha horizontal e bloco de código', () => {
+    expect(
+      paste('<p>a</p><hr class="x"><pre class="y"><code>const x = 1;\n  y()</code></pre>'),
+    ).toBe('<p>a</p><hr><pre><code>const x = 1;\n  y()</code></pre>')
+  })
+  it('imagem: endereço http(s) e alt ficam; atributos estranhos saem', () => {
+    expect(
+      paste(
+        '<p><img src="https://a.com/x.png" alt="foto" width="120" class="c" onclick="x()" data-k="1"></p>',
+      ),
+    ).toBe('<p><img src="https://a.com/x.png" alt="foto" width="120"></p>')
+  })
+  it('imagem com endereço perigoso ou svg embutido é descartada', () => {
+    expect(
+      paste('<p>a<img src="javascript:alert(1)">b<img src="data:image/svg+xml;base64,AAAA"></p>'),
+    ).toBe('<p>ab</p>')
+  })
+  it('pasteImages desligado descarta as imagens e mantém o texto', () => {
+    expect(paste('<p>antes <img src="https://a.com/x.png"> depois</p>', false)).toBe(
+      '<p>antes  depois</p>',
+    )
+  })
+  it('parágrafo só com imagem não é tratado como vazio', () => {
+    expect(paste('<p><img src="https://a.com/x.png" width="10"></p>')).toBe(
+      '<p><img src="https://a.com/x.png" width="10"></p>',
+    )
   })
 })
 

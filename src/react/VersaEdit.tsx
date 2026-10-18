@@ -49,6 +49,15 @@ export interface VersaEditProps {
   placeholder?: string
   /** Colagem: junta linhas em branco seguidas em uma só */
   singleLineBreaks?: boolean
+  /**
+   * Colagem: mantém as imagens do conteúdo colado (padrão: true). As imagens
+   * continuam apontando para o site de origem: o navegador de quem edita e,
+   * depois, o de quem lê o conteúdo publicado buscam a imagem lá (o site de
+   * origem fica sabendo do acesso e pode tirar ou trocar a imagem). Com false,
+   * as imagens coladas são descartadas. Só endereços http(s), relativos ou
+   * imagens embutidas raster (png, jpeg, gif, webp, bmp) são aceitos.
+   */
+  pasteImages?: boolean
   /** Corta o conteúdo que passar da altura do editor */
   truncateOnOverflow?: boolean
   /** Largura total do bloco em px, moldura incluída */
@@ -127,6 +136,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     contentStyle,
     placeholder,
     singleLineBreaks = false,
+    pasteImages = true,
     truncateOnOverflow = false,
     width = DEFAULT_WIDTH,
     height = DEFAULT_HEIGHT,
@@ -249,6 +259,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     coreRef.current?.setOptions({
       truncateOnOverflow,
       singleLineBreaks,
+      pasteImages,
       fontFamilies,
       fontSizes: fontSizeOptions,
       locale,

@@ -131,8 +131,9 @@ export function sanitizeHtml(html: string): string {
       if (fontSizePt !== null) el.style.fontSize = `${fontSizePt}pt`
       if (fontFamily) el.style.fontFamily = fontFamily
       if (color && CSS.supports('color', color)) el.style.color = color
+      // Fundo só no marca-texto (spans) e no sombreamento de células de tabela
       if (
-        el.tagName === 'SPAN' &&
+        (el.tagName === 'SPAN' || el.tagName === 'TD' || el.tagName === 'TH') &&
         backgroundColor &&
         CSS.supports('background-color', backgroundColor)
       ) {

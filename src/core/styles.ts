@@ -78,6 +78,14 @@ const CSS = `
 .ve-content h1, .ve-content h2, .ve-content h3, .ve-content h4, .ve-content h5, .ve-content h6 { font-family: var(--ve-heading-font, inherit); margin: 0; padding: 0; line-height: 1.2; }
 .ve-content blockquote { border-left: 3px solid var(--ve-accent); margin: 0; padding: 8px 16px; background: ${accent(5)}; color: #555; font-style: italic; clear: both; }
 
+/* Tabelas e código (colados ou carregados) */
+.ve-content table { border-collapse: collapse; max-width: 100%; margin: 4px 0; }
+.ve-content th, .ve-content td { border: 1px solid #c8ccd0; padding: 4px 8px; vertical-align: top; min-width: 2em; }
+.ve-content th { background-color: #f3f4f6; font-weight: 600; text-align: left; }
+.ve-content caption { caption-side: top; padding: 4px 0; font-weight: 600; text-align: left; }
+.ve-content pre { margin: 4px 0; padding: 8px 12px; background: #f6f8fa; border-radius: 4px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
+.ve-content code { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
+
 /* Imagens */
 .ve-content img { touch-action: none; -webkit-touch-callout: none; cursor: pointer; transition: outline 0.15s; outline: 2px solid transparent; outline-offset: 2px; display: block; -webkit-user-drag: none; }
 .ve-content img:hover { outline-color: ${accent(50)}; }

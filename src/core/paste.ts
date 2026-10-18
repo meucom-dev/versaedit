@@ -1,7 +1,7 @@
 // ─── COLAGEM (Word, Google Docs, texto simples) ──────────────────
 import type { FontFamilyOption } from './defaults'
 import { cssFontSizeToPoints } from './fonts'
-import { purifyHtml } from './sanitize'
+import { isSafeUrl, purifyHtml } from './sanitize'
 import type { PendingTypingStyle } from './selection'
 
 export function clipboardFontSizePoints(html: string): number | null {
@@ -41,7 +41,57 @@ export function clipboardFontFamily(html: string, fontFamilies: FontFamilyOption
   return null
 }
 
-export function sanitizeRichPaste(html: string, fontFamilies: FontFamilyOption[]): string {
+export interface PasteOptions {
+  /** Mantém as imagens coladas (endereço validado); false descarta */
+  images: boolean
+}
+
+const DEFAULT_PASTE_OPTIONS: PasteOptions = { images: true }
+
+// Tabelas, linhas e código entram na colagem; imagens dependem da opção
+const TABLE_TAGS = ['TABLE', 'CAPTION', 'THEAD', 'TBODY', 'TFOOT', 'TR', 'TH', 'TD']
+const CELL_TAGS = new Set(['TD', 'TH'])
+const TH_SCOPES = new Set(['row', 'col', 'rowgroup', 'colgroup'])
+
+// Mescla de células: só números inteiros de 1 a 1000
+const validSpan = (value: string | null): string | null =>
+  value && /^\d{1,4}$/.test(value.trim()) && Number(value) >= 1 && Number(value) <= 1000
+    ? String(Number(value))
+    : null
+
+// Atributos que cada tag preserva na colagem (o resto é removido)
+function keptAttributes(element: Element): [string, string][] {
+  const tag = element.tagName
+  const kept: [string, string][] = []
+  const get = (name: string) => element.getAttribute(name)
+  if (tag === 'A' && get('href') !== null) kept.push(['href', get('href')!])
+  if (CELL_TAGS.has(tag)) {
+    const colspan = validSpan(get('colspan'))
+    const rowspan = validSpan(get('rowspan'))
+    if (colspan && colspan !== '1') kept.push(['colspan', colspan])
+    if (rowspan && rowspan !== '1') kept.push(['rowspan', rowspan])
+  }
+  if (tag === 'TH' && TH_SCOPES.has((get('scope') ?? '').toLowerCase())) {
+    kept.push(['scope', get('scope')!.toLowerCase()])
+  }
+  if (tag === 'IMG') {
+    const src = get('src') ?? ''
+    if (src && isSafeUrl('src', src)) kept.push(['src', src])
+    const alt = get('alt')
+    if (alt) kept.push(['alt', alt])
+    for (const dim of ['width', 'height']) {
+      const value = get(dim)
+      if (value && /^\d{1,5}$/.test(value.trim())) kept.push([dim, value.trim()])
+    }
+  }
+  return kept
+}
+
+export function sanitizeRichPaste(
+  html: string,
+  fontFamilies: FontFamilyOption[],
+  options: PasteOptions = DEFAULT_PASTE_OPTIONS,
+): string {
   const pasted = new DOMParser().parseFromString(purifyHtml(html), 'text/html')
   // Word costuma definir Aptos em regras CSS de classes Mso*, não inline.
   // Lemos a família antes de remover a folha de estilos do clipboard.
@@ -75,6 +125,11 @@ export function sanitizeRichPaste(html: string, fontFamilies: FontFamilyOption[]
     'SUP',
     'U',
     'UL',
+    ...TABLE_TAGS,
+    'HR',
+    'PRE',
+    'CODE',
+    ...(options.images ? ['IMG'] : []),
   ])
   const elements = Array.from(pasted.body.querySelectorAll('*'))
   for (const element of elements) {
@@ -92,7 +147,16 @@ export function sanitizeRichPaste(html: string, fontFamilies: FontFamilyOption[]
       continue
     }
     if (!allowedTags.has(element.tagName)) {
-      element.replaceWith(...Array.from(element.childNodes))
+      // Imagem recusada (opção desligada) sai inteira; as outras tags dão lugar ao conteúdo
+      if (element.tagName === 'IMG') element.remove()
+      else element.replaceWith(...Array.from(element.childNodes))
+      continue
+    }
+    // Imagem sem endereço (ou com endereço recusado, que o DOMPurify já
+    // removeu) não tem o que mostrar
+    const imgSrc = element.tagName === 'IMG' ? (element.getAttribute('src') ?? '').trim() : ''
+    if (element.tagName === 'IMG' && (!imgSrc || !isSafeUrl('src', imgSrc))) {
+      element.remove()
       continue
     }
 
@@ -109,19 +173,19 @@ export function sanitizeRichPaste(html: string, fontFamilies: FontFamilyOption[]
     const textAlign = style?.textAlign
     const lineHeight = Number.parseFloat(style?.lineHeight ?? '')
 
-    for (const attribute of Array.from(element.attributes)) {
-      if (element.tagName === 'A' && attribute.name === 'href') continue
-      element.removeAttribute(attribute.name)
-    }
+    const kept = keptAttributes(element)
+    for (const attribute of Array.from(element.attributes)) element.removeAttribute(attribute.name)
+    for (const [name, value] of kept) element.setAttribute(name, value)
 
     if (style) {
       style.cssText = ''
       if (fontSize !== null) style.fontSize = `${fontSize}pt`
       if (fontFamily) style.fontFamily = fontFamily
       if (color && CSS.supports('color', color)) style.color = color
-      // Preserve marca-texto de spans, mas não fundos de containers copiados.
+      // Preserva o marca-texto (spans) e o sombreamento de células de tabela,
+      // mas não fundos de outros containers copiados.
       if (
-        element.tagName === 'SPAN' &&
+        (element.tagName === 'SPAN' || CELL_TAGS.has(element.tagName)) &&
         backgroundColor &&
         CSS.supports('background-color', backgroundColor)
       ) {
@@ -138,6 +202,8 @@ export function sanitizeRichPaste(html: string, fontFamilies: FontFamilyOption[]
       if (Number.isFinite(lineHeight) && lineHeight >= 0.8 && lineHeight <= 3) {
         style.lineHeight = String(lineHeight)
       }
+      // Imagem colada sem largura definida não passa da largura do editor
+      if (element.tagName === 'IMG' && !element.getAttribute('width')) style.maxWidth = '100%'
       // Nenhum estilo permitido: tira o atributo vazio (style="")
       if (!element.getAttribute('style')?.trim()) element.removeAttribute('style')
     }
@@ -148,8 +214,9 @@ export function sanitizeRichPaste(html: string, fontFamilies: FontFamilyOption[]
     }
   }
 
+  // Blocos vazios saem — mas não os que só contêm imagem, linha ou tabela
   pasted.body.querySelectorAll('p,div,h1,h2,h3,h4,h5,h6,li').forEach((block) => {
-    if (!(block.textContent ?? '').trim()) block.remove()
+    if (!(block.textContent ?? '').trim() && !block.querySelector('img,hr,table')) block.remove()
   })
   return pasted.body.innerHTML
 }
@@ -161,10 +228,12 @@ export function buildPasteHtml(
   clipboardText: string,
   singleLineBreaks: boolean,
   fontFamilies: FontFamilyOption[],
+  options: PasteOptions = DEFAULT_PASTE_OPTIONS,
 ): { html: string; fontSizePt: number | null; fontFamily: string | null } {
   const pastedText = singleLineBreaks ? clipboardText.replace(/\n{2,}/g, '\n') : clipboardText
-  const richHtml = sanitizeRichPaste(clipboardHtml, fontFamilies)
-  const hasRichText = Boolean(richHtml.replace(/<[^>]*>/g, '').trim())
+  const richHtml = sanitizeRichPaste(clipboardHtml, fontFamilies, options)
+  const hasRichText =
+    Boolean(richHtml.replace(/<[^>]*>/g, '').trim()) || /<(img|hr|table)\b/i.test(richHtml)
   const pastedFontSizePt = clipboardFontSizePoints(clipboardHtml)
   const pastedFontFamily = clipboardFontFamily(clipboardHtml, fontFamilies)
   const safeHtml = pastedText

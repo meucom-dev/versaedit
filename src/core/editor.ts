@@ -98,6 +98,8 @@ export interface CoreOptions {
   labels: VersaEditLabels
   /** Cor da borda das caixas de texto sem cor definida */
   accentColor: string
+  /** Colagem: mantém imagens (endereço validado). Ver a prop pasteImages */
+  pasteImages: boolean
 }
 
 export interface CoreCallbacks {
@@ -133,6 +135,7 @@ const DEFAULT_OPTIONS: CoreOptions = {
   locale: 'en',
   labels: resolveLabels('en'),
   accentColor: '#2563eb',
+  pasteImages: true,
 }
 
 const toHex = (n: string) => Number(n).toString(16).padStart(2, '0')
@@ -1195,6 +1198,7 @@ export class VersaEditCore {
       clipboardText,
       this.opts.singleLineBreaks,
       this.opts.fontFamilies,
+      { images: this.opts.pasteImages },
     )
 
     // Deixa colagens que não sejam texto (como imagem copiada) seguirem o
