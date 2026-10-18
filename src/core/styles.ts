@@ -77,6 +77,9 @@ const CSS = `
 .ve-content div, .ve-content span { margin: 0; padding: 0; }
 .ve-content h1, .ve-content h2, .ve-content h3, .ve-content h4, .ve-content h5, .ve-content h6 { font-family: var(--ve-heading-font, inherit); margin: 0; padding: 0; line-height: 1.2; }
 .ve-content blockquote { border-left: 3px solid var(--ve-accent); margin: 0; padding: 8px 16px; background: ${accent(5)}; color: #555; font-style: italic; clear: both; }
+/* Recuo (Chromium e WebKit recuam com um blockquote de margem 0 0 0 40px):
+   só a margem, sem a aparência de citação (itálico, fundo, cor) */
+.ve-content blockquote[style*="margin: 0 0 0 40px"] { font-style: normal; background: none; color: inherit; }
 
 /* Tabelas e código (colados ou carregados) */
 .ve-content table { border-collapse: collapse; max-width: 100%; margin: 4px 0; }
