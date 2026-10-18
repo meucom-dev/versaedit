@@ -45,8 +45,9 @@ export function clearManualOffsets(el: HTMLElement) {
 
 // Deslocamento manual atual (translate aplicado pelo arrasto ou pelas setas)
 export function getManualOffset(el: HTMLElement): { x: number; y: number } {
-  const m = /translate\(([-\d.]+)px,\s*([-\d.]+)px\)/.exec(el.style.transform || '')
-  return { x: m ? parseFloat(m[1]) : 0, y: m ? parseFloat(m[2]) : 0 }
+  // O Firefox grava translate(1px, 0px) como translate(1px): o y é opcional
+  const m = /translate\(\s*([-\d.]+)px(?:\s*,\s*([-\d.]+)px)?\s*\)/.exec(el.style.transform || '')
+  return { x: m ? parseFloat(m[1]) : 0, y: m?.[2] ? parseFloat(m[2]) : 0 }
 }
 
 // Deslocamento fino livre (setas + Ctrl): move o elemento alguns pixels,

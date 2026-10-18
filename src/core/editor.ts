@@ -145,6 +145,9 @@ const DEFAULT_OPTIONS: CoreOptions = {
 
 const toHex = (n: string) => Number(n).toString(16).padStart(2, '0')
 
+// Movimento menor que isto ao soltar imagem/caixa conta como clique, não arrasto
+const CLICK_TOLERANCE_PX = 3
+
 export class VersaEditCore {
   readonly el: HTMLDivElement
   private opts: CoreOptions
@@ -180,6 +183,7 @@ export class VersaEditCore {
   private isResizing = false
   private resizeEl: HTMLElement | null = null
   private resizeStart = { x: 0, y: 0, w: 0, h: 0 }
+  private ignoreNextClick = false
   private readonly pointer = createPointerTracker()
 
   // Seleção guardada enquanto o formulário de link está aberto
@@ -1031,10 +1035,22 @@ export class VersaEditCore {
     this.pointer.stop()
     if (!el) return
     el.classList.remove('dragging')
-    // Reposiciona no ponto de queda — o texto passa a contornar o elemento
-    // com a margem de 40px do CSS; se o ponto for inválido, restaura a posição
-    if (!dropElementAtPoint(this.el, el, e.clientX, e.clientY)) {
-      el.style.transform = ''
+    const moved =
+      Math.hypot(e.clientX - this.dragStart.x, e.clientY - this.dragStart.y) >= CLICK_TOLERANCE_PX
+    if (!moved) {
+      // Clique (sem arrastar): o elemento fica onde estava. Reposicionar aqui
+      // movia a imagem a cada clique e, no Firefox, fazia o clique chegar ao
+      // editor (e não à imagem), que então a desmarcava.
+      const { ox, oy } = this.dragStart
+      el.style.transform = ox || oy ? `translate(${ox}px, ${oy}px)` : ''
+    } else {
+      // Reposiciona no ponto de queda — o texto passa a contornar o elemento
+      // com a margem de 40px do CSS; se o ponto for inválido, restaura a posição
+      if (!dropElementAtPoint(this.el, el, e.clientX, e.clientY)) el.style.transform = ''
+      // O clique que vem logo depois de um arrasto não é um clique do usuário:
+      // no Firefox ele chega ao editor (o elemento mudou de lugar) e desmarcaria
+      this.ignoreNextClick = true
+      window.setTimeout(() => (this.ignoreNextClick = false), 0)
     }
     this.updateObjectToolbar(el)
     this.updateResizeHandlePosition(el)
@@ -1137,6 +1153,10 @@ export class VersaEditCore {
   }
 
   private handleClick = (e: MouseEvent): void => {
+    if (this.ignoreNextClick) {
+      this.ignoreNextClick = false
+      return
+    }
     const target = e.target as HTMLElement
     if (target.tagName === 'IMG') {
       e.preventDefault()

@@ -366,7 +366,14 @@ test.describe('foco ao clicar em imagem', () => {
     ).toBe(true)
     expect(await page.evaluate(() => getSelection()!.toString())).toBe('')
     await page.keyboard.press('Control+ArrowRight')
-    expect(await img.evaluate((el: HTMLElement) => el.style.transform)).toBe('translate(1px, 0px)')
+    // O Firefox grava translate(1px, 0px) como translate(1px)
+    expect(await img.evaluate((el: HTMLElement) => el.style.transform)).toMatch(
+      /^translate\(1px(, 0px)?\)$/,
+    )
+    await page.keyboard.press('Control+ArrowRight')
+    expect(await img.evaluate((el: HTMLElement) => el.style.transform)).toMatch(
+      /^translate\(2px(, 0px)?\)$/,
+    )
     await page.keyboard.press('Delete')
     await expect(img).toHaveCount(0)
     expect(await t.html()).toBe('<p>alpha beta</p>')
