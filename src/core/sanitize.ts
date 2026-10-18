@@ -31,16 +31,29 @@ export function isSafeUrl(attribute: string, value: string): boolean {
   return !/^(javascript|vbscript|data):/.test(url)
 }
 
-const purifier = DOMPurify()
-// Regra própria de URLs, mais estrita que a padrão do DOMPurify (ex.: data:image/svg+xml)
-purifier.addHook('uponSanitizeAttribute', (_node, data) => {
-  if (URL_ATTRIBUTES.has(data.attrName) && !isSafeUrl(data.attrName, data.attrValue)) {
-    data.keepAttr = false
+// Criado no primeiro uso (sempre no navegador): no servidor (SSR) não existe
+// DOM, e criar o DOMPurify ao importar o módulo quebrava a página
+let purifier: ReturnType<typeof DOMPurify> | null = null
+
+function getPurifier(): ReturnType<typeof DOMPurify> {
+  if (purifier) return purifier
+  const instance = DOMPurify()
+  if (!instance.isSupported) {
+    // Nunca devolver HTML sem sanitização
+    throw new Error('VersaEdit: a sanitização de HTML precisa de um DOM (navegador)')
   }
-})
+  // Regra própria de URLs, mais estrita que a padrão do DOMPurify (ex.: data:image/svg+xml)
+  instance.addHook('uponSanitizeAttribute', (_node, data) => {
+    if (URL_ATTRIBUTES.has(data.attrName) && !isSafeUrl(data.attrName, data.attrValue)) {
+      data.keepAttr = false
+    }
+  })
+  purifier = instance
+  return instance
+}
 
 export function purifyHtml(html: string): string {
-  return purifier.sanitize(html, {
+  return getPurifier().sanitize(html, {
     USE_PROFILES: { html: true }, // sem SVG e MathML
     FORBID_TAGS,
     FORBID_ATTR,

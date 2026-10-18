@@ -36,6 +36,10 @@ import { Toolbar, type ToolbarState } from './toolbar/Toolbar'
 
 const GOOGLE_FONTS_LINK_ID = 'versaedit-google-fonts'
 
+// No servidor (SSR) o useLayoutEffect não roda e o React 18 avisa; lá usa-se
+// useEffect (que também não roda). No navegador, nada muda.
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
+
 export interface VersaEditProps {
   /** HTML inicial. Mudanças vindas de fora recarregam o editor; o eco do próprio onChange não. */
   initialContent?: string
@@ -208,7 +212,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
   // Callbacks da tela sempre atualizados: a tela pode recriar onChange a cada
   // renderização sem que o editor recarregue o conteúdo
   const latest = useRef({ onChange, onOverflowChange, onSave, onImageUpload, onFocus, onBlur })
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     latest.current = { onChange, onOverflowChange, onSave, onImageUpload, onFocus, onBlur }
   })
 
@@ -237,7 +241,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
   )
 
   // Núcleo: criado com o elemento editável e destruído ao desmontar
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const el = editorRef.current
     if (!el) return
     const core = new VersaEditCore(
@@ -278,7 +282,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
   }, [patchToolbar, openLink])
 
   // Opções do núcleo acompanham as props
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     coreRef.current?.setOptions({
       truncateOnOverflow,
       singleLineBreaks,
