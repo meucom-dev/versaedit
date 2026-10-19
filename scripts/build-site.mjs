@@ -1,6 +1,7 @@
 // Site público (https://versaedit.dev, GitHub Pages), gerado em site/ (fora do git):
 //   /             página inicial em inglês
 //   /pt/          página inicial em português
+//   /es/          página inicial em espanhol
 //   /playground/  playground (build do Vite com --mode site)
 //   /assets/      logo
 //   npm run build:site
@@ -37,4 +38,5 @@ fs.cpSync(path.join(ROOT, 'site-src', 'assets'), path.join(SITE, 'assets'), { re
 // Domínio próprio no GitHub Pages; sem processamento Jekyll
 fs.writeFileSync(path.join(SITE, 'CNAME'), 'versaedit.dev\n')
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '')
-console.log('\n✔ site/ pronto: /, /pt/, /playground/, /assets/, CNAME')
+const pages = Object.values(CONTENT).map((t) => t.path)
+console.log(`\n✔ site/ pronto: ${pages.join(', ')}, /playground/, /assets/, CNAME`)
