@@ -114,3 +114,48 @@ test('caixa de texto: também fica onde foi solta', async ({ page }) => {
   const after = (await tb.boundingBox())!
   expect(Math.abs(after.x - (to.x - grabDx))).toBeLessThan(3)
 })
+
+test.describe('menu da imagem dentro da área', () => {
+  const menuAndImage = async (page: Page) => {
+    const [area, img, menu] = await Promise.all([
+      page.locator('#host .ve-content').boundingBox(),
+      page.locator('#host .ve-content img').boundingBox(),
+      page.locator('#host .ve-float-toolbar').boundingBox(),
+    ])
+    return { area: area!, img: img!, menu: menu! }
+  }
+
+  test('normal: acima da imagem, alinhado à esquerda dela, numa linha só', async ({ page }) => {
+    await mount(page, { initialContent: CONTENT, width: 900, height: 500 })
+    const img = page.locator('#host .ve-content img')
+    await dragTo(page, img, 0.35, 0.4)
+    const { img: i, menu: m } = await menuAndImage(page)
+    expect(m.y + m.height).toBeLessThanOrEqual(i.y)
+    expect(Math.abs(m.x - i.x)).toBeLessThan(3)
+    expect(m.height).toBeLessThan(40)
+  })
+
+  test('perto da borda direita: o menu inverte e alinha pela direita da imagem', async ({
+    page,
+  }) => {
+    await mount(page, { initialContent: CONTENT, width: 900, height: 500 })
+    const img = page.locator('#host .ve-content img')
+    await dragTo(page, img, 0.93, 0.4)
+    const { area: a, img: i, menu: m } = await menuAndImage(page)
+    expect(m.x + m.width).toBeLessThanOrEqual(a.x + a.width)
+    expect(Math.abs(m.x + m.width - (i.x + i.width))).toBeLessThan(3)
+    expect(m.height).toBeLessThan(40)
+  })
+
+  test('imagem no topo: o menu vai para baixo dela, sem cobrir a barra', async ({ page }) => {
+    await mount(page, {
+      initialContent: `<p>${IMG} Texto ao lado.</p>`,
+      width: 900,
+      height: 400,
+    })
+    await page.locator('#host .ve-content img').click()
+    const { area: a, img: i, menu: m } = await menuAndImage(page)
+    expect(m.y).toBeGreaterThanOrEqual(i.y + i.height)
+    expect(m.y).toBeGreaterThanOrEqual(a.y)
+  })
+})

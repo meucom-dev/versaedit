@@ -77,6 +77,8 @@ export interface ObjectState {
   handle: Point | null
   /** O objeto saiu da parte visível da área de edição (rolagem): menu e alça somem */
   hidden?: boolean
+  /** Retângulo do objeto em relação à área de edição (para o menu não sair dela) */
+  box?: { top: number; left: number; right: number; bottom: number }
 }
 
 /** Estilo na posição do cursor, para os indicadores da barra */
@@ -216,6 +218,7 @@ export class VersaEditCore {
   private toolbarPos: Point = { top: 0, left: 0 }
   private handlePos: Point | null = null
   private objHidden = false
+  private objBox: ObjectState['box'] = undefined
 
   // Arrasto e redimensionamento livre
   private isDragging = false
@@ -400,6 +403,7 @@ export class VersaEditCore {
             toolbar: this.toolbarPos,
             handle: this.handlePos,
             ...(this.objHidden && { hidden: true }),
+            ...(this.objBox && { box: this.objBox }),
           }
         : null,
     )
@@ -410,6 +414,7 @@ export class VersaEditCore {
     if (!type) {
       this.handlePos = null
       this.objHidden = false
+      this.objBox = undefined
     }
     this.emitObject()
   }
@@ -420,6 +425,12 @@ export class VersaEditCore {
     const rect = el.getBoundingClientRect()
     const area = this.el.getBoundingClientRect()
     this.objHidden = rect.bottom < area.top || rect.top > area.bottom
+    this.objBox = {
+      top: rect.top - area.top,
+      left: rect.left - area.left,
+      right: rect.right - area.left,
+      bottom: rect.bottom - area.top,
+    }
     this.emitObject()
   }
 

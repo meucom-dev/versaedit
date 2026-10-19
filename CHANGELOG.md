@@ -17,6 +17,9 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
   snap to the left or right edge). It floats to the nearer side with a horizontal margin to keep its
   position; text wraps on the free side (CSS floats wrap on one side only) and the 40px margin is
   kept. The Left/Right/Center buttons reset that offset.
+- The image/text box menu stays inside the editing area: near the right edge it aligns with the
+  object's right side, and with no room above it moves below the object; it no longer wraps onto
+  two lines. `ObjectState.box` (optional) carries the object's rectangle.
 
 #### Added
 
