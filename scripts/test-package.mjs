@@ -7,6 +7,9 @@
 //   npm run test:package                 todos os exemplos
 //   npm run test:package -- vite-react   só um
 //   npm run test:package -- --no-e2e     sem os testes de navegador
+//   npm run test:package -- --from-registry=versaedit@0.5.0-beta.1
+//                                        depois de publicar: instala do npm
+//                                        (sem build nem pack) e confere igual
 import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -18,6 +21,7 @@ const WORK = path.join(os.tmpdir(), 'versaedit-consumer')
 const EXAMPLES = fs.readdirSync(path.join(ROOT, 'examples'))
 const args = process.argv.slice(2)
 const runE2e = !args.includes('--no-e2e')
+const registrySpec = args.find((a) => a.startsWith('--from-registry='))?.split('=')[1]
 const chosen = args.filter((a) => !a.startsWith('--'))
 const examples = chosen.length ? chosen : EXAMPLES
 
@@ -31,8 +35,9 @@ const REQUIRED = [
   'dist/index.d.ts',
   'dist/versaedit.css',
   'dist/versaedit-content.css',
+  'CHANGELOG.md',
 ]
-const ALLOWED = /^(package\.json|LICENSE|README(\.pt-BR)?\.md|dist\/.+)$/
+const ALLOWED = /^(package\.json|LICENSE|README(\.pt-BR)?\.md|CHANGELOG\.md|dist\/.+)$/
 const SECRETS = [
   [/[A-Za-z]:[\\/]{1,2}(Users|AI_DEV)\b/i, 'caminho local do Windows'],
   [/\/(home|Users)\/[a-z]/, 'caminho local Unix/macOS'],
@@ -50,30 +55,49 @@ const fail = (msg) => {
   process.exit(1)
 }
 
-// 1. Pacote
-run('npm run build')
+// Conteúdo do pacote: arquivos exigidos, nada além deles, sem dados locais
+// nem chaves, package.json com os campos de distribuição
+function checkContents(files, baseDir) {
+  for (const f of REQUIRED) if (!files.includes(f)) fail(`falta no pacote: ${f}`)
+  const extra = files.filter((f) => !ALLOWED.test(f))
+  if (extra.length) fail(`arquivos inesperados no pacote: ${extra.join(', ')}`)
+  for (const f of files.filter((f) => /\.(js|map|css|d\.ts)$/.test(f))) {
+    const text = fs.readFileSync(path.join(baseDir, f), 'utf8')
+    for (const [re, what] of SECRETS) if (re.test(text)) fail(`${what} em ${f}`)
+  }
+  const pkg = JSON.parse(fs.readFileSync(path.join(baseDir, 'package.json'), 'utf8'))
+  for (const field of ['name', 'version', 'license', 'types', 'exports', 'peerDependencies']) {
+    if (!pkg[field]) fail(`package.json sem "${field}"`)
+  }
+  console.log('✔ conteúdo do pacote: arquivos, CSS, tipos, licença e mapas sem dados locais')
+}
+
+const listFiles = (dir, prefix = '') =>
+  fs
+    .readdirSync(dir, { withFileTypes: true })
+    .flatMap((e) =>
+      e.isDirectory()
+        ? listFiles(path.join(dir, e.name), `${prefix}${e.name}/`)
+        : [`${prefix}${e.name}`],
+    )
+
+// 1-2. Pacote: gerado aqui (npm pack) ou, com --from-registry, o publicado
 fs.rmSync(WORK, { recursive: true, force: true })
 fs.mkdirSync(WORK, { recursive: true })
-const [packed] = JSON.parse(
-  execSync(`npm pack --json --pack-destination "${WORK}"`, { cwd: ROOT, encoding: 'utf8' }),
-)
-const tgz = path.join(WORK, packed.filename)
-const files = packed.files.map((f) => f.path.replaceAll('\\', '/'))
-console.log(`\nPacote: ${packed.filename} — ${files.length} arquivos, ${packed.size} bytes`)
-
-// 2. Conteúdo do pacote
-for (const f of REQUIRED) if (!files.includes(f)) fail(`falta no pacote: ${f}`)
-const extra = files.filter((f) => !ALLOWED.test(f))
-if (extra.length) fail(`arquivos inesperados no pacote: ${extra.join(', ')}`)
-for (const f of files.filter((f) => /\.(js|map|css|d\.ts)$/.test(f))) {
-  const text = fs.readFileSync(path.join(ROOT, f), 'utf8')
-  for (const [re, what] of SECRETS) if (re.test(text)) fail(`${what} em ${f}`)
+let installSpec
+if (registrySpec) {
+  installSpec = registrySpec
+  console.log(`\nPacote do registro do npm: ${registrySpec}`)
+} else {
+  run('npm run build')
+  const [packed] = JSON.parse(
+    execSync(`npm pack --json --pack-destination "${WORK}"`, { cwd: ROOT, encoding: 'utf8' }),
+  )
+  installSpec = `"${path.join(WORK, packed.filename)}"`
+  const files = packed.files.map((f) => f.path.replaceAll('\\', '/'))
+  console.log(`\nPacote: ${packed.filename} — ${files.length} arquivos, ${packed.size} bytes`)
+  checkContents(files, ROOT)
 }
-const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
-for (const field of ['name', 'version', 'license', 'types', 'exports', 'peerDependencies']) {
-  if (!pkg[field]) fail(`package.json sem "${field}"`)
-}
-console.log('✔ conteúdo do pacote: arquivos, CSS, tipos, licença e mapas sem dados locais')
 
 // 3. Cada exemplo, numa cópia fora do repositório
 for (const name of examples) {
@@ -85,9 +109,11 @@ for (const name of examples) {
     filter: (p) => !/[\\/](node_modules|dist|\.next)([\\/]|$)/.test(p.slice(src.length)),
   })
   run('npm ci --no-audit --no-fund', dir)
-  run(`npm install --no-audit --no-fund "${tgz}"`, dir)
+  run(`npm install --no-audit --no-fund ${installSpec}`, dir)
   const installed = path.join(dir, 'node_modules', 'versaedit')
   if (fs.existsSync(path.join(installed, 'src'))) fail('o pacote instalado contém src/')
+  // Do registro: o conteúdo é conferido no que foi instalado
+  if (registrySpec && name === examples[0]) checkContents(listFiles(installed), installed)
   run('npm run build', dir)
 }
 console.log(`\n✔ exemplos compilados com o pacote instalado: ${examples.join(', ')}`)

@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "description": "VersaEdit — Rich Text Editor for Web Applications",
   "license": "MIT",
+  "author": {
+    "name": "meucom-dev",
+    "email": "support@versaedit.dev",
+    "url": "https://versaedit.dev"
+  },
   "keywords": [
     "rich-text-editor",
     "wysiwyg",
@@ -12,21 +17,27 @@
     "html",
     "typescript"
   ],
-  "homepage": "https://github.com/meucom-dev/versaedit#readme",
+  "homepage": "https://versaedit.dev",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/meucom-dev/versaedit.git"
   },
   "bugs": {
-    "url": "https://github.com/meucom-dev/versaedit/issues"
+    "url": "https://github.com/meucom-dev/versaedit/issues",
+    "email": "support@versaedit.dev"
   },
   "type": "module",
   "private": true,
   "sideEffects": [
     "*.css"
   ],
+  "publishConfig": {
+    "access": "public",
+    "tag": "beta"
+  },
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "main": "./dist/versaedit.js",
   "module": "./dist/versaedit.js",
@@ -50,7 +61,9 @@
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "test:package": "node scripts/test-package.mjs"
+    "test:package": "node scripts/test-package.mjs",
+    "build:site": "node scripts/build-site.mjs",
+    "test:site": "npm run build:site && playwright test -c playwright.site.config.ts"
   },
   "peerDependencies": {
     "react": "^18.3.0 || ^19.0.0",

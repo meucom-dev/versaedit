@@ -13,7 +13,7 @@ One tab per use case. Each tab is covered by `tests/package/vite-react.spec.ts`.
 
 ## Run
 
-The package is not published yet. From the repository root, `npm run test:package` builds the
+From the repository root, `npm run test:package` builds the
 package with `npm pack`, copies this folder to a temporary directory, installs the `.tgz` there
 (`npm ci`, then `npm install <file>.tgz`), builds it and runs the browser tests.
 
@@ -23,4 +23,4 @@ To try it by hand, inside that temporary copy (path printed by the script):
 npm run dev
 ```
 
-In your own project, once published: `npm install versaedit`.
+In your own project: `npm install versaedit@beta` (beta). Try it online: <https://versaedit.dev/playground/>.
