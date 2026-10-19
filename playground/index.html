@@ -41,6 +41,12 @@
       .pg-pill select:focus {
         outline: none;
       }
+      /* Celular: Eventos e JSX do painel Propriedades um embaixo do outro */
+      @media (max-width: 700px) {
+        .pg-two-col {
+          grid-template-columns: minmax(0, 1fr) !important;
+        }
+      }
     </style>
   </head>
   <body>

@@ -70,3 +70,52 @@ test('onError ligado: aviso no registro, sem alert do navegador', async ({ page 
   await expect(page.getByTestId('events')).toContainText('onError file-wrong-type')
   expect(dialogs).toEqual([])
 })
+
+test.describe('celular (375px)', () => {
+  test.use({ viewport: { width: 375, height: 800 }, hasTouch: true })
+
+  const noHorizontalScroll = async (page: Page) => {
+    const { scroll, view } = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      view: window.innerWidth,
+    }))
+    expect(scroll, 'rolagem horizontal').toBeLessThanOrEqual(view)
+  }
+
+  test('sem rolagem horizontal; editor na largura da tela e funcionando', async ({ page }) => {
+    await page.goto('/')
+    const content = page.locator('.ve-content')
+    await expect(content).toBeVisible()
+    await noHorizontalScroll(page)
+    const frame = (await page.locator('.ve-frame').boundingBox())!
+    expect(frame.x).toBeGreaterThanOrEqual(0)
+    expect(frame.x + frame.width).toBeLessThanOrEqual(375)
+    // Barra de ferramentas inteira dentro da tela (quebra em linhas)
+    const toolbar = (await page.getByRole('toolbar').first().boundingBox())!
+    expect(toolbar.x + toolbar.width).toBeLessThanOrEqual(375)
+    await content.tap()
+    await page.keyboard.type('Texto no celular')
+    await expect(content).toContainText('Texto no celular')
+    await page.getByRole('button', { name: /^Bold/ }).first().tap()
+    await noHorizontalScroll(page)
+  })
+
+  test('painel Propriedades e segundo editor cabem na tela', async ({ page }) => {
+    await page.goto('/')
+    await page.getByText('Show HTML', { exact: true }).click()
+    await page.getByText('Properties', { exact: true }).click()
+    await expect(page.getByTestId('events')).toBeVisible()
+    await noHorizontalScroll(page)
+    // Eventos e JSX um embaixo do outro
+    const [events, jsx] = await Promise.all([
+      page.getByTestId('events').boundingBox(),
+      page.getByTestId('jsx').boundingBox(),
+    ])
+    expect(jsx!.y).toBeGreaterThan(events!.y + events!.height - 1)
+    await page.getByRole('button', { name: 'Load: Table' }).click()
+    await expect(page.locator('.ve-content table').first()).toBeVisible()
+    await page.getByRole('button', { name: 'Show editor with onSave' }).click()
+    await expect(page.locator('.ve-frame')).toHaveCount(2)
+    await noHorizontalScroll(page)
+  })
+})

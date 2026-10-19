@@ -354,7 +354,10 @@ export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, even
         </div>
       </fieldset>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div
+        className="pg-two-col"
+        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
+      >
         <div>
           <h2 style={{ fontSize: 14 }}>{T.events}</h2>
           <pre
@@ -375,7 +378,13 @@ export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, even
           <h2 style={{ fontSize: 14 }}>{T.jsx}</h2>
           <pre
             data-testid="jsx"
-            style={{ fontSize: 12, background: '#f4f4f4', padding: 8, whiteSpace: 'pre-wrap' }}
+            style={{
+              fontSize: 12,
+              background: '#f4f4f4',
+              padding: 8,
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'anywhere',
+            }}
           >
             {settingsToJsx(s, locale)}
           </pre>

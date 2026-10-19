@@ -1,4 +1,4 @@
-import { StrictMode, useCallback, useRef, useState } from 'react'
+import { StrictMode, useCallback, useRef, useState, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
 import { VersaEdit, VersaEditDictation, type VersaEditHandle, type VersaEditLocale } from '../src'
 import { DEFAULT_SETTINGS, PropsPanel, settingsToProps } from './PropsPanel'
@@ -43,6 +43,19 @@ const codeStyle = {
   fontSize: 12,
 } as const
 
+// Largura disponível para o editor (coluna de até 1000px com 16px de cada lado).
+// Uma largura fixa que não cabe na tela (celular) vira '100%'; no computador
+// o editor continua com os 900px de sempre.
+const onResize = (cb: () => void) => {
+  window.addEventListener('resize', cb)
+  return () => window.removeEventListener('resize', cb)
+}
+const columnWidth = () => Math.min(1000, window.innerWidth) - 32
+function useFitWidth(width: number | string): number | string {
+  const available = useSyncExternalStore(onResize, columnWidth, () => 1000)
+  return typeof width === 'number' && width > available ? '100%' : width
+}
+
 function App() {
   const [locale, setLocale] = useState<VersaEditLocale>('en')
   const T = TEXT[locale]
@@ -50,6 +63,8 @@ function App() {
   const [saved, setSaved] = useState<string | null>(null)
   const editorRef = useRef<VersaEditHandle>(null)
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
+  const editorWidth = useFitWidth(settings.width)
+  const secondWidth = useFitWidth(600)
   // Registro de eventos do painel "Propriedades" (os 30 mais recentes)
   const [events, setEvents] = useState<string[]>([])
   const log = useCallback((line: string) => {
@@ -70,7 +85,15 @@ function App() {
       style={{ maxWidth: 1000, margin: '24px auto', padding: '0 16px', fontFamily: 'system-ui' }}
     >
       <h1 style={{ fontSize: 20 }}>VersaEdit — playground</h1>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 16,
+          alignItems: 'center',
+          marginBottom: 12,
+        }}
+      >
         {/* Mesmo formato do botão de microfone ao lado (pílula com ícone e texto) */}
         <label className="pg-pill" title={T.locale}>
           <svg
@@ -108,6 +131,7 @@ function App() {
         onError={settings.useOnError ? (e) => log(`onError ${e.code}: ${e.message}`) : undefined}
         locale={locale}
         {...settingsToProps(settings)}
+        width={editorWidth}
       />
       {/* Área de desenvolvimento, recolhida: HTML gerado, propriedades e teste do onSave */}
       <details style={{ marginTop: 24 }}>
@@ -143,7 +167,7 @@ function App() {
             initialContent={T.second}
             onSave={setSaved}
             locale={locale}
-            width={600}
+            width={secondWidth}
             height={200}
             frame={{ width: 6, color: '#8fbc8f', radius: 16 }}
           />
@@ -155,7 +179,7 @@ function App() {
           data-testid="site-note"
           style={{
             // Mesma largura da caixa de edição (acompanha a largura escolhida no painel)
-            maxWidth: settings.width,
+            maxWidth: editorWidth,
             marginTop: 24,
             fontSize: 12,
             color: '#666',
