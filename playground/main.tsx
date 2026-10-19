@@ -12,7 +12,7 @@ const TEXT = {
     useOnSave: 'Show editor with onSave',
     hideOnSave: 'Hide editor with onSave',
     siteNote:
-      'Beta — the API may change before 1.0. Nothing you type leaves your browser: VersaEdit has no server. Dictation, when used, sends audio to your browser vendor (Google, Microsoft or Apple).',
+      'Beta — the API may change before 1.0. Nothing you type leaves your browser: VersaEdit has no server. This playground loads its fonts from Google Fonts (your browser contacts Google; the editor package does not by default). Dictation, when used, sends audio to your browser vendor (Google, Microsoft or Apple).',
   },
   'pt-BR': {
     locale: 'Idioma',
@@ -21,7 +21,7 @@ const TEXT = {
     useOnSave: 'Mostrar editor com onSave',
     hideOnSave: 'Esconder editor com onSave',
     siteNote:
-      'Beta — a API pode mudar antes da 1.0. Nada do que você digita sai do navegador: o VersaEdit não tem servidor. O ditado, quando usado, envia o áudio ao fabricante do navegador (Google, Microsoft ou Apple).',
+      'Beta — a API pode mudar antes da 1.0. Nada do que você digita sai do navegador: o VersaEdit não tem servidor. Este playground carrega as fontes do Google Fonts (seu navegador contata o Google; o pacote do editor não faz isso por padrão). O ditado, quando usado, envia o áudio ao fabricante do navegador (Google, Microsoft ou Apple).',
   },
 } satisfies Record<VersaEditLocale, Record<string, string>>
 

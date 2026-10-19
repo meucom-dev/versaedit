@@ -21,7 +21,7 @@ test('grupos da barra, largura e JSX equivalente', async ({ page }) => {
   await expect(toolbar.getByRole('button', { name: 'Insert image' })).toBeVisible()
   await page.getByLabel('insert', { exact: true }).uncheck()
   await expect(toolbar.getByRole('button', { name: 'Insert image' })).toHaveCount(0)
-  await expect(page.getByTestId('jsx')).toContainText("toolbar={['file'")
+  await expect(page.getByTestId('jsx')).toContainText('toolbar={["file"')
 
   await page
     .locator('label', { hasText: /^Width/ })

@@ -15,7 +15,9 @@ test.beforeEach(({ page }) => {
   })
   page.on('request', (r) => {
     const url = new URL(r.url())
-    if (url.hostname !== 'localhost' && url.protocol !== 'data:') external.push(r.url())
+    // Só o Google Fonts, carregado pelo playground (e declarado na nota de privacidade)
+    const fonts = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com'
+    if (url.hostname !== 'localhost' && url.protocol !== 'data:' && !fonts) external.push(r.url())
   })
 })
 test.afterEach(() => {
@@ -50,6 +52,12 @@ test('playground em /playground/: edita, nota de privacidade, sem o harness', as
   await page.keyboard.type('Hello from the public playground')
   await expect(content).toContainText('Hello from the public playground')
   await expect(page.getByTestId('site-note')).toContainText('VersaEdit has no server')
+  await expect(page.getByTestId('site-note')).toContainText('Google Fonts')
+  // Fontes do Blog do À Mesa: Montserrat no texto, Playfair Display nos títulos
+  await expect(
+    page.locator('#versaedit-google-fonts, link[href*="fonts.googleapis.com"]').first(),
+  ).toHaveAttribute('href', /Montserrat.*Playfair\+Display/)
+  expect(await content.evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/^"?Montserrat/)
   await page.getByRole('combobox').first().selectOption('pt-BR')
   await expect(page.getByTestId('site-note')).toContainText('o VersaEdit não tem servidor')
   // A página de testes (harness) não vai para o site

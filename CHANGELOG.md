@@ -27,6 +27,10 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 - Package metadata: author `meucom-dev`, homepage `https://versaedit.dev`, support e-mail,
   `publishConfig` (`access: public`, `tag: beta`); `CHANGELOG.md` included in the package.
 - README: beta notice, `npm install versaedit@beta`, links to the site and playground.
+- Playground (local and public): the fonts of the À Mesa blog editor — Montserrat for text,
+  Playfair Display for headings, the same 15-font menu, loaded from Google Fonts (stated in the
+  public playground's privacy note). The package defaults are unchanged: no Google Fonts request
+  unless `loadGoogleFonts` is set.
 
 ### Batch v0.4.x — playground, independent integration, distribution
 

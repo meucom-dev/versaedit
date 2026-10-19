@@ -52,9 +52,42 @@ const BOOLEANS = [
 ] as const
 
 // Props do editor que diferem do padrão do playground (só essas são passadas)
+// Fontes do editor do Blog do À Mesa (RichEditor.tsx): Montserrat no texto,
+// Playfair Display nos títulos, o mesmo menu e as mesmas famílias do Google Fonts
+export const PLAYGROUND_FONTS = {
+  fontFamily: "'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  headingFontFamily: "'Playfair Display', Georgia, 'Times New Roman', serif",
+  fontFamilies: [
+    { label: 'Aptos', value: 'Aptos, "Segoe UI", Arial, sans-serif' },
+    { label: 'Aptos Display', value: '"Aptos Display", Aptos, "Segoe UI", Arial, sans-serif' },
+    { label: 'Consolas', value: 'Consolas, "Courier New", monospace' },
+    { label: 'Fraunces', value: 'Fraunces, Georgia, "Times New Roman", serif' },
+    { label: 'Georgia', value: 'Georgia, "Times New Roman", serif' },
+    { label: 'Inter', value: 'Inter, Arial, sans-serif' },
+    { label: 'Montserrat', value: "'Montserrat', Arial, sans-serif" },
+    { label: 'Open Sans', value: "'Open Sans', Arial, sans-serif" },
+    { label: 'Playfair Display', value: "'Playfair Display', Georgia, 'Times New Roman', serif" },
+    { label: 'Poppins', value: 'Poppins, Arial, sans-serif' },
+    { label: 'Roboto', value: 'Roboto, Arial, sans-serif' },
+    { label: 'sans-serif', value: 'sans-serif' },
+    { label: 'Segoe UI', value: '"Segoe UI", Arial, sans-serif' },
+    { label: 'serif', value: 'serif' },
+    { label: 'Verdana', value: 'Verdana, Geneva, sans-serif' },
+  ],
+  loadGoogleFonts: [
+    'Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700',
+    'Inter:wght@300;400;500;600;700',
+    'Montserrat:wght@300;400;500;600;700',
+    'Open Sans:wght@300;400;500;600;700',
+    'Playfair Display:wght@400;500;600;700',
+    'Poppins:wght@300;400;500;600;700',
+    'Roboto:wght@300;400;500;600;700',
+  ],
+} satisfies Partial<VersaEditProps>
+
 export function settingsToProps(s: Settings): Partial<VersaEditProps> {
   const d = DEFAULT_SETTINGS
-  const props: Partial<VersaEditProps> = { width: s.width, height: s.height }
+  const props: Partial<VersaEditProps> = { width: s.width, height: s.height, ...PLAYGROUND_FONTS }
   if (s.toolbar.length !== GROUPS.length) props.toolbar = s.toolbar
   if (s.accentColor !== d.accentColor) props.accentColor = s.accentColor
   if (
@@ -67,19 +100,17 @@ export function settingsToProps(s: Settings): Partial<VersaEditProps> {
   return props
 }
 
-// Valor em JavaScript legível: { width: 3, color: '#d0d7de' }, ['format', 'link']
-const jsLiteral = (value: unknown) =>
-  JSON.stringify(value)
-    .replace(/"(\w+)":/g, '$1: ')
-    .replaceAll(',', ', ')
-    .replaceAll('"', "'")
+// Valor em JavaScript: { width: 3, color: "#d0d7de" }, ["format","link"]
+// (JSON é JavaScript válido mesmo com aspas dentro dos valores, como nos nomes
+// de fonte; só as chaves perdem as aspas)
+const jsLiteral = (value: unknown) => JSON.stringify(value).replace(/"(\w+)":/g, '$1: ')
 
 // JSX equivalente à configuração atual, para copiar
 export function settingsToJsx(s: Settings, locale: VersaEditLocale): string {
   const lines = ['<VersaEdit', '  ref={editorRef}']
   if (locale !== 'en') lines.push(`  locale="${locale}"`)
   for (const [key, value] of Object.entries(settingsToProps(s))) {
-    if (typeof value === 'string') lines.push(`  ${key}="${value}"`)
+    if (typeof value === 'string' && !value.includes('"')) lines.push(`  ${key}="${value}"`)
     else lines.push(`  ${key}={${jsLiteral(value)}}`)
   }
   if (s.useOnError) lines.push('  onError={(error) => console.warn(error.code, error.message)}')

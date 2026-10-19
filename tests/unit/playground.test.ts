@@ -1,11 +1,20 @@
 // Playground: o JSX equivalente mostrado no painel compila e reproduz as props
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_SETTINGS, settingsToJsx, settingsToProps } from '../../playground/PropsPanel'
+import {
+  DEFAULT_SETTINGS,
+  PLAYGROUND_FONTS,
+  settingsToJsx,
+  settingsToProps,
+} from '../../playground/PropsPanel'
 
 describe('JSX equivalente do painel Propriedades', () => {
-  it('sem mudanças, só largura e altura de sempre', () => {
-    expect(settingsToProps(DEFAULT_SETTINGS)).toEqual({ width: 900, height: 420 })
+  it('sem mudanças, largura e altura de sempre e as fontes do Blog do À Mesa', () => {
+    expect(settingsToProps(DEFAULT_SETTINGS)).toEqual({
+      width: 900,
+      height: 420,
+      ...PLAYGROUND_FONTS,
+    })
   })
 
   it('compila e entrega ao VersaEdit as mesmas props aplicadas no playground', () => {
@@ -19,7 +28,7 @@ describe('JSX equivalente do painel Propriedades', () => {
       useOnError: true,
     }
     const jsx = settingsToJsx(settings, 'pt-BR')
-    expect(jsx).toContain("toolbar={['format', 'link']}")
+    expect(jsx).toContain('toolbar={["format","link"]}')
     const out = ts.transpileModule(`return ${jsx}`, {
       compilerOptions: { jsx: ts.JsxEmit.React },
       reportDiagnostics: true,
