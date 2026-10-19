@@ -19,6 +19,8 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
   kept. The Left/Right/Center buttons reset that offset.
 - Playground: no horizontal scrolling on phones (a fixed width that does not fit becomes 100%;
   desktop unchanged).
+- The toolbar's text box group wraps onto two lines on screens narrower than about 340px (and at
+  375px in WebKit), instead of causing horizontal scrolling; desktop unchanged.
 - The image/text box menu fits small screens: it never gets wider than the editing area and wraps
   onto two lines when needed (desktop unchanged).
 - The image/text box menu stays inside the editing area: near the right edge it aligns with the
@@ -155,8 +157,6 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 ## Pending investigation
 
-- Phones narrower than about 340px: the toolbar's text box group (border and line style lists) is
-  wider than the editing area and causes horizontal scrolling (from 375px up everything fits).
 - Firefox diagnostic: image drag tests (`tests/e2e/drop-position.spec.ts`) can time out in
   `mouse.move` when run in parallel (4 of 5 once, 1 of 5 on rerun); 15/15 when run one at a time.
 - Firefox diagnostic: `injectStyles={false}` test (`tests/e2e/css.spec.ts`) failed once in the full
