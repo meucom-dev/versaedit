@@ -15,6 +15,9 @@ for (const width of [320, 340, 375, 768]) {
 
     for (const locale of Object.keys(LOAD_IMAGE) as (keyof typeof LOAD_IMAGE)[]) {
       test(`${locale}: tocar na imagem seleciona e abre o menu`, async ({ page }) => {
+        // Sem as fontes do Google Fonts: chegando no meio do teste, elas mudavam a
+        // quebra de linha do exemplo e deslocavam a imagem (e o teste dependeria da rede)
+        await page.route(/fonts\.(googleapis|gstatic)\.com/, (route) => route.abort())
         await page.goto('/')
         await page.locator('.pg-pill select').selectOption(locale)
         await page.locator('#root details summary').first().click()
