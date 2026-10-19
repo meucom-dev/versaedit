@@ -290,3 +290,63 @@ test.describe('logo oficial', () => {
     }
   })
 })
+
+test.describe('logo por tema', () => {
+  for (const scheme of ['light', 'dark'] as const) {
+    const file = scheme === 'dark' ? '/assets/logo-dark.png' : '/assets/logo.png'
+    test(`tema ${scheme}: cabeçalho e caixa usam ${file}, sem filtro, com 110px`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: scheme })
+      for (const l of LANGS) {
+        for (const width of [1440, 375]) {
+          await page.setViewportSize({ width, height: 900 })
+          await goto(page, l.path)
+          const imgs = await page.evaluate(() =>
+            ['.logo img', '.facts .logo-band img'].map((s) => {
+              const img = document.querySelector<HTMLImageElement>(s)!
+              return {
+                src: new URL(img.currentSrc).pathname,
+                filter: getComputedStyle(img).filter,
+                width: img.getBoundingClientRect().width,
+                loaded: img.complete && img.naturalWidth > 0,
+              }
+            }),
+          )
+          for (const img of imgs) {
+            expect(img.src, `${l.path} ${width}px`).toBe(file)
+            expect(img.loaded, 'imagem carregada').toBe(true)
+            expect(img.filter, 'sem filtro de CSS').toBe('none')
+            expect(img.width).toBeCloseTo(110, 0)
+          }
+        }
+      }
+    })
+  }
+
+  test('a variante escura tem a mesma forma do logo oficial (transparência idêntica)', async ({
+    page,
+  }) => {
+    await goto(page, '/')
+    const r = await page.evaluate(async () => {
+      const pixels = async (src: string) => {
+        const img = new Image()
+        img.src = src
+        await img.decode()
+        const c = document.createElement('canvas')
+        c.width = img.naturalWidth
+        c.height = img.naturalHeight
+        const g = c.getContext('2d')!
+        g.drawImage(img, 0, 0)
+        return { w: c.width, h: c.height, d: g.getImageData(0, 0, c.width, c.height).data }
+      }
+      const [a, b] = [await pixels('/assets/logo.png'), await pixels('/assets/logo-dark.png')]
+      let alphaDiff = 0
+      for (let i = 3; i < a.d.length; i += 4) if (a.d[i] !== b.d[i]) alphaDiff++
+      return { same: a.w === b.w && a.h === b.h, alphaDiff, corner: b.d[3] }
+    })
+    expect(r.same, 'mesmas dimensões').toBe(true)
+    expect(r.alphaDiff, 'pixels com transparência diferente').toBe(0)
+    expect(r.corner, 'fundo transparente').toBe(0)
+  })
+})

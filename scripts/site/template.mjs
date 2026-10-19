@@ -170,6 +170,12 @@ const SCRIPT = `
 })();
 `
 
+// Logo: o oficial no tema claro; no escuro, a variante aprovada (mesma forma e
+// transparência, cores claras em "Versa" e nos símbolos). O navegador escolhe
+// pelo tema, como as demais cores da página; sem filtros de CSS na imagem.
+const logo = (alt) =>
+  `<picture><source srcset="/assets/logo-dark.png" media="(prefers-color-scheme: dark)"><img src="/assets/logo.png" width="110" height="57" alt="${alt}"></picture>`
+
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 export function renderPage(t, { editedDate }) {
@@ -210,7 +216,7 @@ export function renderPage(t, { editedDate }) {
 <a class="skip" href="#content">${t.skip}</a>
 <header class="site-header">
   <div class="wrap header-row">
-    <a class="logo" href="${t.path}"><img src="/assets/logo.png" width="110" height="57" alt="VersaEdit"></a>
+    <a class="logo" href="${t.path}">${logo('VersaEdit')}</a>
     <nav class="site-nav" aria-label="${t.nav.label}">
       <a href="/playground/">${t.nav.playground}</a>
       <a href="${t.docsUrl}">${t.nav.docs}</a>
@@ -310,7 +316,7 @@ ${t.references.map(([href, label, after], i) => `          <li id="ref-${i + 1}"
       <aside class="facts" aria-labelledby="facts-name">
         <p class="name" id="facts-name">VersaEdit</p>
         <figure>
-          <div class="logo-band"><img src="/assets/logo.png" width="110" height="57" alt="${t.facts.caption}"></div>
+          <div class="logo-band">${logo(t.facts.caption)}</div>
           <figcaption>${t.facts.caption}</figcaption>
         </figure>
         <dl>
