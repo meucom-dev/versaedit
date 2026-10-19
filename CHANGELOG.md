@@ -17,12 +17,21 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
   snap to the left or right edge). It floats to the nearer side with a horizontal margin to keep its
   position; text wraps on the free side (CSS floats wrap on one side only) and the 40px margin is
   kept. The Left/Right/Center buttons reset that offset.
+- Playground: no horizontal scrolling on phones (a fixed width that does not fit becomes 100%;
+  desktop unchanged).
+- The image/text box menu fits small screens: it never gets wider than the editing area and wraps
+  onto two lines when needed (desktop unchanged).
 - The image/text box menu stays inside the editing area: near the right edge it aligns with the
   object's right side, and with no room above it moves below the object; it no longer wraps onto
   two lines. `ObjectState.box` (optional) carries the object's rectangle.
 
 #### Added
 
+- Site `versaedit.dev`: bilingual home page in an encyclopedia-article layout (`/` in English,
+  `/pt/` in Portuguese) generated from one template and two text dictionaries; system fonts and
+  no requests to other servers; contents rail, article, fact box, references; responsive (tablet:
+  collapsible contents; phone: one column, stacked browser table). No search box and no npm links
+  until the package is published.
 - `scrollable` prop (default `true`): the editing area scrolls when the content is taller than
   `height`; the image/text box menu and resize handle follow the scroll and hide when the object
   leaves the visible area. `scrollable={false}` keeps the previous fixed-block behavior (content
@@ -146,6 +155,8 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 ## Pending investigation
 
+- Phones narrower than about 340px: the toolbar's text box group (border and line style lists) is
+  wider than the editing area and causes horizontal scrolling (from 375px up everything fits).
 - Firefox diagnostic: image drag tests (`tests/e2e/drop-position.spec.ts`) can time out in
   `mouse.move` when run in parallel (4 of 5 once, 1 of 5 on rerun); 15/15 when run one at a time.
 - Firefox diagnostic: `injectStyles={false}` test (`tests/e2e/css.spec.ts`) failed once in the full
