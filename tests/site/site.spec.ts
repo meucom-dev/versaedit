@@ -58,6 +58,9 @@ test('playground em /playground/: edita, nota de privacidade, sem o harness', as
     page.locator('#versaedit-google-fonts, link[href*="fonts.googleapis.com"]').first(),
   ).toHaveAttribute('href', /Montserrat.*Playfair\+Display/)
   expect(await content.evaluate((el) => getComputedStyle(el).fontFamily)).toMatch(/^"?Montserrat/)
+  // O menu de fontes já abre mostrando a fonte do texto
+  await page.reload()
+  await expect(page.locator('.ve-font-button')).toHaveText(/^Montserrat/)
   await page.getByRole('combobox').first().selectOption('pt-BR')
   await expect(page.getByTestId('site-note')).toContainText('o VersaEdit não tem servidor')
   // A página de testes (harness) não vai para o site

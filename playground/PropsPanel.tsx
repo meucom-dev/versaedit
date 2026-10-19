@@ -55,7 +55,9 @@ const BOOLEANS = [
 // Fontes do editor do Blog do À Mesa (RichEditor.tsx): Montserrat no texto,
 // Playfair Display nos títulos, o mesmo menu e as mesmas famílias do Google Fonts
 export const PLAYGROUND_FONTS = {
-  fontFamily: "'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  // O valor é o mesmo da opção "Montserrat" do menu: assim o menu já abre com o
+  // nome da fonte (ele só reconhece valores idênticos aos das opções)
+  fontFamily: "'Montserrat', Arial, sans-serif",
   headingFontFamily: "'Playfair Display', Georgia, 'Times New Roman', serif",
   fontFamilies: [
     { label: 'Aptos', value: 'Aptos, "Segoe UI", Arial, sans-serif' },
