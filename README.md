@@ -1,7 +1,11 @@
 # VersaEdit
 
-Lightweight rich text editor for React applications — **work in progress (not published yet)**.
+Lightweight rich text editor for React applications.
 
+> **Beta** (`0.5.0-beta.1`) — the API may change before 1.0; see [Known limitations](#known-limitations).
+> <!-- release:pending -->**Not yet published on npm.**<!-- /release:pending -->
+
+[versaedit.dev](https://versaedit.dev) · [Playground](https://versaedit.dev/playground/) ·
 [Leia em português](README.pt-BR.md)
 
 VersaEdit edits HTML with the browser's own `contentEditable`, adds a toolbar, a sanitizer
@@ -17,7 +21,7 @@ wherever you want (Supabase, Firebase, REST…).
 ## Install
 
 ```bash
-npm install versaedit
+npm install versaedit@beta
 ```
 
 ## Quick start
@@ -142,6 +146,8 @@ anywhere on the page (`<VersaEditDictation editor={ref} />`).
 
 ## Security
 
+Report vulnerabilities privately — see [SECURITY.md](SECURITY.md) (support@versaedit.dev).
+
 - Every HTML input (initial content, opened files, paste) goes through DOMPurify plus the editor's
   own allow-lists; scripts, event handlers, `javascript:` links and SVG are removed. A battery of 42
   XSS vectors runs in CI.
@@ -198,6 +204,7 @@ npm run lint
 npm run typecheck
 npm test           # unit tests (Vitest) + browser tests (Playwright)
 npm run test:package  # npm pack → install in examples/ copies → type check, build, browser tests
+npm run test:site     # public site (versaedit.dev + /playground/) built into site/ and tested
 ```
 
 Browser tests use `playground/harness.html`. Locally they run in the installed Microsoft Edge; in CI,

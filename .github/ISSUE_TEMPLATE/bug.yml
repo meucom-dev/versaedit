@@ -1,0 +1,47 @@
+name: Bug report / Relato de defeito
+description: Something does not work as documented. / Algo não funciona como documentado.
+labels: [bug, beta]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security problems: do **not** use this form — see SECURITY.md.
+        Problemas de segurança: **não** use este formulário — veja o SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: VersaEdit version / Versão
+      placeholder: 0.5.0-beta.1
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS / Navegador e sistema
+      placeholder: Chrome 141, Windows 11
+    validations:
+      required: true
+  - type: input
+    id: framework
+    attributes:
+      label: React / framework
+      placeholder: React 19, Next.js 16 (SSR)
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce / Passos para reproduzir
+      description: Props used and the actions in the editor. / Props usadas e as ações no editor.
+    validations:
+      required: true
+  - type: textarea
+    id: html
+    attributes:
+      label: Input HTML / HTML de entrada
+      description: initialContent or pasted content, if relevant (remove personal data). / initialContent ou conteúdo colado, se for o caso (sem dados pessoais).
+      render: html
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result / Resultado esperado e obtido
+    validations:
+      required: true

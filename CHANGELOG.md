@@ -6,6 +6,28 @@ yet (version `0.0.0`); work is grouped by the internal stabilization batches.
 
 ## [Unreleased]
 
+To be released as **`0.5.0-beta.1`** (first public beta). At release time this heading becomes
+`## [0.5.0-beta.1] - YYYY-MM-DD` (see `RELEASING.md`).
+
+### Release preparation (0.5.0-beta.1)
+
+#### Added
+
+- Public site for `https://versaedit.dev` with the playground at `/playground/` (`npm run build:site`,
+  `npm run test:site`, CI job `site`, GitHub Pages workflow that only runs once the repository is
+  public). The public playground shows a beta/privacy note; nothing is sent to any VersaEdit server.
+- `release.yml`: manual npm publication with Trusted Publishing (OIDC, no stored token), approval
+  environment `npm-publish`, full test suite and guards (no `private`, beta versions only, matching
+  version and CHANGELOG section, README without the "not published" notice).
+- `SECURITY.md` (private vulnerability reporting, support@versaedit.dev), issue templates.
+- `npm run test:package -- --from-registry=<spec>` to test the published package.
+
+#### Changed
+
+- Package metadata: author `meucom-dev`, homepage `https://versaedit.dev`, support e-mail,
+  `publishConfig` (`access: public`, `tag: beta`); `CHANGELOG.md` included in the package.
+- README: beta notice, `npm install versaedit@beta`, links to the site and playground.
+
 ### Batch v0.4.x — playground, independent integration, distribution
 
 #### Added
