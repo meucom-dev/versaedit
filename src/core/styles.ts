@@ -26,7 +26,7 @@ export const EDITOR_CSS = `
 .ve-select:hover { background: #f0f0f0; }
 .ve-select:disabled, .ve-disabled { opacity: 0.45; }
 .ve-inline { display: inline-flex; align-items: center; gap: 4px; }
-.ve-group { display: inline-flex; align-items: center; gap: 4px; border: 1px dashed var(--ve-accent); border-radius: 6px; padding: 2px 6px; background: ${accent(6)}; }
+.ve-group { display: inline-flex; flex-wrap: wrap; max-width: 100%; box-sizing: border-box; align-items: center; gap: 4px; border: 1px dashed var(--ve-accent); border-radius: 6px; padding: 2px 6px; background: ${accent(6)}; }
 
 /* Menus suspensos */
 .ve-font-picker { position: relative; display: inline-flex; }
