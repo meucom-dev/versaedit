@@ -16,7 +16,7 @@ entrega HTML e você guarda onde quiser (Supabase, Firebase, REST…).
 - React 18.3+ ou 19 · renderização no servidor (testada com Next.js)
 - Uma dependência: [DOMPurify](https://github.com/cure53/DOMPurify) · só módulos ES (sem versão
   CommonJS) · tipos TypeScript para bundlers e `moduleResolution: node16/nodenext`
-- Interface em inglês e português do Brasil (`locale`), com todos os textos trocáveis (`labels`)
+- Interface em inglês, português do Brasil e espanhol (`locale`), com todos os textos trocáveis (`labels`)
 
 ## Instalação
 
@@ -87,7 +87,7 @@ O `initialContent` é carregado (e sanitizado) quando muda; o editor ignora o ec
 | `truncateOnOverflow`                                 | `boolean`                                           | `false`                           | Corta o que passar da altura do editor.                                                                                      |
 | `singleLineBreaks`                                   | `boolean`                                           | `false`                           | Colagem: junta linhas em branco seguidas.                                                                                    |
 | `injectStyles`                                       | `boolean`                                           | `true`                            | Injeta o CSS do editor; com `false`, importe o arquivo de CSS.                                                               |
-| `locale` / `labels`                                  | `'en' \| 'pt-BR'` / parcial                         | `'en'`                            | Idioma da interface e troca de textos.                                                                                       |
+| `locale` / `labels`                                  | `'en' \| 'pt-BR' \| 'es'` / parcial                 | `'en'`                            | Idioma da interface e troca de textos.                                                                                       |
 | `contentClassName` / `contentStyle` / `placeholder`  | —                                                   | —                                 | Classe, estilo e texto de vazio da área de edição.                                                                           |
 
 **Grupos da barra** (`TOOLBAR_GROUPS`, sempre nesta ordem): `dictation`, `file`, `history`, `font`,
@@ -139,8 +139,10 @@ Os dois exemplos rodam no CI com o pacote gerado (`npm pack`), instalado fora do
 ## Ditado
 
 O botão de microfone transforma fala em texto com a Web Speech API do navegador (Chrome, Edge,
-Safari; no Firefox o botão não aparece). Pontuação falada funciona ("vírgula", "ponto final",
-"nova linha"…; em inglês "comma", "period", "new line"…). **Privacidade:** nesses navegadores o áudio
+Safari; no Firefox o botão não aparece), no idioma da interface (`en-US`, `pt-BR` ou `es-ES`;
+`speechLang` muda). Pontuação falada funciona ("vírgula", "ponto final", "nova linha"…; em inglês
+"comma", "period", "new line"…; em espanhol "coma", "punto final", "nueva línea"…; em espanhol só
+entram o ? e o ! de fechamento, sem ¿ e ¡). **Privacidade:** nesses navegadores o áudio
 é processado nos servidores do fabricante (Google, Microsoft, Apple). Use `speechRecognition` para
 outro mecanismo com a mesma interface, ou `showDictation={false}` para tirar o botão.
 `VersaEditDictation` coloca o microfone em qualquer lugar da página

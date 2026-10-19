@@ -16,7 +16,7 @@ wherever you want (Supabase, Firebase, REST…).
 - React 18.3+ or 19 · server rendering (tested with Next.js)
 - One runtime dependency: [DOMPurify](https://github.com/cure53/DOMPurify) · ES modules only (no
   CommonJS build) · TypeScript types for bundlers and `moduleResolution: node16/nodenext`
-- English and Brazilian Portuguese interface (`locale`), every text replaceable (`labels`)
+- English, Brazilian Portuguese and Spanish interface (`locale`), every text replaceable (`labels`)
 
 ## Install
 
@@ -87,7 +87,7 @@ export function PostEditor({
 | `truncateOnOverflow`                                 | `boolean`                                           | `false`                   | Cut content that exceeds the editor height.                                                                   |
 | `singleLineBreaks`                                   | `boolean`                                           | `false`                   | Paste: collapse consecutive blank lines.                                                                      |
 | `injectStyles`                                       | `boolean`                                           | `true`                    | Inject the editor CSS; set `false` and import the CSS file instead.                                           |
-| `locale` / `labels`                                  | `'en' \| 'pt-BR'` / partial                         | `'en'`                    | Interface language and text overrides.                                                                        |
+| `locale` / `labels`                                  | `'en' \| 'pt-BR' \| 'es'` / partial                 | `'en'`                    | Interface language and text overrides.                                                                        |
 | `contentClassName` / `contentStyle` / `placeholder`  | —                                                   | —                         | Editing area class, style and placeholder.                                                                    |
 
 **Toolbar groups** (`TOOLBAR_GROUPS`, always shown in this order): `dictation`, `file`, `history`,
@@ -139,8 +139,10 @@ Both examples run against the packed package (`npm pack`), installed outside the
 ## Dictation
 
 A microphone button converts speech to text using the browser's Web Speech API (Chrome, Edge,
-Safari; hidden in Firefox). Spoken punctuation works ("comma", "period", "new line"…; in pt-BR
-"vírgula", "ponto final", "nova linha"…). **Privacy:** these browsers process the audio on the
+Safari; hidden in Firefox), in the interface language (`en-US`, `pt-BR` or `es-ES`; `speechLang`
+changes it). Spoken punctuation works ("comma", "period", "new line"…; in pt-BR "vírgula", "ponto
+final", "nova linha"…; in Spanish "coma", "punto final", "nueva línea"…; Spanish gets only the
+closing ? and !, not ¿ and ¡). **Privacy:** these browsers process the audio on the
 vendor's servers (Google, Microsoft, Apple). Pass `speechRecognition` to use another engine with the
 same interface, or `showDictation={false}` to remove it. `VersaEditDictation` renders the microphone
 anywhere on the page (`<VersaEditDictation editor={ref} />`).

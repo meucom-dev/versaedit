@@ -29,6 +29,11 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Added
 
+- Spanish interface (`locale="es"`): every toolbar, menu, tooltip, form, message and accessibility
+  text, plus dictation in `es-ES` with spoken punctuation ("coma", "punto final", "nueva línea"…;
+  closing ? and ! only, no ¿ and ¡). English and Brazilian Portuguese are unchanged. The Playground
+  language selector offers Español, and the Playground's own texts follow the selected language
+  (the frame fields' accessible names, previously always in English, are now translated too).
 - Site `versaedit.dev`: home page in an encyclopedia-article layout in English (`/`), Portuguese
   (`/pt/`) and Spanish (`/es/`) generated from one template and one text dictionary per language; system fonts and
   no requests to other servers; contents rail, article, fact box, references; responsive (tablet:
