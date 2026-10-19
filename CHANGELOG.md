@@ -29,8 +29,8 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Added
 
-- Site `versaedit.dev`: bilingual home page in an encyclopedia-article layout (`/` in English,
-  `/pt/` in Portuguese) generated from one template and two text dictionaries; system fonts and
+- Site `versaedit.dev`: home page in an encyclopedia-article layout in English (`/`), Portuguese
+  (`/pt/`) and Spanish (`/es/`) generated from one template and one text dictionary per language; system fonts and
   no requests to other servers; contents rail, article, fact box, references; responsive (tablet:
   collapsible contents; phone: one column, stacked browser table). No search box and no npm links
   until the package is published.

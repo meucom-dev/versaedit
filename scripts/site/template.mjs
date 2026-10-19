@@ -1,7 +1,7 @@
 // Modelo da página inicial, no formato de artigo enciclopédico: cabeçalho,
 // sumário lateral, artigo, caixa de informações e rodapé. Um único modelo para
 // as duas línguas (os textos vêm de content.mjs), sem recursos externos.
-import { REPO } from './content.mjs'
+import { LANGUAGES, REPO } from './content.mjs'
 
 const SECTION_IDS = [
   'features',
@@ -60,7 +60,8 @@ img { max-width: 100%; }
 .logo { display: block; flex: none; line-height: 0; }
 .logo img, .facts .logo-band img { display: block; width: 110px; height: auto; aspect-ratio: 880 / 455; }
 .site-nav { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; font-size: 14px; }
-.lang-link { display: inline-flex; align-items: center; gap: 6px; }
+.lang-links { display: inline-flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; }
+.lang-links svg { margin-right: -8px; color: var(--link); }
 
 .body { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; padding-top: 24px; padding-bottom: 48px; }
 .rail { font-size: 14px; align-self: start; position: sticky; top: env(safe-area-inset-top, 0px); padding-top: 8px; }
@@ -180,7 +181,9 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 
 export function renderPage(t, { editedDate }) {
   const s = t.sections
-  const other = t.otherLang === 'pt' ? '/pt/' : '/'
+  const others = LANGUAGES.filter((l) => l.key !== t.key)
+  const langLink = (l) =>
+    `<a href="${l.path}" hreflang="${l.htmlLang}" lang="${l.htmlLang}" data-lang-switch>${l.label}</a>`
   const date = new Intl.DateTimeFormat(t.footer.dateLocale, {
     day: 'numeric',
     month: 'long',
@@ -194,7 +197,7 @@ export function renderPage(t, { editedDate }) {
   onChange={setHtml}
   width="100%"
   height={480}
-  locale="${t.htmlLang === 'pt-BR' ? 'pt-BR' : 'en'}"
+  locale="${t.key === 'pt' ? 'pt-BR' : 'en'}"
 /&gt;`
 
   // A marca de referência [1] não quebra para a linha de baixo (o navegador
@@ -207,8 +210,9 @@ export function renderPage(t, { editedDate }) {
 <title>${esc(t.title)}</title>
 <meta name="description" content="${esc(t.description)}">
 <link rel="canonical" href="https://versaedit.dev${t.path}">
-<link rel="alternate" hreflang="en" href="https://versaedit.dev/">
-<link rel="alternate" hreflang="pt-BR" href="https://versaedit.dev/pt/">
+${LANGUAGES.map((l) => `<link rel="alternate" hreflang="${l.htmlLang}" href="https://versaedit.dev${l.path}">`).join('\n')}
+<link rel="alternate" hreflang="x-default" href="https://versaedit.dev/">
+<meta property="og:locale" content="${t.htmlLang.replace('-', '_')}">
 <link rel="icon" href="data:,">
 <style>${CSS}</style>
 </head>
@@ -221,7 +225,7 @@ export function renderPage(t, { editedDate }) {
       <a href="/playground/">${t.nav.playground}</a>
       <a href="${t.docsUrl}">${t.nav.docs}</a>
       <a href="${REPO}">${t.nav.github}</a>
-      <a class="lang-link" href="${other}" hreflang="${t.otherLang === 'pt' ? 'pt-BR' : 'en'}" lang="${t.otherLang === 'pt' ? 'pt-BR' : 'en'}" data-lang-switch>${ICON.languages}${t.otherLabel}</a>
+      <span class="lang-links" role="group" aria-label="${t.nav.languages}">${ICON.languages}${others.map(langLink).join('')}</span>
     </nav>
   </div>
   <div class="wrap menu-row">
@@ -351,7 +355,7 @@ ${t.footer.privacy.map((p) => `        <li>${p}</li>`).join('\n')}
           <li><a href="${t.docsUrl}">${t.footer.about}</a></li>
           <li><a href="${REPO}/security/policy">${t.footer.security}</a></li>
           <li><a href="mailto:support@versaedit.dev">support@versaedit.dev</a></li>
-          <li><a href="${other}" hreflang="${t.otherLang === 'pt' ? 'pt-BR' : 'en'}" lang="${t.otherLang === 'pt' ? 'pt-BR' : 'en'}" data-lang-switch>${t.otherLabel}</a></li>
+${others.map((l) => `          <li>${langLink(l)}</li>`).join('\n')}
         </ul>
       </nav>
     </div>

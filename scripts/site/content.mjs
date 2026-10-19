@@ -3,12 +3,18 @@
 // mesma, só o texto muda. Os textos podem conter HTML simples (code, strong, a).
 const REPO = 'https://github.com/meucom-dev/versaedit'
 
+// Idiomas da página inicial, na ordem do seletor (cada nome no próprio idioma)
+export const LANGUAGES = [
+  { key: 'en', label: 'English', htmlLang: 'en', path: '/' },
+  { key: 'pt', label: 'Português', htmlLang: 'pt-BR', path: '/pt/' },
+  { key: 'es', label: 'Español', htmlLang: 'es', path: '/es/' },
+]
+
 export const CONTENT = {
   en: {
+    key: 'en',
     htmlLang: 'en',
     path: '/',
-    otherLabel: 'Português',
-    otherLang: 'pt',
     title: 'VersaEdit — open-source rich text editor for React',
     description:
       'VersaEdit is a lightweight, open-source rich text editor for React web applications. Beta.',
@@ -19,6 +25,7 @@ export const CONTENT = {
       docs: 'Documentation',
       github: 'GitHub',
       contents: 'Contents',
+      languages: 'Languages',
     },
     rail: {
       contents: 'Contents',
@@ -171,10 +178,9 @@ export const CONTENT = {
   },
 
   pt: {
+    key: 'pt',
     htmlLang: 'pt-BR',
     path: '/pt/',
-    otherLabel: 'English',
-    otherLang: 'en',
     title: 'VersaEdit — editor de texto rico de código aberto para React',
     description:
       'O VersaEdit é um editor de texto rico leve e de código aberto para aplicações web em React. Beta.',
@@ -185,6 +191,7 @@ export const CONTENT = {
       docs: 'Documentação',
       github: 'GitHub',
       contents: 'Conteúdo',
+      languages: 'Idiomas',
     },
     rail: {
       contents: 'Conteúdo',
@@ -341,6 +348,175 @@ export const CONTENT = {
       ],
       about: 'Sobre o VersaEdit',
       security: 'Política de segurança',
+    },
+  },
+  es: {
+    key: 'es',
+    htmlLang: 'es',
+    path: '/es/',
+    title: 'VersaEdit — editor de texto enriquecido de código abierto para React',
+    description:
+      'VersaEdit es un editor de texto enriquecido ligero y de código abierto para aplicaciones web con React. Beta.',
+    skip: 'Saltar al contenido',
+    nav: {
+      label: 'Sitio',
+      playground: 'Playground',
+      docs: 'Documentación',
+      github: 'GitHub',
+      contents: 'Contenido',
+      languages: 'Idiomas',
+    },
+    rail: {
+      contents: 'Contenido',
+      top: '(Inicio)',
+      project: 'Proyecto',
+      sourceCode: 'Código fuente',
+      changelog: 'Registro de cambios',
+      issue: 'Informar de un problema',
+      security: 'Política de seguridad',
+    },
+    tabs: {
+      namespaces: 'Espacios de nombres',
+      views: 'Vistas',
+      article: 'Artículo',
+      read: 'Leer',
+      source: 'Ver código fuente',
+      history: 'Ver historial',
+    },
+    tagline: 'De versaedit.dev, el editor de texto enriquecido de código abierto para React',
+    hatnote:
+      'Para la demostración interactiva, véase el <a href="/playground/">Playground</a>. El paquete de npm (0.5.0-beta.1) está previsto y aún no se ha publicado.',
+    notice: {
+      title: 'Este software está en fase beta.',
+      body: `La API pública puede cambiar antes de la versión 1.0 y el paquete aún no se ha publicado en npm. Las limitaciones conocidas se indican más abajo; si encuentra algún problema, <a href="${REPO}/issues/new/choose">infórmelo en GitHub</a>.`,
+    },
+    lead: [
+      '<strong>VersaEdit</strong> es un editor de texto enriquecido ligero y de código abierto para aplicaciones web con React. Edita HTML con el propio <code>contentEditable</code> del navegador y añade una barra de herramientas, saneamiento con DOMPurify, un historial propio de deshacer y rehacer, limpieza del contenido pegado desde páginas web y Microsoft Word, imágenes, cuadros de texto, dictado y apertura y guardado de archivos <code>.html</code>.<sup><a href="#ref-1">[1]</a></sup>',
+      'El editor no depende de un backend: entrega HTML plano a la aplicación, que lo guarda donde el desarrollador prefiera, como Supabase, Firebase o cualquier servicio REST. Es compatible con React 18.3 y 19 y con el renderizado en el servidor (probado con Next.js), y su interfaz está disponible en inglés y en portugués de Brasil, con todos los textos reemplazables.',
+      'El desarrollo comenzó en 2026. VersaEdit es software libre, publicado bajo la licencia MIT.',
+    ],
+    sections: {
+      features: 'Características',
+      installation: 'Instalación',
+      usage: 'Uso',
+      styling: 'Estilos',
+      security: 'Seguridad',
+      browsers: 'Compatibilidad con navegadores',
+      limitations: 'Limitaciones',
+      seeAlso: 'Véase también',
+      references: 'Referencias',
+    },
+    features: [
+      'Formato de texto, fuentes y tamaños, colores de texto y de resaltado, color del papel, títulos, citas, listas, sangría, enlaces y líneas horizontales.',
+      'Imágenes (con carga opcional mediante callback) y cuadros de texto que se pueden mover, redimensionar y hacer flotar junto al texto; las tablas pegadas desde páginas web o Word conservan su estructura.',
+      'Historial propio de deshacer y rehacer, atajos de teclado y una barra de herramientas navegable con el teclado (WAI-ARIA).',
+      'Dictado con puntuación hablada, mediante el reconocimiento de voz de Chrome, Edge y Safari.',
+      'Grupos de la barra configurables, ancho fluido, área de edición con desplazamiento o de altura fija, y textos de la interfaz reemplazables.',
+    ],
+    installation:
+      'VersaEdit es un módulo ES con tipos de TypeScript. La versión beta (0.5.0-beta.1) está prevista para npm y aún no se ha publicado.',
+    installLabel: 'Para usar después de la publicación',
+    styling:
+      'El editor inyecta su propia hoja de estilos de forma predeterminada. Los sitios con una política de seguridad de contenido (CSP) estricta pueden desactivar la inyección con <code>injectStyles={false}</code> e importar <code>versaedit/versaedit.css</code>. El contenido guardado se muestra con <code>versaedit-content.css</code> dentro de un elemento <code>.versaedit-content</code>.<sup><a href="#ref-2">[2]</a></sup>',
+    security:
+      'Todo el HTML recibido, incluidos el contenido inicial, los archivos abiertos y el contenido pegado, pasa por DOMPurify y por las listas de elementos permitidos del propio editor, y una batería de 42 vectores de XSS se ejecuta en la integración continua. Como el editor se ejecuta en el navegador del usuario, las aplicaciones deben volver a sanear el HTML en el servidor antes de guardarlo o publicarlo; la guía de integración incluye una receta probada.<sup><a href="#ref-2">[2]</a></sup>',
+    table: {
+      browser: 'Navegador',
+      status: 'Estado',
+      notes: 'Observaciones',
+      rows: [
+        [
+          'Chrome, Edge (escritorio)',
+          'ok',
+          'Compatible',
+          'Batería completa de pruebas automáticas en la integración continua (motor Chromium), con React 18 y 19.',
+        ],
+        [
+          'Firefox (escritorio)',
+          'warn',
+          'Funciona, con diferencias',
+          'Solo ejecuciones de diagnóstico. Pequeñas diferencias en el HTML (por ejemplo, una imagen soltada queda dentro del párrafo). El pegado y Ctrl+B/I/U no están cubiertos por pruebas automáticas. El dictado no está disponible.',
+        ],
+        [
+          'Safari',
+          'warn',
+          'Funciona, con diferencias',
+          'Probado solo con el motor WebKit, no en el propio Safari. Las listas reciben elementos span de font-size adicionales; no se verificó la carga de audio y vídeo externos.',
+        ],
+        [
+          'Navegadores móviles',
+          'off',
+          'No validado',
+          'La entrada táctil es compatible (probada mediante emulación en Chromium); aún no se ha probado en teléfonos ni tabletas reales.',
+        ],
+      ],
+    },
+    limitations: [
+      'Basado en <code>document.execCommand</code>: el HTML generado varía ligeramente entre navegadores.',
+      'Deshacer y rehacer colocan el cursor al principio del editor.',
+      'Después del resaltador o de un color personalizado, la negrita se guarda como <code>&lt;span style="font-weight: bold"&gt;</code> en lugar de <code>&lt;b&gt;</code> (el aspecto es el mismo).',
+      'El texto rodea una imagen o un cuadro de texto flotante solo por un lado (limitación del float de CSS).',
+      'El pegado desde Microsoft Word aún no se ha validado con documentos reales.',
+      'El menú de fuentes solo muestra el nombre de la fuente cuando <code>fontFamily</code> coincide exactamente con una de las opciones del menú.',
+      'Solo exporta HTML, sin JSON ni Markdown.',
+    ],
+    seeAlso: [
+      ['https://es.wikipedia.org/wiki/WYSIWYG', 'WYSIWYG', ''],
+      [
+        'https://developer.mozilla.org/es/docs/Web/HTML/Reference/Global_attributes/contenteditable',
+        'contentEditable',
+        ' (MDN)',
+      ],
+      [
+        'https://en.wikipedia.org/wiki/Comparison_of_HTML_editors',
+        'Comparación de editores HTML',
+        ' (en inglés)',
+      ],
+    ],
+    references: [
+      [`${REPO}#readme`, 'README de VersaEdit', ' (en inglés), github.com/meucom-dev/versaedit.'],
+      [
+        `${REPO}/blob/main/docs/integration.md`,
+        'Guía de integración: saneamiento en el navegador y en el servidor',
+        ' (en inglés).',
+      ],
+      [
+        `${REPO}/blob/main/CHANGELOG.md`,
+        'CHANGELOG: preparación de la versión 0.5.0-beta.1',
+        ' (en inglés).',
+      ],
+    ],
+    docsUrl: `${REPO}#readme`,
+    facts: {
+      caption: 'Logotipo de VersaEdit',
+      developer: 'Desarrollador',
+      started: 'Creado en',
+      preview: 'Versión preliminar',
+      previewValue: '0.5.0-beta.1 (prevista, aún no publicada)',
+      playground: 'Playground',
+      repository: 'Repositorio',
+      writtenIn: 'Escrito en',
+      framework: 'Framework',
+      dependency: 'Dependencia',
+      type: 'Tipo',
+      typeValue: 'Editor de texto enriquecido (WYSIWYG)',
+      typeUrl: 'https://es.wikipedia.org/wiki/WYSIWYG',
+      license: 'Licencia',
+      licenseValue: 'Licencia MIT',
+      website: 'Sitio web',
+    },
+    footer: {
+      edited: (date) => `Esta página se editó por última vez el ${date}.`,
+      dateLocale: 'es-ES',
+      license: 'Los textos y el código están disponibles bajo la licencia MIT.',
+      privacyTitle: 'Privacidad',
+      privacy: [
+        'Esta página no usa cookies, no tiene analítica y no hace solicitudes a otros servidores.',
+        'El <a href="/playground/">Playground</a> público carga sus fuentes desde Google Fonts, por lo que su navegador se conecta con Google al abrirlo; el dictado, cuando se usa, envía el audio al fabricante del navegador (Google, Microsoft o Apple).',
+        'El paquete VersaEdit en sí no hace solicitudes a terceros, salvo que se active la opción <code>loadGoogleFonts</code>.',
+      ],
+      about: 'Acerca de VersaEdit',
+      security: 'Política de seguridad',
     },
   },
 }

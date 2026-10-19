@@ -1,14 +1,15 @@
 // Site público (site/, gerado por npm run build:site): página inicial em inglês
-// (/) e em português (/pt/), e o playground em /playground/
+// (/), português (/pt/) e espanhol (/es/), e o playground em /playground/
 import fs from 'node:fs'
 import path from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
 
 const LANGS = [
-  { path: '/', lang: 'en', other: '/pt/', otherLabel: 'Português' },
-  { path: '/pt/', lang: 'pt-BR', other: '/', otherLabel: 'English' },
+  { path: '/', lang: 'en', label: 'English', install: 'For use after publication' },
+  { path: '/pt/', lang: 'pt-BR', label: 'Português', install: 'Para uso após a publicação' },
+  { path: '/es/', lang: 'es', label: 'Español', install: 'Para usar después de la publicación' },
 ] as const
-const WIDTHS = [375, 768, 1024, 1440]
+const WIDTHS = [320, 375, 768, 1024, 1440]
 
 // Erros de página/console e requisições a outros servidores. A página inicial
 // não faz nenhuma; o playground carrega só o Google Fonts (declarado na nota).
@@ -49,19 +50,22 @@ const noHorizontalScroll = async (page: Page) => {
 
 for (const l of LANGS) {
   for (const width of WIDTHS) {
-    test(`${l.path} em ${width}px: sem rolagem horizontal, sem erros, nada externo`, async ({
-      page,
-    }) => {
-      await page.setViewportSize({ width, height: 900 })
-      await goto(page, l.path)
-      expect(await page.evaluate(() => document.documentElement.lang)).toBe(l.lang)
-      await expect(page.locator('h1')).toHaveText('VersaEdit')
-      await noHorizontalScroll(page)
-    })
+    for (const scheme of ['light', 'dark'] as const) {
+      test(`${l.path} em ${width}px, tema ${scheme}: sem rolagem horizontal, sem erros, nada externo`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ colorScheme: scheme })
+        await page.setViewportSize({ width, height: 900 })
+        await goto(page, l.path)
+        expect(await page.evaluate(() => document.documentElement.lang)).toBe(l.lang)
+        await expect(page.locator('h1')).toHaveText('VersaEdit')
+        await noHorizontalScroll(page)
+      })
+    }
   }
 }
 
-test('as duas línguas têm a mesma estrutura e nenhuma mistura de textos', async ({ page }) => {
+test('as três línguas têm a mesma estrutura e nenhuma mistura de textos', async ({ page }) => {
   const read = async (p: string) => {
     await goto(page, p)
     return page.evaluate(() => ({
@@ -73,12 +77,20 @@ test('as duas línguas têm a mesma estrutura e nenhuma mistura de textos', asyn
       text: document.body.innerText,
     }))
   }
-  const en = await read('/')
-  const pt = await read('/pt/')
-  expect(pt.ids).toEqual(en.ids)
-  expect(pt.counts).toEqual(en.counts)
-  for (const h of pt.headings) expect(en.text, `"${h}" na página em inglês`).not.toContain(h)
-  for (const h of en.headings) expect(pt.text, `"${h}" na página em português`).not.toContain(h)
+  const pages = []
+  for (const l of LANGS) pages.push({ ...l, ...(await read(l.path)) })
+  const [en] = pages
+  for (const p of pages) {
+    expect(p.ids, p.path).toEqual(en.ids)
+    expect(p.counts, p.path).toEqual(en.counts)
+  }
+  // Títulos que mudam entre as línguas ("Uso" e "Estilos" são iguais em pt e es)
+  for (const a of pages)
+    for (const b of pages) {
+      if (a === b) continue
+      for (const h of a.headings.filter((x) => !b.headings.includes(x)))
+        expect(b.text, `"${h}" (${a.path}) na página ${b.path}`).not.toContain(h)
+    }
 })
 
 test('todos os links levam a um destino real; a troca de idioma mantém a seção', async ({
@@ -101,14 +113,49 @@ test('todos os links levam a um destino real; a troca de idioma mantém a seçã
       expect(href, 'nada aponta para o npm antes da publicação').not.toMatch(/npmjs/)
     }
   }
-  // Troca de idioma levando a seção aberta
+  // Seletor: cada página oferece as outras duas línguas, no cabeçalho e no rodapé
+  for (const l of LANGS) {
+    await goto(page, l.path)
+    const others = LANGS.filter((o) => o !== l).map((o) => o.label)
+    await expect(page.locator('.site-nav a[data-lang-switch]')).toHaveText(others)
+    await expect(page.locator('footer a[data-lang-switch]')).toHaveText(others)
+  }
+  // Troca de idioma levando a seção aberta: en → pt (cabeçalho) → es (rodapé) → en
   await goto(page, '/#security')
-  await page.locator('.site-nav a[data-lang-switch]').click()
+  await page.locator('.site-nav a[data-lang-switch]', { hasText: 'Português' }).click()
   await expect(page).toHaveURL(/\/pt\/#security$/)
   await expect(page.locator('#security')).toHaveText('Segurança')
-  await page.locator('footer a[data-lang-switch]').click()
+  await page.locator('footer a[data-lang-switch]', { hasText: 'Español' }).click()
+  await expect(page).toHaveURL(/\/es\/#security$/)
+  await expect(page.locator('#security')).toHaveText('Seguridad')
+  await page.locator('.site-nav a[data-lang-switch]', { hasText: 'English' }).click()
   await expect(page).toHaveURL(/\/#security$/)
   await expect(page.locator('#security')).toHaveText('Security')
+})
+
+test('metadados de idioma: lang, canonical, hreflang dos três e x-default', async ({ page }) => {
+  for (const l of LANGS) {
+    await goto(page, l.path)
+    const m = await page.evaluate(() => ({
+      lang: document.documentElement.lang,
+      canonical: document.querySelector('link[rel="canonical"]')?.getAttribute('href'),
+      alternates: [...document.querySelectorAll('link[rel="alternate"]')].map(
+        (e) => `${e.getAttribute('hreflang')} ${e.getAttribute('href')}`,
+      ),
+      ogLocale: document.querySelector('meta[property="og:locale"]')?.getAttribute('content'),
+      description: document.querySelector('meta[name="description"]')?.getAttribute('content'),
+    }))
+    expect(m.lang).toBe(l.lang)
+    expect(m.canonical).toBe(`https://versaedit.dev${l.path}`)
+    expect(m.alternates).toEqual([
+      'en https://versaedit.dev/',
+      'pt-BR https://versaedit.dev/pt/',
+      'es https://versaedit.dev/es/',
+      'x-default https://versaedit.dev/',
+    ])
+    expect(m.ogLocale).toBe(l.lang.replace('-', '_'))
+    expect(m.description).toBeTruthy()
+  }
 })
 
 test('sem busca, sem link para o npm, instalação marcada como uso futuro', async ({ page }) => {
@@ -118,9 +165,7 @@ test('sem busca, sem link para o npm, instalação marcada como uso futuro', asy
     await expect(page.locator('a[href*="npmjs"]')).toHaveCount(0)
     const install = page.locator('#installation ~ .code-block').first()
     await expect(install.locator('code')).toHaveText('npm install versaedit@beta')
-    await expect(install.locator('.code-label')).toHaveText(
-      l.lang === 'en' ? 'For use after publication' : 'Para uso após a publicação',
-    )
+    await expect(install.locator('.code-label')).toHaveText(l.install)
     await expect(page.locator('footer .privacy li')).toHaveCount(3)
   }
 })
@@ -218,7 +263,7 @@ test('playground em /playground/: edita, nota de privacidade, sem o harness', as
 test('arquivos do site: CNAME do domínio e nada de dados locais ou chaves', () => {
   const site = path.resolve('site')
   expect(fs.readFileSync(path.join(site, 'CNAME'), 'utf8').trim()).toBe('versaedit.dev')
-  for (const page of ['index.html', 'pt/index.html']) {
+  for (const page of ['index.html', 'pt/index.html', 'es/index.html']) {
     expect(fs.existsSync(path.join(site, page)), page).toBe(true)
   }
   const files = (dir: string): string[] =>
