@@ -123,35 +123,112 @@ export function settingsToJsx(s: Settings, locale: VersaEditLocale): string {
 const PIXEL =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgaPj/HwAEhQJ/UhG2BwAAAABJRU5ErkJggg=='
 
-// Conteúdos de exemplo (sem endereços externos)
-export const SAMPLES: { id: string; html: string }[] = [
-  { id: 'empty', html: '' },
-  {
-    id: 'formatted',
-    html:
-      '<h2>Heading</h2><p><b>Bold</b>, <i>italic</i>, <u>underline</u>, ' +
-      '<span style="color: rgb(190, 18, 60);">color</span> and a <a href="https://example.com">link</a>.</p>' +
-      '<ul><li>First</li><li>Second</li></ul><blockquote>A quote.</blockquote>',
+// Textos dos conteúdos de exemplo. A estrutura HTML, os estilos e a imagem são
+// os mesmos nos três idiomas; só o texto muda
+const SAMPLE_TEXT = {
+  en: {
+    heading: 'Heading',
+    bold: 'Bold',
+    italic: 'italic',
+    underline: 'underline',
+    color: 'color',
+    and: 'and a',
+    link: 'link',
+    first: 'First',
+    second: 'Second',
+    quote: 'A quote.',
+    item: 'Item',
+    qty: 'Qty',
+    bread: 'Bread',
+    milk: 'Milk',
+    imageIntro: 'An image floated to the right:',
+    imageAlt: 'Blue square',
+    imageNext: 'Text next to it.',
+    before: 'Before.',
+    textbox: 'A text box',
+    after: 'After.',
+    paragraph: 'Paragraph',
   },
-  {
-    id: 'table',
-    html:
-      '<table><thead><tr><th>Item</th><th>Qty</th></tr></thead>' +
-      '<tbody><tr><td>Bread</td><td>2</td></tr><tr><td>Milk</td><td>1</td></tr></tbody></table><p></p>',
+  'pt-BR': {
+    heading: 'Título',
+    bold: 'Negrito',
+    italic: 'itálico',
+    underline: 'sublinhado',
+    color: 'cor',
+    and: 'e um',
+    link: 'link',
+    first: 'Primeiro',
+    second: 'Segundo',
+    quote: 'Uma citação.',
+    item: 'Item',
+    qty: 'Qtd.',
+    bread: 'Pão',
+    milk: 'Leite',
+    imageIntro: 'Uma imagem flutuando à direita:',
+    imageAlt: 'Quadrado azul',
+    imageNext: 'Texto ao lado dela.',
+    before: 'Antes.',
+    textbox: 'Uma caixa de texto',
+    after: 'Depois.',
+    paragraph: 'Parágrafo',
   },
-  {
-    id: 'image',
-    html: `<p>An image floated to the right:</p><img src="${PIXEL}" class="pos-right" style="width: 120px" alt="Blue square"><p>Text next to it.</p>`,
+  es: {
+    heading: 'Título',
+    bold: 'Negrita',
+    italic: 'cursiva',
+    underline: 'subrayado',
+    color: 'color',
+    and: 'y un',
+    link: 'enlace',
+    first: 'Primero',
+    second: 'Segundo',
+    quote: 'Una cita.',
+    item: 'Artículo',
+    qty: 'Cant.',
+    bread: 'Pan',
+    milk: 'Leche',
+    imageIntro: 'Una imagen flotando a la derecha:',
+    imageAlt: 'Cuadrado azul',
+    imageNext: 'Texto junto a ella.',
+    before: 'Antes.',
+    textbox: 'Un cuadro de texto',
+    after: 'Después.',
+    paragraph: 'Párrafo',
   },
-  {
-    id: 'textbox',
-    html: '<p>Before.</p><div class="rich-textbox"><span contenteditable="false" class="textbox-handle">⠿</span>A text box</div><p>After.</p>',
-  },
-  {
-    id: 'long',
-    html: Array.from({ length: 40 }, (_, i) => `<p>Paragraph ${i + 1}.</p>`).join(''),
-  },
-]
+} satisfies Record<VersaEditLocale, Record<string, string>>
+
+// Conteúdos de exemplo no idioma escolhido (sem endereços externos)
+export function samplesFor(locale: VersaEditLocale): { id: string; html: string }[] {
+  const t = SAMPLE_TEXT[locale]
+  return [
+    { id: 'empty', html: '' },
+    {
+      id: 'formatted',
+      html:
+        `<h2>${t.heading}</h2><p><b>${t.bold}</b>, <i>${t.italic}</i>, <u>${t.underline}</u>, ` +
+        `<span style="color: rgb(190, 18, 60);">${t.color}</span> ${t.and} <a href="https://example.com">${t.link}</a>.</p>` +
+        `<ul><li>${t.first}</li><li>${t.second}</li></ul><blockquote>${t.quote}</blockquote>`,
+    },
+    {
+      id: 'table',
+      html:
+        `<table><thead><tr><th>${t.item}</th><th>${t.qty}</th></tr></thead>` +
+        `<tbody><tr><td>${t.bread}</td><td>2</td></tr><tr><td>${t.milk}</td><td>1</td></tr></tbody></table><p></p>`,
+    },
+    {
+      id: 'image',
+      html: `<p>${t.imageIntro}</p><img src="${PIXEL}" class="pos-right" style="width: 120px" alt="${t.imageAlt}"><p>${t.imageNext}</p>`,
+    },
+    {
+      id: 'textbox',
+      html: `<p>${t.before}</p><div class="rich-textbox"><span contenteditable="false" class="textbox-handle">⠿</span>${t.textbox}</div><p>${t.after}</p>`,
+    },
+    {
+      id: 'long',
+      html: Array.from({ length: 40 }, (_, i) => `<p>${t.paragraph} ${i + 1}.</p>`).join(''),
+    },
+  ]
+}
 
 export const PANEL_TEXT = {
   en: {
@@ -380,7 +457,7 @@ export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, even
       <fieldset style={fieldset}>
         <legend>{T.content}</legend>
         <div style={row}>
-          {SAMPLES.map((sample) => (
+          {samplesFor(locale).map((sample) => (
             <button key={sample.id} type="button" onClick={() => onLoadSample(sample.html)}>
               {T.load}: {T.samples[sample.id as keyof typeof T.samples]}
             </button>

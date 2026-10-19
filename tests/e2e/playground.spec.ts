@@ -185,3 +185,81 @@ test('seletor de idioma: editor, painel e textos do playground em en, pt-BR e es
     expect(texts).toContain(L[locale].placeholder)
   }
 })
+
+test('conteúdos de exemplo carregam no idioma escolhido (en, pt-BR, es)', async ({ page }) => {
+  await openPanel(page)
+  const EXPECT = {
+    en: { th: 'Item', td: 'Bread', alt: 'Blue square', box: 'A text box', h2: 'Heading' },
+    'pt-BR': {
+      th: 'Item',
+      td: 'Pão',
+      alt: 'Quadrado azul',
+      box: 'Uma caixa de texto',
+      h2: 'Título',
+    },
+    es: {
+      th: 'Artículo',
+      td: 'Pan',
+      alt: 'Cuadrado azul',
+      box: 'Un cuadro de texto',
+      h2: 'Título',
+    },
+  } as const
+  const editor = page.locator('.ve-content').first()
+  for (const locale of ['es', 'pt-BR', 'en'] as const) {
+    await page.locator('.pg-pill select').selectOption(locale)
+    const T = PANEL_TEXT[locale]
+    const e = EXPECT[locale]
+    const load = (id: keyof typeof T.samples) =>
+      page.getByRole('button', { name: `${T.load}: ${T.samples[id]}` }).click()
+    await load('table')
+    await expect(editor.locator('th').first()).toHaveText(e.th)
+    await expect(editor.locator('td').first()).toHaveText(e.td)
+    await load('image')
+    await expect(editor.locator('img.pos-right')).toHaveAttribute('alt', e.alt)
+    await load('textbox')
+    await expect(editor.locator('.rich-textbox')).toContainText(e.box)
+    await load('formatted')
+    await expect(editor.locator('h2')).toHaveText(e.h2)
+    await expect(editor.locator('span[style*="color"]')).toHaveCount(1)
+  }
+})
+
+test('trocar o idioma não muda o conteúdo em edição; o exemplo muda só ao carregá-lo de novo', async ({
+  page,
+}) => {
+  await openPanel(page)
+  const editor = page.locator('.ve-content').first()
+  // Editor principal: exemplo em inglês, editado
+  await page.getByRole('button', { name: 'Load: Table' }).click()
+  await editor.locator('td').first().click()
+  await page.keyboard.press('End')
+  await page.keyboard.type(' editado')
+  const edited = await editor.innerHTML()
+  expect(edited).toContain('Bread editado')
+  // Segundo editor (onSave): aberto em inglês e editado
+  await page.getByRole('button', { name: 'Show editor with onSave' }).click()
+  const second = page.locator('.ve-content').nth(1)
+  await expect(second).toContainText('Second editor with')
+  await second.click()
+  await page.keyboard.press('Control+End')
+  await page.keyboard.type(' texto meu')
+  const secondEdited = await second.innerHTML()
+
+  for (const locale of ['es', 'pt-BR'] as const) {
+    await page.locator('.pg-pill select').selectOption(locale)
+    await expect(
+      page
+        .getByRole('toolbar')
+        .first()
+        .getByRole('button', { name: locale === 'es' ? 'Negrita (Ctrl+B)' : 'Negrito (Ctrl+B)' }),
+    ).toBeVisible()
+    await page.waitForTimeout(200)
+    expect(await editor.innerHTML(), `editor principal em ${locale}`).toBe(edited)
+    expect(await second.innerHTML(), `segundo editor em ${locale}`).toBe(secondEdited)
+  }
+  // Carregar o exemplo de novo, explicitamente, traz o texto do idioma atual
+  await page.getByRole('button', { name: 'Carregar: Tabela' }).click()
+  await expect(editor.locator('td').first()).toHaveText('Pão')
+  expect(await second.innerHTML()).toBe(secondEdited)
+})
