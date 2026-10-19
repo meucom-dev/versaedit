@@ -1,5 +1,5 @@
-// Textos da página inicial (https://versaedit.dev) em inglês e em português.
-// As duas versões têm exatamente as mesmas chaves: a estrutura da página é a
+// Textos da página inicial (https://versaedit.dev) em inglês, português e espanhol.
+// As três versões têm exatamente as mesmas chaves: a estrutura da página é a
 // mesma, só o texto muda. Os textos podem conter HTML simples (code, strong, a).
 const REPO = 'https://github.com/meucom-dev/versaedit'
 

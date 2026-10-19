@@ -1,6 +1,6 @@
 // Modelo da página inicial, no formato de artigo enciclopédico: cabeçalho,
 // sumário lateral, artigo, caixa de informações e rodapé. Um único modelo para
-// as duas línguas (os textos vêm de content.mjs), sem recursos externos.
+// as três línguas (os textos vêm de content.mjs), sem recursos externos.
 import { LANGUAGES, REPO } from './content.mjs'
 
 const SECTION_IDS = [
