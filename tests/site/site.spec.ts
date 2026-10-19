@@ -53,6 +53,13 @@ test('playground em /playground/: edita, nota de privacidade, sem o harness', as
   await expect(content).toContainText('Hello from the public playground')
   await expect(page.getByTestId('site-note')).toContainText('VersaEdit has no server')
   await expect(page.getByTestId('site-note')).toContainText('Google Fonts')
+  // A nota acompanha a largura da caixa de edição (não passa da borda dela)
+  const [note, frame] = await Promise.all([
+    page.getByTestId('site-note').boundingBox(),
+    page.locator('.ve-frame').boundingBox(),
+  ])
+  expect(Math.abs(note!.x - frame!.x)).toBeLessThan(1)
+  expect(note!.x + note!.width).toBeLessThanOrEqual(frame!.x + frame!.width + 1)
   // Fontes do playground: Montserrat no texto, Playfair Display nos títulos
   await expect(
     page.locator('#versaedit-google-fonts, link[href*="fonts.googleapis.com"]').first(),

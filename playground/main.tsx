@@ -134,7 +134,16 @@ function App() {
       </details>
       {/* Só no playground público (npm run build:site) */}
       {import.meta.env.MODE === 'site' && (
-        <p data-testid="site-note" style={{ marginTop: 24, fontSize: 12, color: '#666' }}>
+        <p
+          data-testid="site-note"
+          style={{
+            // Mesma largura da caixa de edição (acompanha a largura escolhida no painel)
+            maxWidth: settings.width,
+            marginTop: 24,
+            fontSize: 12,
+            color: '#666',
+          }}
+        >
           {T.siteNote} <a href="https://versaedit.dev">versaedit.dev</a> ·{' '}
           <a href="mailto:support@versaedit.dev">support@versaedit.dev</a>
         </p>
