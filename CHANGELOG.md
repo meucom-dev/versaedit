@@ -13,6 +13,10 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Added
 
+- `scrollable` prop (default `true`): the editing area scrolls when the content is taller than
+  `height`; the image/text box menu and resize handle follow the scroll and hide when the object
+  leaves the visible area. `scrollable={false}` keeps the previous fixed-block behavior (content
+  beyond the height hidden — for À Mesa's fixed blog block).
 - Public site for `https://versaedit.dev` with the playground at `/playground/` (`npm run build:site`,
   `npm run test:site`, CI job `site`, GitHub Pages workflow that only runs once the repository is
   public). The public playground shows a beta/privacy note; nothing is sent to any VersaEdit server.

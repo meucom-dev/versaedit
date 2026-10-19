@@ -74,6 +74,8 @@ export interface ObjectState {
   type: 'image' | 'textbox'
   toolbar: Point
   handle: Point | null
+  /** O objeto saiu da parte visível da área de edição (rolagem): menu e alça somem */
+  hidden?: boolean
 }
 
 /** Estilo na posição do cursor, para os indicadores da barra */
@@ -212,6 +214,7 @@ export class VersaEditCore {
   private objType: SelectionType = null
   private toolbarPos: Point = { top: 0, left: 0 }
   private handlePos: Point | null = null
+  private objHidden = false
 
   // Arrasto e redimensionamento livre
   private isDragging = false
@@ -262,7 +265,22 @@ export class VersaEditCore {
     ['focusin', (e) => this.handleFocusIn(e as FocusEvent)],
     ['focusout', (e) => this.handleBlur(e as FocusEvent)],
     ['dragstart', (e) => e.preventDefault()],
+    ['scroll', () => this.handleScroll()],
   ]
+
+  // Rolagem da área (pela roda, pelo teclado ou pelo cursor que o navegador
+  // mantém visível): menu e alça do objeto selecionado acompanham, um quadro por vez
+  private scrollFrame = 0
+  private handleScroll(): void {
+    if (this.scrollFrame) return
+    this.scrollFrame = requestAnimationFrame(() => {
+      this.scrollFrame = 0
+      const target = this.selectedImg ?? this.selectedTextbox
+      if (!target || !this.objType) return
+      if (this.handlePos) this.handlePos = resizeHandlePosition(target, this.el)
+      this.updateToolbarPosition(target)
+    })
+  }
 
   /** Remove ouvintes e temporizadores (ao desmontar o editor) */
   destroy(): void {
@@ -270,6 +288,7 @@ export class VersaEditCore {
     this.observer = null
     this.history.dispose()
     this.pointer.stop()
+    if (this.scrollFrame) cancelAnimationFrame(this.scrollFrame)
     document.removeEventListener('selectionchange', this.handleSelectionChange)
     for (const [type, listener] of this.listeners) this.el.removeEventListener(type, listener)
   }
@@ -375,19 +394,31 @@ export class VersaEditCore {
   private emitObject(): void {
     this.cb.onObjectChange?.(
       this.objType
-        ? { type: this.objType, toolbar: this.toolbarPos, handle: this.handlePos }
+        ? {
+            type: this.objType,
+            toolbar: this.toolbarPos,
+            handle: this.handlePos,
+            ...(this.objHidden && { hidden: true }),
+          }
         : null,
     )
   }
 
   private setObjType(type: SelectionType): void {
     this.objType = type
-    if (!type) this.handlePos = null
+    if (!type) {
+      this.handlePos = null
+      this.objHidden = false
+    }
     this.emitObject()
   }
 
   private updateToolbarPosition(el: HTMLElement): void {
     this.toolbarPos = toolbarPosition(el, this.el)
+    // Fora da parte visível (área rolada): menu e alça não aparecem soltos
+    const rect = el.getBoundingClientRect()
+    const area = this.el.getBoundingClientRect()
+    this.objHidden = rect.bottom < area.top || rect.top > area.bottom
     this.emitObject()
   }
 

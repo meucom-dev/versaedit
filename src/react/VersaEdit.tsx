@@ -80,6 +80,12 @@ export interface VersaEditProps {
    */
   pasteImages?: boolean
   /**
+   * A área de edição rola quando o conteúdo passa da altura (padrão: true).
+   * Com false, o que passa fica escondido, como num bloco de altura fixa
+   * (veja onOverflowChange e truncateOnOverflow).
+   */
+  scrollable?: boolean
+  /**
    * Deixa áudio e vídeo externos do conteúdo carregarem dentro do editor
    * (padrão: false). Desligado, a mídia não é baixada nem toca enquanto se
    * edita, e o HTML entregue (onChange, getHTML, arquivo) continua idêntico ao
@@ -189,6 +195,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     placeholder,
     singleLineBreaks = false,
     pasteImages = true,
+    scrollable = true,
     allowExternalMedia = false,
     truncateOnOverflow = false,
     width = DEFAULT_WIDTH,
@@ -436,7 +443,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
           suppressContentEditableWarning
           role="textbox"
           aria-multiline="true"
-          className={`ve-content ${contentClassName}`.trim()}
+          className={`ve-content${scrollable ? ' ve-scroll' : ''} ${contentClassName}`.trim()}
           data-placeholder={placeholder ?? L.placeholder}
           style={{
             // Número: medida exata em px (como sempre); medida CSS: ocupa a moldura
@@ -448,8 +455,8 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
           }}
         />
 
-        {object && <ObjectToolbar object={object} core={getCore} labels={L} />}
-        {object?.handle && (
+        {object && !object.hidden && <ObjectToolbar object={object} core={getCore} labels={L} />}
+        {object?.handle && !object.hidden && (
           <ResizeHandle position={object.handle} title={L.resizeFree} core={getCore} />
         )}
       </div>

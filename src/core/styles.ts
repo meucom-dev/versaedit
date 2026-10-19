@@ -74,6 +74,7 @@ export const EDITOR_CSS = `
 /* Moldura e área de edição */
 .ve-frame { position: relative; max-width: 100%; margin: 0; box-sizing: border-box; }
 .ve-content { display: block; max-width: 100%; box-sizing: border-box; padding: 8px 16px; border: none; overflow: hidden; resize: none; line-height: 1.6; font-size: 12pt; color: #1f2328; background-color: #fff; caret-color: currentColor; outline: none; }
+.ve-content.ve-scroll { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
 .ve-content:empty::before { content: attr(data-placeholder); color: #999; pointer-events: none; font-style: italic; }
 .ve-content p { margin: 0; padding: 0; line-height: 1.3; }
 .ve-content div, .ve-content span { margin: 0; padding: 0; }
