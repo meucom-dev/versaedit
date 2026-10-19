@@ -6,8 +6,8 @@ import { escapeHtml, safeCssColor } from './sanitize'
 export const FILE_GENERATOR = 'VersaEdit'
 export const MAX_OPEN_FILE_BYTES = 20 * 1024 * 1024
 
-// Separa a cor do papel (fundo do editor) do HTML salvo. Lê também o nome
-// antigo (amesa-paper), usado pelo conteúdo gravado antes do VersaEdit.
+// Separa a cor do papel (fundo do editor) do HTML salvo. Lê também o nome de
+// classe legado (amesa-paper), do conteúdo gravado pela versão anterior do editor.
 export const PAPER_MARK =
   /^<div class="(?:ve|amesa)-paper" data-paper="([^"]+)"[^>]*>([\s\S]*)<\/div>$/
 export const paperWrap = (paper: string, inner: string) =>

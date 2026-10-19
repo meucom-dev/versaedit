@@ -1,7 +1,7 @@
-// Compatibilidade com conteúdo real do À Mesa (teste externo, só local).
+// Compatibilidade com conteúdo real de produção (teste externo, só local).
 // Amostras em compat-samples/*.json (fora do git): lista de objetos com o HTML
 // em "content" ou "value" (formato de exportação do SQL Editor do Supabase).
-// Sem a pasta, o teste é pulado. Relatório: test-results/compat-amesa.json
+// Sem a pasta, o teste é pulado. Relatório: test-results/compat-samples.json
 import fs from 'node:fs'
 import path from 'node:path'
 import { expect, test } from '@playwright/test'
@@ -37,7 +37,7 @@ interface Diff {
 
 const report: Record<string, Diff & { stable: boolean }> = {}
 
-test.describe('compatibilidade com conteúdo do À Mesa', () => {
+test.describe('compatibilidade com amostras reais de conteúdo', () => {
   test.skip(samples.length === 0, 'sem amostras em compat-samples/')
 
   for (const sample of samples) {
@@ -106,7 +106,7 @@ test.describe('compatibilidade com conteúdo do À Mesa', () => {
 
   test.afterAll(() => {
     if (!Object.keys(report).length) return
-    const out = path.resolve('test-results/compat-amesa.json')
+    const out = path.resolve('test-results/compat-samples.json')
     fs.mkdirSync(path.dirname(out), { recursive: true })
     fs.writeFileSync(out, JSON.stringify(report, null, 2))
   })

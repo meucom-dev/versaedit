@@ -26,7 +26,7 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 - `scrollable` prop (default `true`): the editing area scrolls when the content is taller than
   `height`; the image/text box menu and resize handle follow the scroll and hide when the object
   leaves the visible area. `scrollable={false}` keeps the previous fixed-block behavior (content
-  beyond the height hidden — for À Mesa's fixed blog block).
+  beyond the height hidden — for layouts with a fixed-size content block).
 - Public site for `https://versaedit.dev` with the playground at `/playground/` (`npm run build:site`,
   `npm run test:site`, CI job `site`, GitHub Pages workflow that only runs once the repository is
   public). The public playground shows a beta/privacy note; nothing is sent to any VersaEdit server.
@@ -41,8 +41,8 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 - Package metadata: author `meucom-dev`, homepage `https://versaedit.dev`, support e-mail,
   `publishConfig` (`access: public`, `tag: beta`); `CHANGELOG.md` included in the package.
 - README: beta notice, `npm install versaedit@beta`, links to the site and playground.
-- Playground (local and public): the fonts of the À Mesa blog editor — Montserrat for text,
-  Playfair Display for headings, the same 15-font menu, loaded from Google Fonts (stated in the
+- Playground (local and public): Montserrat for text, Playfair Display for headings and a
+  15-font menu, loaded from Google Fonts (stated in the
   public playground's privacy note). The package defaults are unchanged: no Google Fonts request
   unless `loadGoogleFonts` is set.
 
@@ -130,7 +130,8 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 ### Earlier phases
 
-- Extraction from the À Mesa application, decoupling (no CoreUI/Bootstrap), English/Portuguese
+- Extraction from an existing application into a standalone library, decoupling (no
+  CoreUI/Bootstrap), English/Portuguese
   interface, framework-free core (`VersaEditCore`), touch support, link form, toolbar keyboard
   navigation, ref API, image upload, dictation, test suites and CI.
 

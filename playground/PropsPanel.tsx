@@ -52,8 +52,8 @@ const BOOLEANS = [
 ] as const
 
 // Props do editor que diferem do padrão do playground (só essas são passadas)
-// Fontes do editor do Blog do À Mesa (RichEditor.tsx): Montserrat no texto,
-// Playfair Display nos títulos, o mesmo menu e as mesmas famílias do Google Fonts
+// Fontes do playground: Montserrat no texto, Playfair Display nos títulos, um
+// menu de 15 fontes e as famílias correspondentes carregadas do Google Fonts
 export const PLAYGROUND_FONTS = {
   // O valor é o mesmo da opção "Montserrat" do menu: assim o menu já abre com o
   // nome da fonte (ele só reconhece valores idênticos aos das opções)

@@ -53,7 +53,7 @@ test('playground em /playground/: edita, nota de privacidade, sem o harness', as
   await expect(content).toContainText('Hello from the public playground')
   await expect(page.getByTestId('site-note')).toContainText('VersaEdit has no server')
   await expect(page.getByTestId('site-note')).toContainText('Google Fonts')
-  // Fontes do Blog do À Mesa: Montserrat no texto, Playfair Display nos títulos
+  // Fontes do playground: Montserrat no texto, Playfair Display nos títulos
   await expect(
     page.locator('#versaedit-google-fonts, link[href*="fonts.googleapis.com"]').first(),
   ).toHaveAttribute('href', /Montserrat.*Playfair\+Display/)

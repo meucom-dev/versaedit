@@ -9,7 +9,7 @@ import {
 } from '../../playground/PropsPanel'
 
 describe('JSX equivalente do painel Propriedades', () => {
-  it('sem mudanças, largura e altura de sempre e as fontes do Blog do À Mesa', () => {
+  it('sem mudanças, largura e altura de sempre e as fontes do playground', () => {
     expect(settingsToProps(DEFAULT_SETTINGS)).toEqual({
       width: 900,
       height: 420,

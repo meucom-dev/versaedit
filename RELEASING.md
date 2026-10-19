@@ -6,8 +6,8 @@ preparados no repositório. Nada é publicado sem a sua confirmação expressa.
 
 ## 1. Repositório público
 
-1. Conferir o resultado da auditoria do histórico (relatório da preparação da beta): sem segredos;
-   os 42 commits trazem o e-mail do autor e há menções ao À Mesa nas primeiras versões.
+1. ✅ Auditoria do histórico concluída: sem segredos; e-mail do autor trocado pelo `noreply` do
+   GitHub; repositório recriado só com o histórico corrigido.
 2. **(mantenedor)** Settings → General → Danger Zone → **Change visibility → Public**.
 3. **(mantenedor)** Settings → Security → **Private vulnerability reporting → Enable** (é o canal do
    `SECURITY.md`). Ativar também Dependabot alerts.
