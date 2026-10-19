@@ -1,10 +1,11 @@
 import { en, type VersaEditLabels } from './en'
+import { es } from './es'
 import { ptBR } from './pt-BR'
 
 export type { VersaEditLabels }
-export type VersaEditLocale = 'en' | 'pt-BR'
+export type VersaEditLocale = 'en' | 'pt-BR' | 'es'
 
-const DICTIONARIES: Record<VersaEditLocale, VersaEditLabels> = { en, 'pt-BR': ptBR }
+const DICTIONARIES: Record<VersaEditLocale, VersaEditLabels> = { en, 'pt-BR': ptBR, es }
 
 // Dicionário do idioma escolhido, com os textos trocados pela prop `labels`
 export function resolveLabels(

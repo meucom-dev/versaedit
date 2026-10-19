@@ -147,7 +147,7 @@ export interface VersaEditProps {
    * processam o áudio nos servidores do fabricante.
    */
   showDictation?: boolean
-  /** Idioma do ditado (padrão: o do `locale`, ex.: 'pt-BR', 'en-US') */
+  /** Idioma do ditado (padrão: o do `locale`: 'en-US', 'pt-BR' ou 'es-ES') */
   speechLang?: string
   /** Outro mecanismo de reconhecimento com a interface do SpeechRecognition */
   speechRecognition?: SpeechRecognitionConstructor
@@ -157,7 +157,7 @@ export interface VersaEditProps {
    * estilos injetados por script.
    */
   injectStyles?: boolean
-  /** Idioma da interface (padrão: 'en') */
+  /** Idioma da interface: 'en' (padrão), 'pt-BR' ou 'es' */
   locale?: VersaEditLocale
   /** Troca qualquer texto da interface */
   labels?: Partial<VersaEditLabels>

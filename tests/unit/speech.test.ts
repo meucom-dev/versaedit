@@ -31,6 +31,24 @@ describe('comandos de voz', () => {
   ])('en: %s', (input, expected) => {
     expect(applyVoiceCommands(input, 'en')).toBe(expected)
   })
+
+  it.each([
+    ['hola coma qué tal punto final', 'hola, qué tal.'],
+    ['es en serio signo de interrogación', 'es en serio?'],
+    ['qué bien signo de exclamación', 'qué bien!'],
+    ['lista dos puntos elementos', 'lista: elementos'],
+    ['uno punto y coma dos', 'uno; dos'],
+    ['y así puntos suspensivos', 'y así…'],
+    ['primera nueva línea segunda', 'primera\nsegunda'],
+    ['fin nuevo párrafo comienzo', 'fin\n\ncomienzo'],
+    ['Coma al principio', ', al principio'],
+    [
+      'la comadre y el punto de vista no son comandos',
+      'la comadre y el punto de vista no son comandos',
+    ],
+  ])('es: %s', (input, expected) => {
+    expect(applyVoiceCommands(input, 'es')).toBe(expected)
+  })
 })
 
 describe('formatação do trecho ditado', () => {

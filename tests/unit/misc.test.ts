@@ -9,18 +9,45 @@ import { DEFAULT_FONT_FAMILIES, googleFontsUrl } from '../../src/core/defaults'
 import { closestFontSizeOption, cssFontSizeToPoints, matchFontFamily } from '../../src/core/fonts'
 import { en } from '../../src/core/i18n/en'
 import { format, resolveLabels } from '../../src/core/i18n'
+import { es } from '../../src/core/i18n/es'
 import { ptBR } from '../../src/core/i18n/pt-BR'
 
 describe('idiomas', () => {
-  it('pt-BR tem exatamente as mesmas chaves do en, todas preenchidas', () => {
-    expect(Object.keys(ptBR).sort()).toEqual(Object.keys(en).sort())
-    for (const [key, value] of Object.entries(ptBR)) expect(value, key).not.toBe('')
-  })
-  it('marcadores {..} iguais nos dois idiomas', () => {
+  const OTHERS = { 'pt-BR': ptBR, es } as const
+  it.each(Object.entries(OTHERS))(
+    '%s tem exatamente as mesmas chaves do en, todas preenchidas',
+    (_, dict) => {
+      expect(Object.keys(dict).sort()).toEqual(Object.keys(en).sort())
+      for (const [key, value] of Object.entries(dict)) expect(value, key).not.toBe('')
+    },
+  )
+  it.each(Object.entries(OTHERS))('%s: marcadores {..} iguais aos do en', (_, dict) => {
     const marks = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join()
     for (const key of Object.keys(en) as (keyof typeof en)[]) {
-      expect(marks(ptBR[key]), key).toBe(marks(en[key]))
+      expect(marks(dict[key]), key).toBe(marks(en[key]))
     }
+  })
+  it('es: nenhum texto ficou igual ao do en ou do pt-BR, salvo termos técnicos', () => {
+    // Iguais de propósito: títulos com a etiqueta HTML e textos que se escrevem
+    // igual em espanhol e português
+    const SAME = new Set([
+      'heading2',
+      'heading3',
+      'heading4',
+      'center',
+      'linkApply',
+      'linkCancel',
+      'numberedList',
+    ])
+    for (const key of Object.keys(en) as (keyof typeof en)[]) {
+      if (SAME.has(key)) continue
+      expect(es[key], key).not.toBe(en[key])
+      expect(es[key], key).not.toBe(ptBR[key])
+    }
+  })
+  it('resolveLabels escolhe o dicionário do idioma (es) e usa o en para um idioma desconhecido', () => {
+    expect(resolveLabels('es').bold).toBe('Negrita (Ctrl+B)')
+    expect(resolveLabels('xx' as never).bold).toBe('Bold (Ctrl+B)')
   })
   it('resolveLabels aplica as trocas da prop labels', () => {
     const L = resolveLabels('pt-BR', { bold: 'Forte' })

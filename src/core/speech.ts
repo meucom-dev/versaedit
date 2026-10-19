@@ -42,7 +42,11 @@ export function browserSpeechRecognition(): SpeechRecognitionConstructor | null 
 }
 
 /** Idioma do reconhecimento para cada idioma da interface */
-export const SPEECH_LANG: Record<VersaEditLocale, string> = { en: 'en-US', 'pt-BR': 'pt-BR' }
+export const SPEECH_LANG: Record<VersaEditLocale, string> = {
+  en: 'en-US',
+  'pt-BR': 'pt-BR',
+  es: 'es-ES',
+}
 
 export type DictationError = 'denied' | 'no-microphone' | 'network' | 'other'
 
@@ -182,6 +186,17 @@ const VOICE_COMMANDS: Record<VersaEditLocale, [string, string][]> = {
     ['comma', ','],
     ['new paragraph', '\n\n'],
     ['new line', '\n'],
+  ],
+  es: [
+    ['signo de interrogación', '?'],
+    ['signo de exclamación', '!'],
+    ['punto y coma', ';'],
+    ['punto final', '.'],
+    ['dos puntos', ':'],
+    ['puntos suspensivos', '…'],
+    ['coma', ','],
+    ['nuevo párrafo', '\n\n'],
+    ['nueva línea', '\n'],
   ],
 }
 
