@@ -197,7 +197,7 @@ export function renderPage(t, { editedDate }) {
   onChange={setHtml}
   width="100%"
   height={480}
-  locale="${t.key === 'pt' ? 'pt-BR' : 'en'}"
+  locale="${LANGUAGES.find((l) => l.key === t.key).editorLocale}"
 /&gt;`
 
   // A marca de referência [1] não quebra para a linha de baixo (o navegador

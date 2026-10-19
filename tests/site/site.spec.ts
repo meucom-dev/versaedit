@@ -395,3 +395,21 @@ test.describe('logo por tema', () => {
     expect(r.corner, 'fundo transparente').toBe(0)
   })
 })
+
+test('interface do editor nos três idiomas: introdução e exemplo de uso com o locale da página', async ({
+  page,
+}) => {
+  const EXPECT = {
+    '/': { locale: 'en', langs: ['English', 'Brazilian Portuguese', 'Spanish'] },
+    '/pt/': { locale: 'pt-BR', langs: ['inglês', 'português do Brasil', 'espanhol'] },
+    '/es/': { locale: 'es', langs: ['inglés', 'portugués de Brasil', 'español'] },
+  } as const
+  for (const l of LANGS) {
+    const e = EXPECT[l.path]
+    await goto(page, l.path)
+    const usage = page.locator('pre', { hasText: '<VersaEdit' })
+    await expect(usage).toContainText(`locale="${e.locale}"`)
+    const lead = await page.locator('#content p', { hasText: 'Next.js' }).first().textContent()
+    for (const lang of e.langs) expect(lead, `${l.path}: ${lang}`).toContain(lang)
+  }
+})

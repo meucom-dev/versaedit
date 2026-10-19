@@ -3,11 +3,12 @@
 // mesma, só o texto muda. Os textos podem conter HTML simples (code, strong, a).
 const REPO = 'https://github.com/meucom-dev/versaedit'
 
-// Idiomas da página inicial, na ordem do seletor (cada nome no próprio idioma)
+// Idiomas da página inicial, na ordem do seletor (cada nome no próprio idioma);
+// editorLocale é o valor da prop `locale` do editor no exemplo de uso
 export const LANGUAGES = [
-  { key: 'en', label: 'English', htmlLang: 'en', path: '/' },
-  { key: 'pt', label: 'Português', htmlLang: 'pt-BR', path: '/pt/' },
-  { key: 'es', label: 'Español', htmlLang: 'es', path: '/es/' },
+  { key: 'en', label: 'English', htmlLang: 'en', path: '/', editorLocale: 'en' },
+  { key: 'pt', label: 'Português', htmlLang: 'pt-BR', path: '/pt/', editorLocale: 'pt-BR' },
+  { key: 'es', label: 'Español', htmlLang: 'es', path: '/es/', editorLocale: 'es' },
 ]
 
 export const CONTENT = {
@@ -53,7 +54,7 @@ export const CONTENT = {
     },
     lead: [
       '<strong>VersaEdit</strong> is a lightweight, open-source rich text editor for React web applications. It edits HTML with the browser’s own <code>contentEditable</code> and adds a toolbar, sanitization with DOMPurify, its own undo and redo history, cleanup of content pasted from web pages and Microsoft Word, images, text boxes, dictation and saving or opening <code>.html</code> files.<sup><a href="#ref-1">[1]</a></sup>',
-      'The editor has no backend dependency: it hands the application plain HTML, to be stored wherever the developer chooses, such as Supabase, Firebase or any REST service. It supports React 18.3 and 19 and server rendering (tested with Next.js), and ships an English and a Brazilian Portuguese interface in which every text can be replaced.',
+      'The editor has no backend dependency: it hands the application plain HTML, to be stored wherever the developer chooses, such as Supabase, Firebase or any REST service. It supports React 18.3 and 19 and server rendering (tested with Next.js), and ships an English, a Brazilian Portuguese and a Spanish interface, in which every text can be replaced.',
       'Development started in 2026. VersaEdit is free software, published under the MIT License.',
     ],
     sections: {
@@ -219,7 +220,7 @@ export const CONTENT = {
     },
     lead: [
       'O <strong>VersaEdit</strong> é um editor de texto rico leve e de código aberto para aplicações web em React. Ele edita HTML com o próprio <code>contentEditable</code> do navegador e acrescenta barra de ferramentas, sanitização com DOMPurify, histórico próprio de desfazer e refazer, limpeza do conteúdo colado de páginas da web e do Microsoft Word, imagens, caixas de texto, ditado e abertura e gravação de arquivos <code>.html</code>.<sup><a href="#ref-1">[1]</a></sup>',
-      'O editor não depende de backend: entrega HTML puro à aplicação, para ser guardado onde o desenvolvedor preferir, como Supabase, Firebase ou qualquer serviço REST. Suporta React 18.3 e 19 e renderização no servidor (testada com Next.js), e tem interface em inglês e em português do Brasil, com todos os textos substituíveis.',
+      'O editor não depende de backend: entrega HTML puro à aplicação, para ser guardado onde o desenvolvedor preferir, como Supabase, Firebase ou qualquer serviço REST. Suporta React 18.3 e 19 e renderização no servidor (testada com Next.js), e tem interface em inglês, em português do Brasil e em espanhol, com todos os textos substituíveis.',
       'O desenvolvimento começou em 2026. O VersaEdit é software livre, publicado sob a licença MIT.',
     ],
     sections: {
@@ -392,7 +393,7 @@ export const CONTENT = {
     },
     lead: [
       '<strong>VersaEdit</strong> es un editor de texto enriquecido ligero y de código abierto para aplicaciones web con React. Edita HTML con el propio <code>contentEditable</code> del navegador y añade una barra de herramientas, saneamiento con DOMPurify, un historial propio de deshacer y rehacer, limpieza del contenido pegado desde páginas web y Microsoft Word, imágenes, cuadros de texto, dictado y apertura y guardado de archivos <code>.html</code>.<sup><a href="#ref-1">[1]</a></sup>',
-      'El editor no depende de un backend: entrega HTML plano a la aplicación, que lo guarda donde el desarrollador prefiera, como Supabase, Firebase o cualquier servicio REST. Es compatible con React 18.3 y 19 y con el renderizado en el servidor (probado con Next.js), y su interfaz está disponible en inglés y en portugués de Brasil, con todos los textos reemplazables.',
+      'El editor no depende de un backend: entrega HTML plano a la aplicación, que lo guarda donde el desarrollador prefiera, como Supabase, Firebase o cualquier servicio REST. Es compatible con React 18.3 y 19 y con el renderizado en el servidor (probado con Next.js), y su interfaz está disponible en inglés, en portugués de Brasil y en español, con todos los textos reemplazables.',
       'El desarrollo comenzó en 2026. VersaEdit es software libre, publicado bajo la licencia MIT.',
     ],
     sections: {
