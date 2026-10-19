@@ -40,6 +40,7 @@ import {
 import {
   createPointerTracker,
   dropElementAtPoint,
+  keepDropPosition,
   getManualOffset,
   moveElementInFlow,
   nudgeElement,
@@ -1142,7 +1143,13 @@ export class VersaEditCore {
     } else {
       // Reposiciona no ponto de queda — o texto passa a contornar o elemento
       // com a margem de 40px do CSS; se o ponto for inválido, restaura a posição
-      if (!dropElementAtPoint(this.el, el, e.clientX, e.clientY)) el.style.transform = ''
+      // onde o elemento estava visualmente ao soltar (com o deslocamento do arrasto)
+      const dropped = el.getBoundingClientRect()
+      if (dropElementAtPoint(this.el, el, e.clientX, e.clientY)) {
+        keepDropPosition(el, this.el, dropped)
+      } else {
+        el.style.transform = ''
+      }
       // O clique que vem logo depois de um arrasto não é um clique do usuário:
       // no Firefox ele chega ao editor (o elemento mudou de lugar) e desmarcaria
       this.ignoreNextClick = true

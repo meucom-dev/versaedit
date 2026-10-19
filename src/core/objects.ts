@@ -69,6 +69,26 @@ export function setFloatSide(el: HTMLElement, side: 'left' | 'right') {
   }
 }
 
+// Depois de soltar: a flutuação leva o elemento até a borda; uma margem lateral
+// o devolve ao ponto onde foi solto, e o texto o contorna pelo lado livre (o
+// CSS só contorna de um lado). A margem nunca fica menor que a do CSS (40px)
+// nem empurra o elemento para fora da área.
+export function keepDropPosition(el: HTMLElement, editor: HTMLElement, dropped: DOMRect) {
+  const style = window.getComputedStyle(el)
+  const floatLeft = style.float === 'left'
+  if (!floatLeft && style.float !== 'right') return
+  const rect = el.getBoundingClientRect()
+  const pad = window.getComputedStyle(editor)
+  const inner = editor.clientWidth - parseFloat(pad.paddingLeft) - parseFloat(pad.paddingRight)
+  const base = parseFloat(floatLeft ? style.marginLeft : style.marginRight) || 0
+  const room = inner - rect.width - base * 2
+  const shift = floatLeft ? dropped.left - rect.left : rect.right - dropped.right
+  const extra = Math.min(Math.max(0, shift), Math.max(0, room))
+  // Poucos pixels da borda: fica na borda, sem estilo a mais no HTML
+  if (extra < 8) return
+  el.style[floatLeft ? 'marginLeft' : 'marginRight'] = `${Math.round(base + extra)}px`
+}
+
 // Move o elemento um bloco acima/abaixo no fluxo do conteúdo
 export function moveElementInFlow(el: HTMLElement, dir: -1 | 1) {
   const parent = el.parentNode

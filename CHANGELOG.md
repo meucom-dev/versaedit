@@ -11,6 +11,13 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 ### Release preparation (0.5.0-beta.1)
 
+#### Changed
+
+- Drag and drop of images and text boxes: the element stays where it is dropped (it used to
+  snap to the left or right edge). It floats to the nearer side with a horizontal margin to keep its
+  position; text wraps on the free side (CSS floats wrap on one side only) and the 40px margin is
+  kept. The Left/Right/Center buttons reset that offset.
+
 #### Added
 
 - `scrollable` prop (default `true`): the editing area scrolls when the content is taller than
@@ -135,6 +142,8 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 ## Pending investigation
 
+- Firefox diagnostic: image drag tests (`tests/e2e/drop-position.spec.ts`) can time out in
+  `mouse.move` when run in parallel (4 of 5 once, 1 of 5 on rerun); 15/15 when run one at a time.
 - Firefox diagnostic: `injectStyles={false}` test (`tests/e2e/css.spec.ts`) failed once in the full
   Firefox + WebKit run and passed 15/15 when repeated alone; suspected timing under parallel load.
 - Firefox diagnostic: `onConfirm "async-yes"` (`tests/e2e/dialogs.spec.ts`) failed once in the full
