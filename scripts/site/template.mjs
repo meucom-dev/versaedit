@@ -26,7 +26,9 @@ const CSS = `
 :root {
   --bg: #ffffff; --fg: #202122; --muted: #54595d; --link: #3366cc; --line: #a2a9b1;
   --hair: #eaecf0; --panel: #f8f9fa; --head: #eaecf0; --notice: #fc3; --notice-ink: #8a5d00;
-  --ok: #14866d; --warn: #a66200; --off: #72777d; --logo-bg: #ffffff;
+  --ok: #14866d; --warn: #a66200; --off: #72777d;
+  /* Logo oficial com fundo transparente: no tema escuro, sobre um selo claro */
+  --logo-bg: transparent; --logo-pad: 0; --logo-band: #ffffff;
   --serif: Georgia, "Times New Roman", Times, serif;
   --sans: Arial, Helvetica, "Liberation Sans", sans-serif;
   --mono: Consolas, "Liberation Mono", Menlo, Monaco, "Courier New", monospace;
@@ -37,6 +39,7 @@ const CSS = `
     --bg: #101418; --fg: #eaecf0; --muted: #a2a9b1; --link: #88a3e8; --line: #54595d;
     --hair: #2b3036; --panel: #1a1e23; --head: #262b31; --notice: #c99a00; --notice-ink: #f0c040;
     --ok: #4fc1a0; --warn: #e6a43c; --off: #a2a9b1; color-scheme: dark;
+    --logo-bg: #f5f7fa; --logo-pad: 4px 6px; --logo-band: #f5f7fa;
   }
 }
 * { box-sizing: border-box; }
@@ -55,8 +58,8 @@ img { max-width: 100%; }
 .site-header { border-bottom: 1px solid var(--hair); }
 .site-header .wrap { display: flex; align-items: center; gap: 20px; padding-top: 10px; padding-bottom: 10px; }
 .menu-btn { display: none; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 2px; background: var(--bg); color: var(--fg); font: 14px var(--sans); padding: 6px 10px; cursor: pointer; }
-.logo { display: block; flex: none; line-height: 0; background: var(--logo-bg); border-radius: 2px; }
-.logo img { display: block; width: 116px; height: 64px; }
+.logo { display: block; flex: none; line-height: 0; background: var(--logo-bg); padding: var(--logo-pad); border-radius: 4px; }
+.logo img { display: block; width: 124px; height: 64px; }
 .site-nav { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; font-size: 14px; }
 .lang-link { display: inline-flex; align-items: center; gap: 6px; }
 
@@ -99,7 +102,7 @@ ol.refs { padding-left: 24px; font-size: 13px; display: grid; gap: 6px; }
 .facts { background: var(--panel); border: 1px solid var(--line); padding: 6px; font-size: 13px; line-height: 1.4; }
 .facts .name { margin: 0; text-align: center; font: 700 19px var(--sans); padding: 6px 0; }
 .facts figure { margin: 0; }
-.facts .logo-band { background: var(--logo-bg); padding: 10px 0; display: flex; justify-content: center; }
+.facts .logo-band { background: var(--logo-band); padding: 10px 0; display: flex; justify-content: center; }
 .facts .logo-band img { display: block; width: 220px; height: auto; }
 .facts figcaption { text-align: center; color: var(--muted); font-size: 12px; padding: 4px 0 8px; }
 .facts dl { margin: 0; }
@@ -209,7 +212,7 @@ export function renderPage(t, { editedDate }) {
 <header class="site-header">
   <div class="wrap">
     <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="rail">${ICON.menu}<span>${t.nav.contents}</span></button>
-    <a class="logo" href="${t.path}"><img src="/assets/logo.png" width="116" height="64" alt="VersaEdit"></a>
+    <a class="logo" href="${t.path}"><img src="/assets/logo.png" width="124" height="64" alt="VersaEdit"></a>
     <nav class="site-nav" aria-label="${t.nav.label}">
       <a href="/playground/">${t.nav.playground}</a>
       <a href="${t.docsUrl}">${t.nav.docs}</a>
@@ -306,7 +309,7 @@ ${t.references.map(([href, label, after], i) => `          <li id="ref-${i + 1}"
       <aside class="facts" aria-labelledby="facts-name">
         <p class="name" id="facts-name">VersaEdit</p>
         <figure>
-          <div class="logo-band"><img src="/assets/logo.png" width="220" height="121" alt="${t.facts.caption}"></div>
+          <div class="logo-band"><img src="/assets/logo.png" width="220" height="114" alt="${t.facts.caption}"></div>
           <figcaption>${t.facts.caption}</figcaption>
         </figure>
         <dl>
