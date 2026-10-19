@@ -115,7 +115,7 @@ export const EDITOR_CSS = `
 .ve-content .textbox-handle:active { cursor: grabbing; }
 
 /* Menus flutuantes de imagem e caixa de texto */
-.ve-float-toolbar { position: absolute; display: flex; width: max-content; white-space: nowrap; gap: 4px; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 4px 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 100; }
+.ve-float-toolbar { position: absolute; display: flex; flex-wrap: wrap; width: max-content; max-width: calc(100% - 22px); white-space: nowrap; gap: 4px; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 4px 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 100; }
 .ve-float-toolbar button { border: none; background: none; cursor: pointer; padding: 2px 6px; border-radius: 4px; font: inherit; font-size: 13px; color: #555; display: inline-flex; align-items: center; gap: 4px; }
 .ve-float-toolbar button:hover { background: #f0f0f0; }
 .ve-float-toolbar button.ve-danger { color: #dc3545; }
