@@ -9,6 +9,7 @@
     "playground",
     "playwright.config.ts",
     "playwright.package.config.ts",
+    "playwright.site.config.ts",
     "vitest.config.ts",
     "vite.config.ts",
     "vite.playground.config.ts"

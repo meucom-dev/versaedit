@@ -11,6 +11,8 @@ const TEXT = {
     second: '<p>Second editor with <i>onSave</i>.</p>',
     useOnSave: 'Show editor with onSave',
     hideOnSave: 'Hide editor with onSave',
+    siteNote:
+      'Beta — the API may change before 1.0. Nothing you type leaves your browser: VersaEdit has no server. Dictation, when used, sends audio to your browser vendor (Google, Microsoft or Apple).',
   },
   'pt-BR': {
     locale: 'Idioma',
@@ -18,6 +20,8 @@ const TEXT = {
     second: '<p>Segundo editor com <i>onSave</i>.</p>',
     useOnSave: 'Mostrar editor com onSave',
     hideOnSave: 'Esconder editor com onSave',
+    siteNote:
+      'Beta — a API pode mudar antes da 1.0. Nada do que você digita sai do navegador: o VersaEdit não tem servidor. O ditado, quando usado, envia o áudio ao fabricante do navegador (Google, Microsoft ou Apple).',
   },
 } satisfies Record<VersaEditLocale, Record<string, string>>
 
@@ -128,6 +132,13 @@ function App() {
           />
         )}
       </details>
+      {/* Só no playground público (npm run build:site) */}
+      {import.meta.env.MODE === 'site' && (
+        <p data-testid="site-note" style={{ marginTop: 24, fontSize: 12, color: '#666' }}>
+          {T.siteNote} <a href="https://versaedit.dev">versaedit.dev</a> ·{' '}
+          <a href="mailto:support@versaedit.dev">support@versaedit.dev</a>
+        </p>
+      )}
     </div>
   )
 }

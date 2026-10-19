@@ -16,3 +16,5 @@ examples/*/node_modules/
 examples/*/dist/
 examples/*/.next/
 examples/*/next-env.d.ts
+# Site público (gerado por npm run build:site)
+/site/

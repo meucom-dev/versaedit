@@ -93,3 +93,17 @@ jobs:
           name: package-report
           path: test-results/
           retention-days: 7
+
+  site:
+    name: Site público (página inicial e playground)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:site
