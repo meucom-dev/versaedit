@@ -1,10 +1,21 @@
 // Barra de ferramentas em telas estreitas: o grupo de controles da caixa de
-// texto (.ve-group) quebra em linhas e não cria rolagem horizontal; de 375px
-// para cima, e no computador, continua numa linha só, como antes.
+// texto (.ve-group) quebra em até duas linhas e não cria rolagem horizontal. Em
+// 375px o grupo fica no limite da área útil da barra: cabe numa linha ou quebra
+// em duas conforme as fontes do sistema e o navegador (Chromium no Windows: uma;
+// Chromium no Linux e WebKit: duas). No computador continua numa linha só.
 import { expect, test, type Page } from '@playwright/test'
 import { mount } from './helpers'
 
 const group = (page: Page) => page.getByRole('group', { name: 'Text box tools' })
+
+// Controles do grupo, pelo nome acessível
+const CONTROLS = [
+  ['button', 'Insert text box'],
+  ['button', 'Text box border color'],
+  ['combobox', 'Text box border width'],
+  ['combobox', 'Text box border line style'],
+  ['button', 'Delete text box'],
+] as const
 
 async function layout(page: Page) {
   return page.evaluate(() => {
@@ -13,16 +24,29 @@ async function layout(page: Page) {
     const t = r('#host .ve-toolbar')
     const controls = [...document.querySelectorAll('#host .ve-group > *')].map((e) => {
       const b = e.getBoundingClientRect()
-      return { right: b.right, left: b.left, w: b.width, h: b.height }
+      return { right: b.right, left: b.left, top: b.top, bottom: b.bottom, w: b.width, h: b.height }
     })
     return {
       scroll: document.documentElement.scrollWidth,
       view: window.innerWidth,
-      group: { left: g.left, right: g.right, height: g.height },
+      group: { left: g.left, right: g.right, top: g.top, bottom: g.bottom, height: g.height },
       toolbar: { left: t.left, right: t.right },
       controls,
     }
   })
+}
+
+// Linhas ocupadas pelos controles: um controle começa outra linha quando fica
+// inteiro abaixo do anterior
+function rows(controls: { top: number; bottom: number }[]) {
+  const sorted = [...controls].sort((a, b) => a.top - b.top)
+  let n = 0
+  let bottom = -Infinity
+  for (const c of sorted) {
+    if (c.top >= bottom - 1) n++
+    bottom = Math.max(bottom, c.bottom)
+  }
+  return n
 }
 
 for (const width of [320, 340, 375]) {
@@ -31,23 +55,40 @@ for (const width of [320, 340, 375]) {
 
     test('sem rolagem horizontal; grupo e controles dentro da barra e da tela', async ({
       page,
-      browserName,
     }) => {
       await mount(page, { width: '100%', height: 300 })
+      // Todos os controles presentes, visíveis e com nome acessível
+      const g = group(page)
+      for (const [role, name] of CONTROLS) await expect(g.getByRole(role, { name })).toBeVisible()
+
       const l = await layout(page)
       expect(l.scroll, 'rolagem horizontal').toBeLessThanOrEqual(l.view)
       expect(l.group.right).toBeLessThanOrEqual(l.toolbar.right)
       expect(l.group.left).toBeGreaterThanOrEqual(l.toolbar.left)
+      expect(l.controls).toHaveLength(CONTROLS.length)
       for (const c of l.controls) {
         expect(c.w, 'controle visível').toBeGreaterThan(0)
+        expect(c.h, 'controle visível').toBeGreaterThan(0)
+        // Inteiro dentro do grupo (sem corte) e da tela
         expect(c.right, 'controle dentro do grupo').toBeLessThanOrEqual(l.group.right)
+        expect(c.left, 'controle dentro do grupo').toBeGreaterThanOrEqual(l.group.left)
+        expect(c.top, 'controle dentro do grupo').toBeGreaterThanOrEqual(l.group.top - 0.5)
+        expect(c.bottom, 'controle dentro do grupo').toBeLessThanOrEqual(l.group.bottom + 0.5)
+        expect(c.left, 'controle dentro da tela').toBeGreaterThanOrEqual(0)
+        expect(c.right, 'controle dentro da tela').toBeLessThanOrEqual(l.view)
       }
-      // Até 340px o grupo ocupa duas linhas. Em 375px, uma linha no Chromium; no
-      // WebKit o grupo (312px) é 1px mais largo que a área útil da barra e quebra
-      // em duas (antes da correção ele invadia o respiro interno da barra)
-      if (width >= 375 && browserName === 'chromium')
-        expect(l.group.height, 'uma linha').toBeLessThan(40)
-      else expect(l.group.height, 'no máximo duas linhas').toBeLessThan(75)
+      // Nenhum controle sobre outro
+      for (const [i, a] of l.controls.entries())
+        for (const b of l.controls.slice(i + 1)) {
+          const overlap =
+            Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0.5 &&
+            Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0.5
+          expect(overlap, 'controles sobrepostos').toBe(false)
+        }
+      // No máximo duas linhas, em qualquer sistema e navegador; a altura do grupo
+      // acompanha (uma linha tem ~30px, duas ~66px)
+      expect(rows(l.controls), 'no máximo duas linhas').toBeLessThanOrEqual(2)
+      expect(l.group.height, 'no máximo duas linhas').toBeLessThan(75)
     })
 
     test('controles da caixa de texto funcionam por toque', async ({ page }) => {
