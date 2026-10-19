@@ -13,6 +13,9 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Changed
 
+- Playground: the sample contents (formatted text, table, image, text box, long content) load in
+  the selected language, with the same HTML structure; content being edited is not changed by
+  switching the language, only by loading a sample again.
 - Drag and drop of images and text boxes: the element stays where it is dropped (it used to
   snap to the left or right edge). It floats to the nearer side with a horizontal margin to keep its
   position; text wraps on the free side (CSS floats wrap on one side only) and the 40px margin is
@@ -61,6 +64,16 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
   15-font menu, loaded from Google Fonts (stated in the
   public playground's privacy note). The package defaults are unchanged: no Google Fonts request
   unless `loadGoogleFonts` is set.
+
+#### Fixed
+
+- Tapping an image on a phone no longer scrolls the page or leaves the image unselected. Before
+  measuring, the image/text box menu was drawn at a provisional position that could overflow the
+  right edge of the screen; mobile browsers briefly widened the page and scrolled it, and the tap's
+  click then landed outside the image (at 320px, on the text, which deselected it). The menu is now
+  measured from the left edge of the editing area; its final position is unchanged.
+- Playground: switching the language no longer reloads the second editor (`onSave`), which erased
+  what had been typed in it.
 
 ### Batch v0.4.x — playground, independent integration, distribution
 
