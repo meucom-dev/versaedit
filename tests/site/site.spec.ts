@@ -231,3 +231,62 @@ test('arquivos do site: CNAME do domínio e nada de dados locais ou chaves', () 
     expect(text, file).not.toMatch(/service_role|sk-(or|ant|proj)-|eyJ[A-Za-z0-9_-]{30,}\./)
   }
 })
+
+test.describe('logo oficial', () => {
+  const measure = (page: Page) =>
+    page.evaluate(() => {
+      const r = (s: string) => document.querySelector(s)!.getBoundingClientRect()
+      const bg = (s: string) => getComputedStyle(document.querySelector(s)!).backgroundColor
+      const btn = document.getElementById('menu-btn')!
+      return {
+        head: r('.logo img'),
+        facts: r('.facts .logo-band img'),
+        rail: r('#rail'),
+        btn: getComputedStyle(btn).display === 'none' ? null : btn.getBoundingClientRect(),
+        backgrounds: ['.logo', '.logo img', '.facts .logo-band', '.facts .logo-band img'].map(bg),
+        view: window.innerWidth,
+      }
+    })
+
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`mesmo tamanho (110px) no cabeçalho e na caixa, sem fundo — tema ${scheme}`, async ({
+      page,
+    }) => {
+      await page.emulateMedia({ colorScheme: scheme })
+      for (const width of [1440, 768, 375, 320]) {
+        await page.setViewportSize({ width, height: 900 })
+        await goto(page, '/')
+        const m = await measure(page)
+        expect(m.head.width, `${width}px`).toBeCloseTo(110, 0)
+        expect(m.facts.width, `${width}px`).toBeCloseTo(m.head.width, 1)
+        expect(m.facts.height, `${width}px`).toBeCloseTo(m.head.height, 1)
+        // Proporção do arquivo (880×455), sem distorção
+        expect(m.head.width / m.head.height).toBeCloseTo(880 / 455, 2)
+        for (const c of m.backgrounds)
+          expect(c, 'sem fundo, selo ou faixa').toBe('rgba(0, 0, 0, 0)')
+      }
+    })
+  }
+
+  test('canto superior esquerdo: alinhado ao sumário no desktop, acima do botão nas telas menores', async ({
+    page,
+  }) => {
+    for (const l of LANGS) {
+      await page.setViewportSize({ width: 1440, height: 900 })
+      await goto(page, l.path)
+      let m = await measure(page)
+      expect(Math.round(m.head.left)).toBe(Math.round(m.rail.left))
+      expect(m.head.top).toBeLessThan(m.rail.top)
+      for (const width of [768, 375, 320]) {
+        await page.setViewportSize({ width, height: 900 })
+        await goto(page, l.path)
+        m = await measure(page)
+        expect(m.btn, `${width}px: botão Conteúdo visível`).not.toBeNull()
+        expect(m.btn!.top, `${width}px: botão abaixo do logo`).toBeGreaterThanOrEqual(m.head.bottom)
+        expect(Math.round(m.head.left), `${width}px: logo à esquerda`).toBe(Math.round(m.btn!.left))
+        // Não centralizado
+        expect(m.head.left + m.head.width / 2).toBeLessThan(m.view / 2)
+      }
+    }
+  })
+})

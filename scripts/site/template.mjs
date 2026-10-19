@@ -27,8 +27,6 @@ const CSS = `
   --bg: #ffffff; --fg: #202122; --muted: #54595d; --link: #3366cc; --line: #a2a9b1;
   --hair: #eaecf0; --panel: #f8f9fa; --head: #eaecf0; --notice: #fc3; --notice-ink: #8a5d00;
   --ok: #14866d; --warn: #a66200; --off: #72777d;
-  /* Logo oficial com fundo transparente: no tema escuro, sobre um selo claro */
-  --logo-bg: transparent; --logo-pad: 0; --logo-band: #ffffff;
   --serif: Georgia, "Times New Roman", Times, serif;
   --sans: Arial, Helvetica, "Liberation Sans", sans-serif;
   --mono: Consolas, "Liberation Mono", Menlo, Monaco, "Courier New", monospace;
@@ -39,7 +37,6 @@ const CSS = `
     --bg: #101418; --fg: #eaecf0; --muted: #a2a9b1; --link: #88a3e8; --line: #54595d;
     --hair: #2b3036; --panel: #1a1e23; --head: #262b31; --notice: #c99a00; --notice-ink: #f0c040;
     --ok: #4fc1a0; --warn: #e6a43c; --off: #a2a9b1; color-scheme: dark;
-    --logo-bg: #f5f7fa; --logo-pad: 4px 6px; --logo-band: #f5f7fa;
   }
 }
 * { box-sizing: border-box; }
@@ -56,10 +53,12 @@ img { max-width: 100%; }
 @media (min-width: 768px) { .wrap { padding-left: 32px; padding-right: 32px; } }
 
 .site-header { border-bottom: 1px solid var(--hair); }
-.site-header .wrap { display: flex; align-items: center; gap: 20px; padding-top: 10px; padding-bottom: 10px; }
+.site-header .header-row { display: flex; align-items: center; gap: 20px; padding-top: 10px; padding-bottom: 10px; }
+.site-header .menu-row { display: none; padding-bottom: 10px; }
 .menu-btn { display: none; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 2px; background: var(--bg); color: var(--fg); font: 14px var(--sans); padding: 6px 10px; cursor: pointer; }
-.logo { display: block; flex: none; line-height: 0; background: var(--logo-bg); padding: var(--logo-pad); border-radius: 4px; }
-.logo img { display: block; width: 124px; height: 64px; }
+/* Logo oficial, transparente, com o mesmo tamanho no cabeçalho e na caixa de informações */
+.logo { display: block; flex: none; line-height: 0; }
+.logo img, .facts .logo-band img { display: block; width: 110px; height: auto; aspect-ratio: 880 / 455; }
 .site-nav { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; font-size: 14px; }
 .lang-link { display: inline-flex; align-items: center; gap: 6px; }
 
@@ -102,8 +101,7 @@ ol.refs { padding-left: 24px; font-size: 13px; display: grid; gap: 6px; }
 .facts { background: var(--panel); border: 1px solid var(--line); padding: 6px; font-size: 13px; line-height: 1.4; }
 .facts .name { margin: 0; text-align: center; font: 700 19px var(--sans); padding: 6px 0; }
 .facts figure { margin: 0; }
-.facts .logo-band { background: var(--logo-band); padding: 10px 0; display: flex; justify-content: center; }
-.facts .logo-band img { display: block; width: 220px; height: auto; }
+.facts .logo-band { padding: 10px 0; display: flex; justify-content: center; }
 .facts figcaption { text-align: center; color: var(--muted); font-size: 12px; padding: 4px 0 8px; }
 .facts dl { margin: 0; }
 .facts .row { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 10px; padding: 5px 6px; border-top: 1px solid var(--hair); }
@@ -120,6 +118,7 @@ ol.refs { padding-left: 24px; font-size: 13px; display: grid; gap: 6px; }
 
 /* Tablet: sumário recolhível (botão Conteúdo), artigo e caixa lado a lado */
 @media (max-width: 1199px) {
+  .site-header .menu-row { display: block; }
   .menu-btn { display: inline-flex; }
   .body { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .rail { position: static; display: none; border: 1px solid var(--hair); background: var(--panel); padding: 12px 16px; }
@@ -129,7 +128,7 @@ ol.refs { padding-left: 24px; font-size: 13px; display: grid; gap: 6px; }
 }
 /* Celular: uma coluna, caixa de informações logo depois do título, tabela em blocos */
 @media (max-width: 767px) {
-  .site-header .wrap { flex-wrap: wrap; gap: 10px 14px; }
+  .site-header .header-row { flex-wrap: wrap; gap: 10px 14px; }
   .site-nav { margin-left: 0; width: 100%; gap: 6px 16px; }
   h1 { font-size: 28px; }
   .content { grid-template-columns: minmax(0, 1fr); }
@@ -210,15 +209,17 @@ export function renderPage(t, { editedDate }) {
 <body>
 <a class="skip" href="#content">${t.skip}</a>
 <header class="site-header">
-  <div class="wrap">
-    <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="rail">${ICON.menu}<span>${t.nav.contents}</span></button>
-    <a class="logo" href="${t.path}"><img src="/assets/logo.png" width="124" height="64" alt="VersaEdit"></a>
+  <div class="wrap header-row">
+    <a class="logo" href="${t.path}"><img src="/assets/logo.png" width="110" height="57" alt="VersaEdit"></a>
     <nav class="site-nav" aria-label="${t.nav.label}">
       <a href="/playground/">${t.nav.playground}</a>
       <a href="${t.docsUrl}">${t.nav.docs}</a>
       <a href="${REPO}">${t.nav.github}</a>
       <a class="lang-link" href="${other}" hreflang="${t.otherLang === 'pt' ? 'pt-BR' : 'en'}" lang="${t.otherLang === 'pt' ? 'pt-BR' : 'en'}" data-lang-switch>${ICON.languages}${t.otherLabel}</a>
     </nav>
+  </div>
+  <div class="wrap menu-row">
+    <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="rail">${ICON.menu}<span>${t.nav.contents}</span></button>
   </div>
 </header>
 
@@ -309,7 +310,7 @@ ${t.references.map(([href, label, after], i) => `          <li id="ref-${i + 1}"
       <aside class="facts" aria-labelledby="facts-name">
         <p class="name" id="facts-name">VersaEdit</p>
         <figure>
-          <div class="logo-band"><img src="/assets/logo.png" width="220" height="114" alt="${t.facts.caption}"></div>
+          <div class="logo-band"><img src="/assets/logo.png" width="110" height="57" alt="${t.facts.caption}"></div>
           <figcaption>${t.facts.caption}</figcaption>
         </figure>
         <dl>
