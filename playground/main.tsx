@@ -23,6 +23,15 @@ const TEXT = {
     siteNote:
       'Beta — a API pode mudar antes da 1.0. Nada do que você digita sai do navegador: o VersaEdit não tem servidor. Este playground carrega as fontes do Google Fonts (seu navegador contata o Google; o pacote do editor não faz isso por padrão). O ditado, quando usado, envia o áudio ao fabricante do navegador (Google, Microsoft ou Apple).',
   },
+  es: {
+    locale: 'Idioma',
+    showHtml: 'Ver HTML',
+    second: '<p>Segundo editor con <i>onSave</i>.</p>',
+    useOnSave: 'Mostrar editor con onSave',
+    hideOnSave: 'Ocultar editor con onSave',
+    siteNote:
+      'Beta — la API puede cambiar antes de la 1.0. Nada de lo que escriba sale de su navegador: VersaEdit no tiene servidor. Este playground carga sus fuentes desde Google Fonts (su navegador se conecta con Google; el paquete del editor no lo hace de forma predeterminada). El dictado, cuando se usa, envía el audio al fabricante del navegador (Google, Microsoft o Apple).',
+  },
 } satisfies Record<VersaEditLocale, Record<string, string>>
 
 // Só para exibir: imagens embutidas (base64) aparecem abreviadas, com o tamanho
@@ -116,6 +125,7 @@ function App() {
           >
             <option value="en">English</option>
             <option value="pt-BR">Português (Brasil)</option>
+            <option value="es">Español</option>
           </select>
         </label>
         {/* Microfone em destaque, fora da barra de ferramentas */}

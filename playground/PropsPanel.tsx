@@ -163,6 +163,9 @@ export const PANEL_TEXT = {
     look: 'Appearance',
     accent: 'Accent color',
     frame: 'Frame (width, color, radius)',
+    frameWidth: 'Frame width',
+    frameColor: 'Frame color',
+    frameRadius: 'Frame radius',
     behavior: 'Behavior',
     useOnError: 'onError (log instead of alert)',
     content: 'Sample content',
@@ -188,6 +191,9 @@ export const PANEL_TEXT = {
     look: 'Aparência',
     accent: 'Cor de destaque',
     frame: 'Moldura (largura, cor, raio)',
+    frameWidth: 'Largura da moldura',
+    frameColor: 'Cor da moldura',
+    frameRadius: 'Raio da moldura',
     behavior: 'Comportamento',
     useOnError: 'onError (registro em vez de alert)',
     content: 'Conteúdo de exemplo',
@@ -204,7 +210,35 @@ export const PANEL_TEXT = {
       long: 'Conteúdo longo',
     },
   },
-} as const
+  es: {
+    title: 'Propiedades',
+    toolbar: 'Grupos de la barra',
+    size: 'Tamaño',
+    width: 'Ancho',
+    height: 'Alto',
+    look: 'Apariencia',
+    accent: 'Color de énfasis',
+    frame: 'Marco (ancho, color, radio)',
+    frameWidth: 'Ancho del marco',
+    frameColor: 'Color del marco',
+    frameRadius: 'Radio del marco',
+    behavior: 'Comportamiento',
+    useOnError: 'onError (registro en lugar de alert)',
+    content: 'Contenido de ejemplo',
+    load: 'Cargar',
+    events: 'Eventos',
+    jsx: 'JSX equivalente',
+    reset: 'Restablecer',
+    samples: {
+      empty: 'Vacío',
+      formatted: 'Texto con formato',
+      table: 'Tabla',
+      image: 'Imagen',
+      textbox: 'Cuadro de texto',
+      long: 'Contenido largo',
+    },
+  },
+} as const satisfies Record<VersaEditLocale, unknown>
 
 const fieldset = { border: '1px solid #ddd', borderRadius: 6, margin: '8px 0', padding: 8 } as const
 const row = { display: 'flex', flexWrap: 'wrap', gap: '4px 16px', alignItems: 'center' } as const
@@ -295,14 +329,14 @@ export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, even
               type="number"
               min={0}
               max={20}
-              aria-label="frame width"
+              aria-label={T.frameWidth}
               value={s.frameWidth}
               onChange={(e) => set('frameWidth', Number(e.target.value))}
               style={{ width: 50 }}
             />{' '}
             <input
               type="color"
-              aria-label="frame color"
+              aria-label={T.frameColor}
               value={s.frameColor}
               onChange={(e) => set('frameColor', e.target.value)}
             />{' '}
@@ -310,7 +344,7 @@ export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, even
               type="number"
               min={0}
               max={40}
-              aria-label="frame radius"
+              aria-label={T.frameRadius}
               value={s.frameRadius}
               onChange={(e) => set('frameRadius', Number(e.target.value))}
               style={{ width: 50 }}

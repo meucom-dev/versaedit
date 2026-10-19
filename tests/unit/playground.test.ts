@@ -49,4 +49,12 @@ describe('JSX equivalente do painel Propriedades', () => {
     ])
     expect(props).toEqual(settingsToProps(settings))
   })
+
+  it('JSX equivalente em espanhol: locale="es"', () => {
+    expect(settingsToJsx(DEFAULT_SETTINGS, 'es').split('\n').slice(0, 3)).toEqual([
+      '<VersaEdit',
+      '  ref={editorRef}',
+      '  locale="es"',
+    ])
+  })
 })

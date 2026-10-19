@@ -1,6 +1,10 @@
 // Playground (playground/index.html): o painel "Propriedades", dentro da área
 // de desenvolvimento recolhida, muda o editor ao vivo
 import { expect, test, type Page } from '@playwright/test'
+import { PANEL_TEXT } from '../../playground/PropsPanel'
+import { en } from '../../src/core/i18n/en'
+import { es } from '../../src/core/i18n/es'
+import { ptBR } from '../../src/core/i18n/pt-BR'
 
 async function openPanel(page: Page) {
   await page.goto('/')
@@ -118,4 +122,66 @@ test.describe('celular (375px)', () => {
     await expect(page.locator('.ve-frame')).toHaveCount(2)
     await noHorizontalScroll(page)
   })
+})
+
+test('seletor de idioma: editor, painel e textos do playground em en, pt-BR e es', async ({
+  page,
+}) => {
+  await openPanel(page)
+  const L = { en, 'pt-BR': ptBR, es } as const
+  const SHOW_HTML = { en: 'Show HTML', 'pt-BR': 'Ver HTML', es: 'Ver HTML' }
+  // Todos os textos da página fora do conteúdo editado e dos blocos de código
+  const pageTexts = () =>
+    page.evaluate(() => {
+      const out = new Set<string>()
+      const add = (v: string | null | undefined) => {
+        const t = v?.replace(/\s+/g, ' ').trim()
+        if (t) out.add(t)
+      }
+      for (const el of document.querySelectorAll('#root *')) {
+        if (el.closest('pre') || (el.closest('.ve-content') && !el.matches('.ve-content'))) continue
+        for (const a of ['aria-label', 'title', 'placeholder', 'data-placeholder'])
+          add(el.getAttribute(a))
+        for (const n of el.childNodes) if (n.nodeType === Node.TEXT_NODE) add(n.textContent)
+      }
+      return [...out]
+    })
+  const strings = (locale: keyof typeof L): string[] => [
+    ...Object.values(L[locale]),
+    ...Object.values(PANEL_TEXT[locale]).flatMap((v) =>
+      typeof v === 'string' ? [v] : Object.values(v as Record<string, string>),
+    ),
+    SHOW_HTML[locale],
+  ]
+  for (const locale of ['es', 'pt-BR', 'en'] as const) {
+    await page.locator('.pg-pill select').selectOption(locale)
+    await expect(page.locator('#root > div')).toHaveAttribute('lang', locale)
+    await expect(
+      page.getByRole('toolbar').first().getByRole('button', { name: L[locale].bold }),
+    ).toBeVisible()
+    await expect(page.getByRole('button', { name: L[locale].dictate })).toHaveCount(
+      await page.evaluate(() =>
+        'SpeechRecognition' in window || 'webkitSpeechRecognition' in window ? 1 : 0,
+      ),
+    )
+    await expect(page.getByText(PANEL_TEXT[locale].title, { exact: true })).toBeVisible()
+    await expect(page.getByLabel(PANEL_TEXT[locale].frameRadius)).toBeVisible()
+    await expect(page.getByTestId('jsx')).toContainText(
+      locale === 'en' ? '<VersaEdit\n  ref={editorRef}\n  width' : `locale="${locale}"`,
+    )
+    const own = new Set(strings(locale))
+    const foreign = new Set(
+      (['en', 'pt-BR', 'es'] as const)
+        .filter((l) => l !== locale)
+        .flatMap(strings)
+        .filter((s) => !own.has(s) && !s.includes('{')),
+    )
+    const texts = await pageTexts()
+    expect(
+      texts.filter((t) => foreign.has(t)),
+      `textos de outro idioma em ${locale}`,
+    ).toEqual([])
+    expect(texts).toContain(PANEL_TEXT[locale].frame)
+    expect(texts).toContain(L[locale].placeholder)
+  }
 })
