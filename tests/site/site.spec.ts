@@ -62,9 +62,7 @@ test('arquivos do site: CNAME do domínio e nada de dados locais ou chaves', () 
   const files = (dir: string): string[] =>
     fs
       .readdirSync(dir, { withFileTypes: true })
-      .flatMap((e) =>
-        e.isDirectory() ? files(path.join(dir, e.name)) : [path.join(dir, e.name)],
-      )
+      .flatMap((e) => (e.isDirectory() ? files(path.join(dir, e.name)) : [path.join(dir, e.name)]))
   for (const file of files(site)) {
     const text = fs.readFileSync(file, 'utf8')
     expect(text, file).not.toMatch(/[A-Za-z]:[\\/]{1,2}Users\b|\/home\/[a-z]/)
