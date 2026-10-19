@@ -5,6 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="data:," />
     <title>VersaEdit — playground</title>
+    <style>
+      /* Seletor de idioma no formato do botão de microfone (.ve-dictation-standalone .ve-btn) */
+      .pg-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 12px;
+        height: 32px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 999px;
+        background: #fff;
+        color: #333;
+        font:
+          600 14px system-ui,
+          sans-serif;
+        cursor: pointer;
+      }
+      .pg-pill:hover {
+        background: #f0f0f0;
+      }
+      .pg-pill:focus-within {
+        outline: 2px solid #2563eb;
+        outline-offset: 1px;
+      }
+      .pg-pill select {
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        padding: 0;
+        cursor: pointer;
+      }
+      .pg-pill select:focus {
+        outline: none;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

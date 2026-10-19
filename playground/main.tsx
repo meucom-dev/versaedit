@@ -71,9 +71,26 @@ function App() {
     >
       <h1 style={{ fontSize: 20 }}>VersaEdit — playground</h1>
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 12 }}>
-        <label>
-          {T.locale}{' '}
-          <select value={locale} onChange={(e) => setLocale(e.target.value as VersaEditLocale)}>
+        {/* Mesmo formato do botão de microfone ao lado (pílula com ícone e texto) */}
+        <label className="pg-pill" title={T.locale}>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6" />
+          </svg>
+          <select
+            aria-label={T.locale}
+            value={locale}
+            onChange={(e) => setLocale(e.target.value as VersaEditLocale)}
+          >
             <option value="en">English</option>
             <option value="pt-BR">Português (Brasil)</option>
           </select>
