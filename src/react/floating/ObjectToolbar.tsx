@@ -49,7 +49,14 @@ export const ObjectToolbar = forwardRef<
       ),
     )
   }, [box?.top, box?.left, box?.right, box?.bottom]) // eslint-disable-line react-hooks/exhaustive-deps
-  const position: CSSProperties = placed ?? { top: object.toolbar.top, left: object.toolbar.left }
+  // Antes de medir, o menu fica na borda esquerda da área: na posição do núcleo
+  // (borda esquerda do objeto) ele podia passar da borda direita da tela, e no
+  // celular a página ficava mais larga por um instante e rolava; o clique do
+  // toque caía fora do objeto e o desmarcava. Sem box, vale a posição do núcleo.
+  const position: CSSProperties = placed ?? {
+    top: object.toolbar.top,
+    left: box ? 0 : object.toolbar.left,
+  }
 
   const isImage = object.type === 'image'
   const resize = (pct: number) =>
