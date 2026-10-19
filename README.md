@@ -9,11 +9,11 @@ Lightweight rich text editor for React applications.
 [Leia em português](README.pt-BR.md)
 
 VersaEdit edits HTML with the browser's own `contentEditable`, adds a toolbar, a sanitizer
-(DOMPurify), its own undo/redo, smart paste (Word and web pages), images, text boxes, tables,
+(DOMPurify), its own undo/redo, cleanup of content pasted from web pages and Word, images, text boxes, tables,
 dictation and file save/open. It has no backend dependency: it gives you HTML and you store it
 wherever you want (Supabase, Firebase, REST…).
 
-- React 18.3+ or 19 · works with server rendering (Next.js, Remix)
+- React 18.3+ or 19 · server rendering (tested with Next.js)
 - One runtime dependency: [DOMPurify](https://github.com/cure53/DOMPurify) · ES modules only (no
   CommonJS build) · TypeScript types for bundlers and `moduleResolution: node16/nodenext`
 - English and Brazilian Portuguese interface (`locale`), every text replaceable (`labels`)
