@@ -85,4 +85,6 @@ export const ptBR: VersaEditLabels = {
   fileReplaceConfirm: 'Substituir o conteúdo atual pelo arquivo? (Ctrl+Z desfaz)',
   fileReadError: 'Não foi possível ler o arquivo.',
   keyboardHint: 'Tab insere espaços. Para sair do editor, use Shift+Tab, ou Esc e depois Tab.',
+  imageSelected: 'Imagem selecionada',
+  textboxSelected: 'Caixa de texto selecionada',
 }

@@ -255,3 +255,94 @@ test.describe('saída do editor pelo teclado (sem armadilha de teclado)', () => 
     })
   }
 })
+
+test.describe('Backspace logo depois da caixa de texto', () => {
+  const CONTENT = `<p>a</p>${TEXTBOX}<p>depois</p>`
+  const box = (page: Page) => page.locator('#host .rich-textbox')
+  const live = (page: Page) => page.locator('#host [aria-live="polite"].ve-sr-only')
+
+  test('seleciona a caixa, de forma visível, sem apagar nada', async ({ page }) => {
+    const t = await mount(page, { initialContent: CONTENT })
+    await caretIn(page, 'depois', 0)
+    await page.keyboard.press('Backspace')
+    await expect(box(page)).toHaveClass(/\bselected\b/)
+    // Contorno de seleção (o CSS anima o contorno em 0,15 s)
+    await expect
+      .poll(() => box(page).evaluate((el) => getComputedStyle(el).outlineWidth))
+      .toBe('3px')
+    await expect(page.locator('#host .ve-float-toolbar')).toBeVisible()
+    expect(await t.dom()).toBe(
+      CONTENT.replace(
+        'class="rich-textbox"',
+        'class="rich-textbox selected" contenteditable="true"',
+      ),
+    )
+    // O HTML salvo não leva a marca de seleção
+    const saved = await page.evaluate(() =>
+      (window as unknown as { __ref: { current: { getHTML(): string } } }).__ref.current.getHTML(),
+    )
+    expect(saved).toBe(CONTENT)
+  })
+
+  for (const [locale, text] of [
+    ['en', 'Text box selected'],
+    ['pt-BR', 'Caixa de texto selecionada'],
+    ['es', 'Cuadro de texto seleccionado'],
+  ] as const) {
+    test(`${locale}: a seleção é anunciada para leitores de tela`, async ({ page }) => {
+      await mount(page, { locale, initialContent: CONTENT })
+      await caretIn(page, 'depois', 0)
+      await page.keyboard.press('Backspace')
+      await expect(live(page)).toHaveText(text)
+    })
+  }
+
+  test('Backspace de novo continua sem apagar a caixa nem juntar o parágrafo', async ({ page }) => {
+    const t = await mount(page, { initialContent: CONTENT })
+    await caretIn(page, 'depois', 0)
+    await page.keyboard.press('Backspace')
+    await page.keyboard.press('Backspace')
+    await expect(box(page)).toHaveCount(1)
+    expect(await box(page).textContent()).toBe('⠿Caixa')
+    await expect(t.content.locator('p', { hasText: 'depois' })).toHaveText('depois')
+  })
+
+  test('digitar depois escreve no parágrafo e tira a seleção da caixa', async ({ page }) => {
+    const t = await mount(page, { initialContent: CONTENT })
+    await caretIn(page, 'depois', 0)
+    await page.keyboard.press('Backspace')
+    await page.keyboard.type('X')
+    await expect(box(page)).not.toHaveClass(/\bselected\b/)
+    expect(await t.html()).toContain('<p>Xdepois</p>')
+  })
+
+  test('Esc tira a seleção da caixa', async ({ page }) => {
+    await mount(page, { initialContent: CONTENT })
+    await caretIn(page, 'depois', 0)
+    await page.keyboard.press('Backspace')
+    await page.keyboard.press('Escape')
+    await expect(box(page)).not.toHaveClass(/\bselected\b/)
+    await expect(page.locator('#host .ve-float-toolbar')).toHaveCount(0)
+  })
+
+  test('no meio do parágrafo, Backspace apaga normalmente', async ({ page }) => {
+    const t = await mount(page, { initialContent: CONTENT })
+    await caretIn(page, 'depois', 3)
+    await page.keyboard.press('Backspace')
+    expect(await t.html()).toContain('<p>deois</p>')
+    await expect(box(page)).not.toHaveClass(/\bselected\b/)
+  })
+
+  test('depois de um parágrafo comum, Backspace junta os parágrafos como antes', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: '<p>um</p><p>dois</p>' })
+    await caretIn(page, 'dois', 0)
+    await page.keyboard.press('Backspace')
+    // Um parágrafo só, com o texto junto (Chromium e WebKit ainda envolvem "dois"
+    // num span de font-size ao juntar: comportamento antigo, fora deste lote)
+    await expect(t.content.locator('p')).toHaveCount(1)
+    await expect(t.content.locator('p')).toHaveText('umdois')
+    await expect(t.content.locator('.rich-textbox')).toHaveCount(0)
+  })
+})

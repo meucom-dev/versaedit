@@ -191,6 +191,8 @@ const toHex = (n: string) => Number(n).toString(16).padStart(2, '0')
 
 // Movimento menor que isto ao soltar imagem/caixa conta como clique, não arrasto
 const CLICK_TOLERANCE_PX = 3
+// Elementos que são conteúdo mesmo sem texto (vazios ou substituídos, do HTML)
+const REPLACED_ELEMENTS = 'img, hr, input, iframe, video, audio, object, embed, canvas, svg'
 
 export class VersaEditCore {
   readonly el: HTMLDivElement
@@ -863,6 +865,43 @@ export class VersaEditCore {
     this.restoreRange(rangeAtTextOffset(parent, offset))
   }
 
+  // Elemento logo antes do bloco do cursor, se o cursor estiver no começo de um
+  // bloco de primeiro nível (nada antes dele no bloco: texto ou elemento
+  // substituído, como imagem). Vale para qualquer elemento; quem decide se ele é
+  // selecionável é selectBlockObject.
+  private blockBeforeCaret(): HTMLElement | null {
+    const selection = window.getSelection()
+    if (!selection?.rangeCount || !selection.isCollapsed) return null
+    const range = selection.getRangeAt(0)
+    if (!isRangeWithinEditor(this.el, range)) return null
+    let block: Node | null = range.startContainer
+    if (block === this.el) {
+      block = this.el.childNodes[range.startOffset] ?? null
+    } else {
+      while (block.parentNode && block.parentNode !== this.el) block = block.parentNode
+      const ahead = document.createRange()
+      ahead.setStart(block, 0)
+      ahead.setEnd(range.startContainer, range.startOffset)
+      const content = ahead.cloneContents()
+      if (content.textContent || content.querySelector(REPLACED_ELEMENTS)) return null
+    }
+    let previous = block ? block.previousSibling : this.el.lastChild
+    while (previous && previous.nodeType === 3 && !previous.textContent?.trim()) {
+      previous = previous.previousSibling
+    }
+    return previous instanceof HTMLElement ? previous : null
+  }
+
+  // Seleciona o objeto de bloco, se o editor souber selecioná-lo (hoje, a caixa de
+  // texto; novos objetos de bloco entram aqui). Devolve se selecionou.
+  private selectBlockObject(el: HTMLElement): boolean {
+    if (el.classList.contains('rich-textbox')) {
+      this.selectTextbox(el as HTMLDivElement)
+      return true
+    }
+    return false
+  }
+
   // Seleção (ou cursor) com as duas pontas dentro da mesma caixa de texto
   private selectionInOneTextbox(): boolean {
     const range = this.getCurrentRange()
@@ -1376,6 +1415,16 @@ export class VersaEditCore {
     // Digitar com a imagem selecionada escreve depois dela e tira a seleção (senão
     // o próximo Backspace apagaria a imagem, e não a letra)
     if (this.selectedImg) this.deselectImage()
+    // O mesmo para a caixa de texto selecionada com o cursor fora dela (Backspace
+    // logo depois da caixa); digitar dentro da caixa mantém a seleção
+    const typingAt = this.getCurrentRange()
+    if (
+      this.selectedTextbox &&
+      typingAt &&
+      !this.selectedTextbox.contains(typingAt.startContainer)
+    ) {
+      this.deselectTextbox()
+    }
     if (inputEvent.inputType !== 'insertText' || inputEvent.data === null) {
       return
     }
@@ -1550,11 +1599,26 @@ export class VersaEditCore {
         return
       }
     }
+    // Esc com um objeto selecionado tira a seleção (o cursor fica onde está)
+    if (e.key === 'Escape' && (this.selectedImg || this.selectedTextbox)) {
+      this.deselectImage()
+      this.deselectTextbox()
+    }
     // Apaga a imagem selecionada (Delete/Backspace)
     if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedImg) {
       e.preventDefault()
       this.deleteSelectedImage()
       return
+    }
+    // Backspace no começo de um bloco logo depois de um objeto de bloco (caixa de
+    // texto): seleciona o objeto, sem apagá-lo. O Backspace nativo juntaria o
+    // parágrafo ao objeto (o texto entrava na caixa de texto).
+    if (e.key === 'Backspace' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const before = this.blockBeforeCaret()
+      if (before && this.selectBlockObject(before)) {
+        e.preventDefault()
+        return
+      }
     }
     const target = (
       this.objType === 'image' ? this.selectedImg : this.selectedTextbox

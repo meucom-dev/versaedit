@@ -83,6 +83,8 @@ export const en = {
   fileReplaceConfirm: 'Replace the current content with the file? (Ctrl+Z undoes)',
   fileReadError: 'The file could not be read.',
   keyboardHint: 'Tab inserts spaces. To leave the editor, press Shift+Tab, or Esc and then Tab.',
+  imageSelected: 'Image selected',
+  textboxSelected: 'Text box selected',
 }
 
 export type VersaEditLabels = typeof en

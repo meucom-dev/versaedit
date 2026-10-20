@@ -87,4 +87,6 @@ export const es: VersaEditLabels = {
   fileReadError: 'No se pudo leer el archivo.',
   keyboardHint:
     'Tab inserta espacios. Para salir del editor, pulse Mayús+Tab, o Esc y después Tab.',
+  imageSelected: 'Imagen seleccionada',
+  textboxSelected: 'Cuadro de texto seleccionado',
 }

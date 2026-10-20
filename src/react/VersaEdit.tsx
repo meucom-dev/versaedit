@@ -44,6 +44,12 @@ const GOOGLE_FONTS_LINK_ID = 'versaedit-google-fonts'
 // useEffect (que também não roda). No navegador, nada muda.
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
+// Texto anunciado quando cada tipo de objeto é selecionado (novos tipos entram aqui)
+const OBJECT_SELECTED: Record<ObjectState['type'], 'imageSelected' | 'textboxSelected'> = {
+  image: 'imageSelected',
+  textbox: 'textboxSelected',
+}
+
 export interface VersaEditProps {
   /** HTML inicial. Mudanças vindas de fora recarregam o editor; o eco do próprio onChange não. */
   initialContent?: string
@@ -461,6 +467,10 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
         {/* Como sair da área de edição pelo teclado (o Tab insere espaços) */}
         <span id={hintId} className="ve-sr-only">
           {L.keyboardHint}
+        </span>
+        {/* Anuncia o objeto selecionado (imagem, caixa de texto) para leitores de tela */}
+        <span className="ve-sr-only" aria-live="polite">
+          {object ? L[OBJECT_SELECTED[object.type]] : ''}
         </span>
         {object && !object.hidden && <ObjectToolbar object={object} core={getCore} labels={L} />}
         {object?.handle && !object.hidden && (
