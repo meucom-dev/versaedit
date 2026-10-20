@@ -804,3 +804,125 @@ test.describe('Delete logo antes da caixa de texto', () => {
     await expect(box(page)).not.toHaveClass(/\bselected\b/)
   })
 })
+
+test.describe('desfazer / refazer: o cursor fica visível, com o menor deslocamento', () => {
+  const PARAS = Array.from({ length: 60 }, (_, i) => `<p>Parágrafo ${i + 1}.</p>`).join('')
+  const settle = (page: Page) => page.waitForTimeout(500)
+  // Posição do cursor em relação a uma caixa (a área de edição ou outro contêiner)
+  const caretInside = (page: Page, selector: string | null) =>
+    page.evaluate((sel) => {
+      const range = getSelection()!.getRangeAt(0)
+      const rect =
+        range.getClientRects()[0] ?? range.startContainer.parentElement!.getBoundingClientRect()
+      const box = sel
+        ? document.querySelector(sel)!.getBoundingClientRect()
+        : { top: 0, bottom: window.visualViewport?.height ?? innerHeight }
+      return rect.top >= box.top && rect.bottom <= box.bottom
+    }, selector)
+  const scrolls = (page: Page) =>
+    page.evaluate(() => ({
+      area: document.querySelector('#host .ve-content')!.scrollTop,
+      page: Math.round(window.scrollY),
+    }))
+
+  test('área com rolagem: depois de desfazer longe dali, o cursor volta à vista', async ({
+    page,
+  }) => {
+    await mount(page, { initialContent: PARAS, height: 300 })
+    await caretIn(page, 'Parágrafo 2.', 11)
+    await page.keyboard.type(' novo')
+    await settle(page)
+    await page.evaluate(() => {
+      const ed = document.querySelector<HTMLElement>('#host .ve-content')!
+      ed.scrollTop = ed.scrollHeight
+    })
+    const pageBefore = (await scrolls(page)).page
+    await page.keyboard.press('Control+z')
+    expect(await caretInside(page, '#host .ve-content')).toBe(true)
+    // Só a área rolou; a página não saltou
+    expect((await scrolls(page)).page).toBe(pageBefore)
+    // Menor deslocamento: o parágrafo editado fica perto da borda de cima, não no meio
+    const offset = await page.evaluate(() => {
+      const ed = document.querySelector<HTMLElement>('#host .ve-content')!
+      const p = ed.querySelectorAll('p')[1].getBoundingClientRect()
+      return Math.round(p.top - ed.getBoundingClientRect().top)
+    })
+    expect(offset).toBeLessThan(40)
+  })
+
+  test('refazer também traz o cursor à vista', async ({ page }) => {
+    await mount(page, { initialContent: PARAS, height: 300 })
+    await caretIn(page, 'Parágrafo 2.', 11)
+    await page.keyboard.type(' novo')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    await page.evaluate(() => {
+      const ed = document.querySelector<HTMLElement>('#host .ve-content')!
+      ed.scrollTop = ed.scrollHeight
+    })
+    await page.keyboard.press('Control+y')
+    expect(await caretInside(page, '#host .ve-content')).toBe(true)
+  })
+
+  test('com o cursor já visível, nada rola', async ({ page }) => {
+    await mount(page, { initialContent: PARAS, height: 300 })
+    await caretIn(page, 'Parágrafo 3.', 11)
+    await page.keyboard.type(' novo')
+    await settle(page)
+    const before = await scrolls(page)
+    await page.keyboard.press('Control+z')
+    expect(await scrolls(page)).toEqual(before)
+  })
+
+  test('editor expandido (sem rolagem própria): a página rola o mínimo', async ({ page }) => {
+    await mount(page, { initialContent: PARAS, height: 2400 })
+    await caretIn(page, 'Parágrafo 2.', 11)
+    await page.keyboard.type(' novo')
+    await settle(page)
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+    await page.keyboard.press('Control+z')
+    expect(await caretInside(page, null)).toBe(true)
+  })
+
+  test('dentro de um contêiner rolável da aplicação: o contêiner rola', async ({ page }) => {
+    await mount(page, { initialContent: PARAS, height: 2400 })
+    await page.addStyleTag({ content: '#host { height: 300px; overflow: auto; }' })
+    await caretIn(page, 'Parágrafo 2.', 11)
+    await page.keyboard.type(' novo')
+    await settle(page)
+    await page.evaluate(() => {
+      const host = document.querySelector<HTMLElement>('#host')!
+      host.scrollTop = host.scrollHeight
+    })
+    await page.keyboard.press('Control+z')
+    expect(await caretInside(page, '#host')).toBe(true)
+  })
+
+  test('área de altura fixa sem rolagem (scrollable=false): o desfazer não a rola', async ({
+    page,
+  }) => {
+    await mount(page, { initialContent: PARAS, height: 300, scrollable: false })
+    await caretIn(page, 'Parágrafo 2.', 11)
+    await page.keyboard.type(' novo')
+    await settle(page)
+    // O navegador pode rolar a área escondida ao digitar; o desfazer não mexe nela
+    const before = await scrolls(page)
+    await page.keyboard.press('Control+z')
+    expect(await scrolls(page)).toEqual(before)
+  })
+
+  test.describe('no celular', () => {
+    test.use({ viewport: { width: 375, height: 640 }, hasTouch: true, isMobile: true })
+    test.skip(({ browserName }) => browserName === 'firefox', 'isMobile não existe no Firefox')
+
+    test('com o cursor visível, desfazer não faz a página saltar', async ({ page }) => {
+      await mount(page, { initialContent: PARAS, height: 300, width: '100%' })
+      await caretIn(page, 'Parágrafo 1.', 11)
+      await page.keyboard.type(' novo')
+      await settle(page)
+      const before = await scrolls(page)
+      await page.keyboard.press('Control+z')
+      expect(await scrolls(page)).toEqual(before)
+    })
+  })
+})

@@ -82,3 +82,62 @@ export function truncateEditableToFit(editor: HTMLElement): boolean {
   }
   return changed
 }
+
+// ─── CURSOR VISÍVEL ───────────────────────────────────────────────
+
+const REVEAL_MARGIN = 4
+
+// Retângulo do cursor (ponta "focus" da seleção). Um ponto entre elementos
+// pode não ter retângulo próprio: usa o do elemento vizinho.
+function caretRect(selection: Selection): DOMRect | null {
+  if (!selection.rangeCount || !selection.focusNode) return null
+  const range = document.createRange()
+  range.setStart(selection.focusNode, selection.focusOffset)
+  range.collapse(true)
+  const rect = range.getClientRects()[0]
+  if (rect) return rect
+  const node = selection.focusNode
+  const near =
+    node.nodeType === 3 ? node.parentElement : (node.childNodes[selection.focusOffset] ?? node)
+  return near instanceof Element ? near.getBoundingClientRect() : null
+}
+
+/**
+ * Rola o mínimo para o cursor ficar visível: primeiro a área de edição e cada
+ * contêiner rolável acima dela (overflow auto/scroll; uma área de altura fixa
+ * sem rolagem fica como está), e a janela só se ainda precisar (no celular, a
+ * parte visível sem o teclado). Nada rola se o cursor já estiver à vista.
+ */
+export function revealCaret(editor: HTMLElement): void {
+  const selection = window.getSelection()
+  const rect = selection && caretRect(selection)
+  if (!rect) return
+  let top = rect.top
+  let bottom = rect.bottom
+  const reveal = (viewTop: number, viewBottom: number): number => {
+    if (top < viewTop + REVEAL_MARGIN) return top - viewTop - REVEAL_MARGIN
+    if (bottom > viewBottom - REVEAL_MARGIN) return bottom - viewBottom + REVEAL_MARGIN
+    return 0
+  }
+  for (
+    let node: HTMLElement | null = editor;
+    node && node !== document.body && node !== document.documentElement;
+    node = node.parentElement
+  ) {
+    if (node.scrollHeight <= node.clientHeight) continue
+    if (!/(auto|scroll)/.test(getComputedStyle(node).overflowY)) continue
+    const box = node.getBoundingClientRect()
+    const viewTop = box.top + node.clientTop
+    const delta = reveal(viewTop, viewTop + node.clientHeight)
+    if (!delta) continue
+    const before = node.scrollTop
+    node.scrollTop += delta
+    const moved = node.scrollTop - before
+    top -= moved
+    bottom -= moved
+  }
+  const viewport = window.visualViewport
+  const viewTop = viewport ? viewport.offsetTop : 0
+  const delta = reveal(viewTop, viewTop + (viewport ? viewport.height : window.innerHeight))
+  if (delta) window.scrollBy(0, delta)
+}

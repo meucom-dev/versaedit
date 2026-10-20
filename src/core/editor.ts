@@ -35,6 +35,7 @@ import { resolveLabels, type VersaEditLabels, type VersaEditLocale } from './i18
 import {
   editorContentExceedsHeight,
   measureEditorContentHeight,
+  revealCaret,
   truncateEditableToFit,
 } from './measure'
 import {
@@ -1886,7 +1887,11 @@ export class VersaEditCore {
     if (selection) {
       this.el.focus({ preventScroll: true })
       const range = restoreSelection(this.el, selection)
-      if (range) this.savedRange = range
+      if (range) {
+        this.savedRange = range
+        // O ponto restaurado pode estar fora da vista (área ou página roladas)
+        revealCaret(this.el)
+      }
     }
     this.emitChange()
   }
