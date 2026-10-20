@@ -1,5 +1,6 @@
 import DOMPurify from 'dompurify'
 import { cssFontSizeToPoints } from './fonts'
+import { indentMargin, isIndentBlockquote } from './indent'
 
 // ─── SEGURANÇA ────────────────────────────────────────────────────
 // Primeira camada de toda entrada de HTML (carregar, abrir arquivo, colar):
@@ -137,6 +138,9 @@ function isLayoutElement(el: Element): boolean {
   return el.tagName === 'IMG' || el.tagName === 'HR' || el.classList.contains('rich-textbox')
 }
 
+// Blocos de texto que o navegador recua (core/indent.ts)
+const INDENT_BLOCKS = new Set(['P', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'DIV', 'BLOCKQUOTE'])
+
 // Conteúdo carregado (initialContent ou arquivo): remove código inseguro, estilos
 // inline fora da lista, classes estranhas e atributos de cor antigos
 export function sanitizeHtml(html: string): string {
@@ -160,6 +164,11 @@ export function sanitizeHtml(html: string): string {
     const textDecoration = inlineStyle?.textDecoration || ''
     const textAlign = inlineStyle?.textAlign || ''
     const lineHeight = Number.parseFloat(inlineStyle?.lineHeight ?? '')
+    const indent =
+      el instanceof HTMLElement && !keepLayout && INDENT_BLOCKS.has(el.tagName)
+        ? indentMargin(el)
+        : null
+    const indentBlockquote = indent !== null && isIndentBlockquote(el as HTMLElement)
     // style e class são esvaziados no lugar (não removidos e recriados), para
     // que os atributos mantenham a posição; os vazios saem no fim
     if (inlineStyle && el.hasAttribute('style')) inlineStyle.cssText = ''
@@ -172,6 +181,17 @@ export function sanitizeHtml(html: string): string {
     el.removeAttribute('face')
     el.removeAttribute('size')
     if (el instanceof HTMLElement) {
+      // Recuo primeiro, como o navegador o escreve: o blockquote de recuo
+      // (Chromium/WebKit) mantém a geometria e é marcado como não-citação; nos
+      // outros blocos (Firefox), só a margem esquerda
+      if (indentBlockquote) {
+        el.style.margin = `0px 0px 0px ${indent}`
+        el.style.border = 'none'
+        el.style.padding = '0px'
+        if (!el.hasAttribute('role')) el.setAttribute('role', 'presentation')
+      } else if (indent) {
+        el.style.marginLeft = indent
+      }
       if (fontSizePt !== null) el.style.fontSize = `${fontSizePt}pt`
       if (fontFamily) el.style.fontFamily = fontFamily
       if (color && CSS.supports('color', color)) el.style.color = color

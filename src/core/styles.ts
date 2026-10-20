@@ -81,9 +81,9 @@ export const EDITOR_CSS = `
 .ve-content div, .ve-content span { margin: 0; padding: 0; }
 .ve-content h1, .ve-content h2, .ve-content h3, .ve-content h4, .ve-content h5, .ve-content h6 { font-family: var(--ve-heading-font, inherit); margin: 0; padding: 0; line-height: 1.2; }
 .ve-content blockquote { border-left: 3px solid var(--ve-accent); margin: 0; padding: 8px 16px; background: ${accent(5)}; color: #555; font-style: italic; clear: both; }
-/* Recuo (Chromium e WebKit recuam com um blockquote de margem 0 0 0 40px):
-   só a margem, sem a aparência de citação (itálico, fundo, cor) */
-.ve-content blockquote[style*="margin: 0 0 0 40px"] { font-style: normal; background: none; color: inherit; }
+/* Recuo (Chromium e WebKit recuam com um blockquote marcado role="presentation",
+   ver core/indent.ts): só a margem, sem a aparência de citação (itálico, fundo, cor) */
+.ve-content blockquote[role="presentation"] { font-style: normal; background: none; color: inherit; }
 
 /* Tabelas e código (colados ou carregados) */
 .ve-content table { border-collapse: collapse; max-width: 100%; margin: 4px 0; }
@@ -156,5 +156,8 @@ export const CONTENT_CSS = `
 .versaedit-content pre { margin: 4px 0; padding: 8px 12px; background: #f6f8fa; border-radius: 4px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
 .versaedit-content code { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
 .versaedit-content blockquote { border-left: 3px solid var(--ve-accent); margin: 0; padding: 8px 16px; font-style: italic; }
+.versaedit-content blockquote[role="presentation"] { font-style: normal; }
+/* Compatibilidade: recuo salvo antes da marcação (só o HTML publicado sem passar
+   de novo pelo editor; ao ser carregado no editor ele ganha o role) */
 .versaedit-content blockquote[style*="margin: 0 0 0 40px"] { font-style: normal; }
 `

@@ -75,6 +75,16 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Fixed
 
+- Indentation survives saving and reopening, and no longer turns into a quote. In Chromium and
+  WebKit an indented paragraph (a `<blockquote>` with a left margin and no border) lost its style
+  when the content was loaded again and was shown as a quote (italic, border, background); in
+  Firefox (`margin-left` on the paragraph) the indentation disappeared. Indentation is now
+  recognized from the style values the browser reads, not from the text of the `style` attribute:
+  the indentation `<blockquote>` gets the standard ARIA `role="presentation"` (it is not a
+  quotation, and screen readers no longer announce it as one), and the left margin of indented
+  blocks is kept when it is a multiple of 40px. Quotes are unchanged. Documents saved by earlier
+  versions are recognized when loaded; for HTML published without passing through the editor
+  again, `versaedit-content.css` keeps the previous rule as a fallback.
 - Loading content no longer moves the `class` and `style` attributes to the end of the element
   (`<span class="textbox-handle" contenteditable="false">` came back as
   `<span contenteditable="false" class="textbox-handle">`): they are filtered in place, so saving

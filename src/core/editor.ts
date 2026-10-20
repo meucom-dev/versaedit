@@ -32,6 +32,7 @@ import {
 import { closestFontSizeOption, matchFontFamily } from './fonts'
 import { createEditorHistory } from './history'
 import { resolveLabels, type VersaEditLabels, type VersaEditLocale } from './i18n'
+import { markIndentBlockquotes } from './indent'
 import {
   editorContentExceedsHeight,
   measureEditorContentHeight,
@@ -761,6 +762,8 @@ export class VersaEditCore {
     if (command === 'insertUnorderedList' || command === 'insertOrderedList') {
       unwrapListsFromParagraphs(this.el)
     }
+    // Recuo do Chromium/WebKit: o blockquote criado não é uma citação
+    if (command === 'indent') markIndentBlockquotes(this.el)
     this.el.focus()
     this.emitChange()
   }

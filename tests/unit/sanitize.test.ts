@@ -144,6 +144,65 @@ describe('sanitizeHtml (carregar conteúdo)', () => {
   })
 })
 
+describe('sanitizeHtml — recuo e citação', () => {
+  const first = (html: string) => {
+    const body = document.createElement('body')
+    body.innerHTML = html
+    return body.firstElementChild as HTMLElement
+  }
+  // Recuo do Chromium/WebKit, gravado antes desta versão (sem role)
+  const CHROMIUM_INDENT =
+    '<blockquote style="margin: 0 0 0 40px; border: none; padding: 0px;"><p>a</p></blockquote>'
+
+  it('recuo do Chromium/WebKit continua recuo: geometria mantida e role="presentation"', () => {
+    const el = first(sanitizeHtml(CHROMIUM_INDENT))
+    expect(el.tagName).toBe('BLOCKQUOTE')
+    expect(el.getAttribute('role')).toBe('presentation')
+    expect(el.style.marginLeft).toBe('40px')
+    expect(el.style.marginTop).toMatch(/^0(px)?$/)
+    expect(el.style.borderLeftStyle).toBe('none')
+    expect(el.style.paddingLeft).toMatch(/^0(px)?$/)
+    expect(el.innerHTML).toBe('<p>a</p>')
+  })
+  it('recuo aninhado: cada nível marcado', () => {
+    const out = sanitizeHtml(
+      '<blockquote style="margin: 0 0 0 40px; border: none; padding: 0px;"><blockquote style="margin: 0 0 0 40px; border: none; padding: 0px;"><p>a</p></blockquote></blockquote>',
+    )
+    expect(out.match(/role="presentation"/g)).toHaveLength(2)
+  })
+  it('recuo do Firefox (margin-left no bloco) é mantido', () => {
+    expect(first(sanitizeHtml('<p style="margin-left: 40px;">a</p>')).style.marginLeft).toBe('40px')
+    expect(first(sanitizeHtml('<p style="margin-left: 80px;">a</p>')).style.marginLeft).toBe('80px')
+    expect(first(sanitizeHtml('<h2 style="margin-left: 40px;">a</h2>')).style.marginLeft).toBe(
+      '40px',
+    )
+  })
+  it('citação continua citação (sem role); citação recuada mantém o recuo', () => {
+    expect(sanitizeHtml('<blockquote>a</blockquote>')).toBe('<blockquote>a</blockquote>')
+    const quote = first(sanitizeHtml('<blockquote style="margin-left: 40px;">a</blockquote>'))
+    expect(quote.hasAttribute('role')).toBe(false)
+    expect(quote.style.marginLeft).toBe('40px')
+  })
+  it('margens que não são recuo do editor continuam removidas', () => {
+    expect(sanitizeHtml('<p style="margin-left: 48px;">a</p>')).toBe('<p>a</p>')
+    expect(sanitizeHtml('<p style="margin-left: -40px;">a</p>')).toBe('<p>a</p>')
+    expect(sanitizeHtml('<p style="margin: 20px;">a</p>')).toBe('<p>a</p>')
+    expect(sanitizeHtml('<p><span style="margin-left: 40px;">a</span></p>')).toBe(
+      '<p><span>a</span></p>',
+    )
+    // Sem margem, um blockquote sem borda não é recuo
+    expect(sanitizeHtml('<blockquote style="border: none;">a</blockquote>')).toBe(
+      '<blockquote>a</blockquote>',
+    )
+  })
+  it('reabrir de novo não muda mais nada', () => {
+    for (const html of [CHROMIUM_INDENT, '<p style="margin-left: 80px;">a</p>']) {
+      const once = sanitizeHtml(html)
+      expect(sanitizeHtml(once)).toBe(once)
+    }
+  })
+})
+
 describe('sanitizeHtml — atributos ficam onde estavam', () => {
   it('class e style mantêm a posição', () => {
     const handle = '<span class="textbox-handle" contenteditable="false" title="Mover">⠿</span>'
