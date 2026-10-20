@@ -230,6 +230,8 @@ export class VersaEditCore {
   private resizeEl: HTMLElement | null = null
   private resizeStart = { x: 0, y: 0, w: 0, h: 0 }
   private ignoreNextClick = false
+  // Esc foi a última tecla: o próximo Tab sai do editor em vez de inserir espaços
+  private tabLeaves = false
   private readonly pointer = createPointerTracker()
 
   // Seleção guardada enquanto o formulário de link está aberto
@@ -1347,6 +1349,7 @@ export class VersaEditCore {
   }
 
   private handleBlur = (e?: FocusEvent): void => {
+    this.tabLeaves = false
     if (this.preview) this.restorePreview()
     this.emitChange()
     // Saída para fora do editor (não para um elemento dentro dele)
@@ -1476,6 +1479,9 @@ export class VersaEditCore {
   // ─── TECLADO ─────────────────────────────────────────────────────
   private handleKeyDown = (e: KeyboardEvent): void => {
     const editor = this.el
+    // Esc arma a saída pelo Tab; qualquer outra tecla (fora as modificadoras) a desarma
+    const tabLeaves = this.tabLeaves
+    if (!['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) this.tabLeaves = e.key === 'Escape'
     // Antes do Enter nativo (parágrafo Word), impede a nova linha se ela
     // ultrapassaria a caixa física; não apaga texto e mostra o aviso.
     if (this.opts.truncateOnOverflow && e.key === 'Enter') {
@@ -1510,8 +1516,10 @@ export class VersaEditCore {
       exec('insertLineBreak')
       return
     }
-    // Tab: insere espaços dentro do editor
+    // Tab: insere espaços dentro do editor. Shift+Tab, ou Tab logo depois de Esc,
+    // seguem o navegador e tiram o foco do editor (sem armadilha de teclado)
     if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (e.shiftKey || tabLeaves) return
       e.preventDefault()
       insertHtml(TAB_HTML)
       this.enforceHeight()

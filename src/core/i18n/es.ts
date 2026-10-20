@@ -85,4 +85,6 @@ export const es: VersaEditLabels = {
   fileTooLarge: 'El archivo es demasiado grande (máximo 20 MB).',
   fileReplaceConfirm: '¿Reemplazar el contenido actual por el del archivo? (Ctrl+Z lo deshace)',
   fileReadError: 'No se pudo leer el archivo.',
+  keyboardHint:
+    'Tab inserta espacios. Para salir del editor, pulse Mayús+Tab, o Esc y después Tab.',
 }

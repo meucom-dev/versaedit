@@ -177,3 +177,81 @@ test.describe('remover link', () => {
     expect(await t.dom()).toBe('<p>ir ao <a href="https://a.com">site bom</a> hoXje</p>')
   })
 })
+
+test.describe('saída do editor pelo teclado (sem armadilha de teclado)', () => {
+  const inEditor = (page: Page) =>
+    page.evaluate(() => !!document.activeElement?.closest('#host .ve-content'))
+
+  test('Tab continua inserindo espaços (indentação)', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>texto</p>' })
+    await caretIn(page, 'texto', 0)
+    await page.keyboard.press('Tab')
+    expect(await inEditor(page)).toBe(true)
+    expect(await t.dom()).toBe('<p>&nbsp;&nbsp;&nbsp;&nbsp;texto</p>')
+  })
+
+  test('Shift+Tab sai do editor para a barra, sem mudar o texto', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>texto</p>' })
+    await caretIn(page, 'texto', 5)
+    await page.keyboard.press('Shift+Tab')
+    expect(await inEditor(page)).toBe(false)
+    expect(await page.evaluate(() => !!document.activeElement?.closest('#host .ve-toolbar'))).toBe(
+      true,
+    )
+    expect(await t.dom()).toBe('<p>texto</p>')
+  })
+
+  test('Esc e depois Tab vão para o próximo elemento da página, sem mudar o texto', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: '<p>texto</p>' })
+    // Como numa página real, há algo focável depois do editor (sem isso, o Firefox
+    // manda o foco para a interface do navegador e o activeElement não muda)
+    await page.evaluate(() => {
+      const next = document.createElement('button')
+      next.id = 'depois-do-editor'
+      next.textContent = 'depois'
+      document.querySelector('#host')!.after(next)
+    })
+    await caretIn(page, 'texto', 5)
+    await page.keyboard.press('Escape')
+    await page.keyboard.press('Tab')
+    expect(await page.evaluate(() => document.activeElement?.id)).toBe('depois-do-editor')
+    expect(await t.dom()).toBe('<p>texto</p>')
+  })
+
+  test('depois de Esc, outra tecla devolve ao Tab a indentação', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>texto</p>' })
+    await caretIn(page, 'texto', 5)
+    await page.keyboard.press('Escape')
+    await page.keyboard.type('X')
+    await page.keyboard.press('Tab')
+    expect(await inEditor(page)).toBe(true)
+    expect(await t.dom()).toBe('<p>textoX&nbsp;&nbsp;&nbsp;&nbsp;</p>')
+  })
+
+  test('Tab a partir da barra volta ao editor', async ({ page }) => {
+    await mount(page, { initialContent: '<p>texto</p>' })
+    await caretIn(page, 'texto', 5)
+    await page.keyboard.press('Shift+Tab')
+    await page.keyboard.press('Tab')
+    expect(await inEditor(page)).toBe(true)
+  })
+
+  // A tecla Shift se chama Mayús nos teclados em espanhol
+  for (const [locale, shift] of [
+    ['en', /Shift\+Tab/],
+    ['pt-BR', /Shift\+Tab/],
+    ['es', /Mayús\+Tab/],
+  ] as const) {
+    test(`${locale}: a área de edição descreve como sair pelo teclado`, async ({ page }) => {
+      await mount(page, { locale, initialContent: '<p>texto</p>' })
+      const description = await page.locator('#host .ve-content').evaluate((el) => {
+        const ids = (el.getAttribute('aria-describedby') ?? '').split(' ').filter(Boolean)
+        return ids.map((id) => document.getElementById(id)?.textContent ?? '').join(' ')
+      })
+      expect(description).toMatch(/Esc.*Tab/)
+      expect(description).toMatch(shift)
+    })
+  }
+})

@@ -75,6 +75,7 @@ export const EDITOR_CSS = `
 .ve-frame { position: relative; max-width: 100%; margin: 0; box-sizing: border-box; }
 .ve-content { display: block; max-width: 100%; box-sizing: border-box; padding: 8px 16px; border: none; overflow: hidden; resize: none; line-height: 1.6; font-size: 12pt; color: #1f2328; background-color: #fff; caret-color: currentColor; outline: none; }
 .ve-content.ve-scroll { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+.ve-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .ve-content:empty::before { content: attr(data-placeholder); color: #999; pointer-events: none; font-style: italic; }
 .ve-content p { margin: 0; padding: 0; line-height: 1.3; }
 .ve-content div, .ve-content span { margin: 0; padding: 0; }

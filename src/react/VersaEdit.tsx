@@ -2,6 +2,7 @@ import React, {
   forwardRef,
   useCallback,
   useEffect,
+  useId,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
@@ -224,6 +225,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
   ref,
 ) {
   const L = useMemo(() => resolveLabels(locale, labels), [locale, labels])
+  const hintId = `${useId()}-keyboard-hint`
   const frameOpts: FrameOptions =
     frame === false ? { width: 0, color: 'transparent', radius: 0 } : { ...DEFAULT_FRAME, ...frame }
   const fontSizeOptions = fontSizes.length ? fontSizes : DEFAULT_FONT_SIZES
@@ -443,6 +445,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
           suppressContentEditableWarning
           role="textbox"
           aria-multiline="true"
+          aria-describedby={hintId}
           className={`ve-content${scrollable ? ' ve-scroll' : ''} ${contentClassName}`.trim()}
           data-placeholder={placeholder ?? L.placeholder}
           style={{
@@ -455,6 +458,10 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
           }}
         />
 
+        {/* Como sair da área de edição pelo teclado (o Tab insere espaços) */}
+        <span id={hintId} className="ve-sr-only">
+          {L.keyboardHint}
+        </span>
         {object && !object.hidden && <ObjectToolbar object={object} core={getCore} labels={L} />}
         {object?.handle && !object.hidden && (
           <ResizeHandle position={object.handle} title={L.resizeFree} core={getCore} />

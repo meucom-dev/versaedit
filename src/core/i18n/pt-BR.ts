@@ -84,4 +84,5 @@ export const ptBR: VersaEditLabels = {
   fileTooLarge: 'O arquivo é grande demais (máximo de 20 MB).',
   fileReplaceConfirm: 'Substituir o conteúdo atual pelo arquivo? (Ctrl+Z desfaz)',
   fileReadError: 'Não foi possível ler o arquivo.',
+  keyboardHint: 'Tab insere espaços. Para sair do editor, use Shift+Tab, ou Esc e depois Tab.',
 }

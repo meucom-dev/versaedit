@@ -82,6 +82,7 @@ export const en = {
   fileTooLarge: 'The file is too large (maximum 20 MB).',
   fileReplaceConfirm: 'Replace the current content with the file? (Ctrl+Z undoes)',
   fileReadError: 'The file could not be read.',
+  keyboardHint: 'Tab inserts spaces. To leave the editor, press Shift+Tab, or Esc and then Tab.',
 }
 
 export type VersaEditLabels = typeof en
