@@ -10,15 +10,24 @@
 // navegador (o parser troca U+0000 por U+FFFD).
 // ============================================================
 
-export interface EditorHistory {
+// Seleção (opcional): cada passo guarda a seleção de antes da mudança (para o
+// desfazer) e a de depois (para o refazer). O formato é de quem usa o histórico.
+export interface EditorHistory<S = unknown> {
   /** Reinicia o histórico a partir do conteúdo inicial */
   reset(html: string): void
+  /**
+   * Seleção no começo de uma interação do usuário. Vale como "antes" da próxima
+   * mudança; ignorada enquanto um grupo de mudanças está em aberto.
+   */
+  markBefore(selection: S | undefined): void
   /** Agenda o registro do estado atual (agrupa a digitação por ~400 ms) */
-  schedule(getHtml: () => string): void
+  schedule(getHtml: () => string, getSelection?: () => S | undefined): void
   /** Desfaz: devolve o HTML anterior, ou null se não houver */
   undo(getHtml: () => string): string | null
   /** Refaz: devolve o HTML seguinte, ou null se não houver */
   redo(getHtml: () => string): string | null
+  /** Seleção a restaurar depois do último desfazer/refazer (undefined: nenhuma) */
+  restoredSelection(): S | undefined
   /** Cancela registros pendentes (ao desmontar o editor) */
   dispose(): void
   /** Números internos, para testes e diagnóstico */
@@ -43,19 +52,29 @@ const DATA_URI = /data:[\w.+-]+\/[\w.+-]+;base64,[A-Za-z0-9+/=]+/g
 const NUL = String.fromCharCode(0)
 const TOKEN = new RegExp(`${NUL}(\\d+)${NUL}`, 'g')
 
-interface Entry {
+interface Entry<S> {
   /** HTML com marcadores no lugar das imagens grandes */
   text: string
   /** Imagens usadas por este passo (uma vez por ocorrência) */
   ids: number[]
+  /** Seleção antes da primeira mudança do passo (o desfazer volta a ela) */
+  before?: S
+  /** Seleção depois da última mudança do passo (o refazer volta a ela) */
+  after?: S
 }
 
-export function createEditorHistory(limit = 100): EditorHistory {
-  let stack: Entry[] = []
+export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> {
+  type Item = Entry<S>
+  let stack: Item[] = []
   let index = -1
   let timer: number | null = null
   // Enquanto o editor é restaurado pelo histórico, as mutações não são registradas
   let restoring = false
+  // Seleção do começo da interação atual, e as do grupo de mudanças em aberto
+  let candidate: S | undefined
+  let groupBefore: S | undefined
+  let groupAfter: S | undefined
+  let moved: S | undefined
 
   // Tabela de imagens: chave curta → ids, e id → conteúdo + contador de uso.
   // A chave curta (tamanho + começo + fim) evita calcular o hash de strings de
@@ -74,7 +93,7 @@ export function createEditorHistory(limit = 100): EditorHistory {
   }
   const blobs = new Map<number, { data: string; refs: number }>()
 
-  const encode = (html: string): Entry => {
+  const encode = (html: string): Item => {
     const ids: number[] = []
     const text = html.replace(DATA_URI, (data) => {
       if (data.length < MIN_BLOB_CHARS) return data
@@ -94,17 +113,17 @@ export function createEditorHistory(limit = 100): EditorHistory {
     return { text, ids }
   }
 
-  const decode = (entry: Entry): string =>
+  const decode = (entry: Item): string =>
     entry.ids.length
       ? entry.text.replace(TOKEN, (_m, id: string) => blobs.get(Number(id))?.data ?? '')
       : entry.text
 
-  const retain = (entry: Entry) => {
+  const retain = (entry: Item) => {
     for (const id of entry.ids) blobs.get(id)!.refs++
   }
 
   // Solta as imagens do passo; as que ficam sem uso saem da tabela
-  const release = (entry: Entry) => {
+  const release = (entry: Item) => {
     for (const id of entry.ids) {
       const blob = blobs.get(id)
       if (!blob) continue
@@ -114,7 +133,7 @@ export function createEditorHistory(limit = 100): EditorHistory {
   }
 
   // Imagens criadas por um encode que não virou passo (estado repetido)
-  const discardUnused = (entry: Entry) => {
+  const discardUnused = (entry: Item) => {
     for (const id of entry.ids) {
       const blob = blobs.get(id)
       if (blob && blob.refs <= 0) forget(id, blob.data)
@@ -130,6 +149,9 @@ export function createEditorHistory(limit = 100): EditorHistory {
 
   const commit = (html: string) => {
     const entry = encode(html)
+    entry.before = groupBefore
+    entry.after = groupAfter
+    groupBefore = groupAfter = candidate = undefined
     if (index >= 0 && stack[index].text === entry.text) {
       discardUnused(entry)
       return
@@ -150,6 +172,8 @@ export function createEditorHistory(limit = 100): EditorHistory {
   const move = (delta: number): string | null => {
     const target = index + delta
     if (target < 0 || target >= stack.length) return null
+    // Desfazer volta à seleção de antes do passo desfeito; refazer, à de depois
+    moved = delta < 0 ? stack[index].before : stack[target].after
     index = target
     restoring = true
     window.setTimeout(() => {
@@ -161,14 +185,25 @@ export function createEditorHistory(limit = 100): EditorHistory {
   return {
     reset(html) {
       cancelPending()
+      candidate = groupBefore = groupAfter = moved = undefined
       for (const entry of stack) release(entry)
       const entry = encode(html)
       stack = [entry]
       retain(entry)
       index = 0
     },
-    schedule(getHtml) {
+    markBefore(selection) {
       if (restoring) return
+      if (timer === null) candidate = selection
+      // Grupo aberto sem seleção de antes (aberto por uma mudança que não veio de
+      // uma interação): a primeira interação dentro dele a fornece
+      else if (groupBefore === undefined) groupBefore = selection
+    },
+    schedule(getHtml, getSelection) {
+      if (restoring) return
+      // Primeira mudança de um grupo: a seleção "antes" é a do começo da interação
+      if (timer === null) groupBefore = candidate
+      if (getSelection) groupAfter = getSelection()
       cancelPending()
       timer = window.setTimeout(() => {
         timer = null
@@ -182,6 +217,9 @@ export function createEditorHistory(limit = 100): EditorHistory {
     redo(getHtml) {
       flush(getHtml)
       return move(1)
+    },
+    restoredSelection() {
+      return moved
     },
     dispose() {
       cancelPending()

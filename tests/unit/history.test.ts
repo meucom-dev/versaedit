@@ -165,3 +165,133 @@ describe('histórico com imagens embutidas (guardadas uma vez)', () => {
     expect(h.undo(() => '<p>x</p>')).toBe(paper)
   })
 })
+
+describe('seleção guardada em cada passo (desfazer/refazer)', () => {
+  // Agenda uma mudança e deixa o agrupamento fechar
+  const change = (
+    h: ReturnType<typeof createEditorHistory<string>>,
+    html: string,
+    after: string,
+  ) => {
+    h.schedule(
+      () => html,
+      () => after,
+    )
+    vi.advanceTimersByTime(500)
+  }
+
+  it('desfazer volta à seleção de antes do passo; refazer, à de depois', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('a')
+    h.markBefore('antes')
+    change(h, 'ab', 'depois')
+    expect(h.undo(() => 'ab')).toBe('a')
+    expect(h.restoredSelection()).toBe('antes')
+    expect(h.redo(() => 'a')).toBe('ab')
+    expect(h.restoredSelection()).toBe('depois')
+    vi.useRealTimers()
+  })
+
+  it('no grupo de digitação: "antes" é o da primeira mudança e "depois" o da última', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('')
+    h.markBefore('s0')
+    h.schedule(
+      () => 'a',
+      () => 's1',
+    )
+    h.markBefore('ignorado (grupo em aberto)')
+    h.schedule(
+      () => 'ab',
+      () => 's2',
+    )
+    h.schedule(
+      () => 'abc',
+      () => 's3',
+    )
+    vi.advanceTimersByTime(500)
+    expect(h.undo(() => 'abc')).toBe('')
+    expect(h.restoredSelection()).toBe('s0')
+    expect(h.redo(() => '')).toBe('abc')
+    expect(h.restoredSelection()).toBe('s3')
+    vi.useRealTimers()
+  })
+
+  it('vários passos: cada desfazer volta ao "antes" do seu passo', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('')
+    h.markBefore('b1')
+    change(h, '1', 'a1')
+    h.markBefore('b2')
+    change(h, '12', 'a2')
+    expect(h.undo(() => '12')).toBe('1')
+    expect(h.restoredSelection()).toBe('b2')
+    expect(h.undo(() => '1')).toBe('')
+    expect(h.restoredSelection()).toBe('b1')
+    expect(h.redo(() => '')).toBe('1')
+    expect(h.restoredSelection()).toBe('a1')
+    expect(h.redo(() => '1')).toBe('12')
+    expect(h.restoredSelection()).toBe('a2')
+    vi.useRealTimers()
+  })
+
+  it('desfazer grava o grupo pendente com as suas seleções', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('a')
+    h.markBefore('antes')
+    h.schedule(
+      () => 'ab',
+      () => 'depois',
+    ) // ainda dentro do agrupamento
+    expect(h.undo(() => 'ab')).toBe('a')
+    expect(h.restoredSelection()).toBe('antes')
+    vi.useRealTimers()
+  })
+
+  it('sem seleção registrada (uso antigo da API), nada a restaurar', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('a')
+    h.schedule(() => 'ab')
+    vi.advanceTimersByTime(500)
+    expect(h.undo(() => 'ab')).toBe('a')
+    expect(h.restoredSelection()).toBeUndefined()
+    vi.useRealTimers()
+  })
+
+  it('grupo aberto sem seleção de antes: a primeira interação dentro dele a fornece', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('a')
+    h.schedule(
+      () => 'a ',
+      () => 'x',
+    ) // mudança sem interação (por exemplo, assíncrona)
+    h.markBefore('primeira interação')
+    h.markBefore('segunda (ignorada)')
+    h.schedule(
+      () => 'a b',
+      () => 'depois',
+    )
+    vi.advanceTimersByTime(500)
+    expect(h.undo(() => 'a b')).toBe('a')
+    expect(h.restoredSelection()).toBe('primeira interação')
+    vi.useRealTimers()
+  })
+
+  it('reset esquece as seleções', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('a')
+    h.markBefore('antes')
+    change(h, 'ab', 'depois')
+    h.undo(() => 'ab')
+    h.reset('x')
+    expect(h.restoredSelection()).toBeUndefined()
+    vi.useRealTimers()
+  })
+})

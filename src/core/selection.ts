@@ -45,6 +45,151 @@ export function rangeAtTextOffset(root: Node, offset: number): Range {
   return range
 }
 
+// ─── SELEÇÃO QUE SOBREVIVE À TROCA DO HTML (desfazer / refazer) ───
+// Cada ponta da seleção vira uma posição linear: os caracteres de texto mais uma
+// unidade por elemento sem conteúdo (img, br, hr, iframe…) ou não editável
+// (contenteditable="false", como a alça da caixa de texto e futuros
+// incorporados), em ordem de documento. Não depende dos nós (o HTML relido gera
+// nós novos, e nós de texto vizinhos se fundem) nem do texto (texto repetido não
+// confunde). O caminho do elemento que contém a ponta desempata as fronteiras
+// (fim do negrito × começo do texto seguinte). Não conhece tipos de objeto.
+
+/** Uma ponta da seleção */
+export interface SelectionPoint {
+  /** Posição linear desde o começo do editor */
+  offset: number
+  /** Índices dos elementos, do editor até o elemento que contém a ponta */
+  path: number[]
+  /** A ponta estava dentro de um nó de texto */
+  inText: boolean
+}
+
+/** Seleção com direção: anchor é onde começou, focus é onde terminou */
+export interface SelectionSnapshot {
+  anchor: SelectionPoint
+  focus: SelectionPoint
+}
+
+const isUnit = (node: Node): boolean =>
+  node.nodeType === 1 &&
+  (!node.firstChild || (node as Element).getAttribute('contenteditable') === 'false')
+
+function elementPath(root: Node, node: Node): number[] {
+  const path: number[] = []
+  let el: Node | null = node.nodeType === 3 ? node.parentNode : node
+  while (el && el !== root && el.parentNode) {
+    path.unshift(Array.prototype.indexOf.call((el.parentNode as Element).children, el))
+    el = el.parentNode
+  }
+  return path
+}
+
+// Posição linear do ponto (container, offset). Um ponto dentro de uma unidade
+// (por exemplo, dentro da alça) conta como logo antes dela.
+function linearOffset(root: Node, container: Node, offset: number): number {
+  let count = 0
+  let done = false
+  const visit = (node: Node): void => {
+    for (let i = 0; i < node.childNodes.length && !done; i++) {
+      if (node === container && i === offset) {
+        done = true
+        return
+      }
+      const child = node.childNodes[i]
+      if (child.nodeType === 3) {
+        if (child === container) {
+          count += offset
+          done = true
+          return
+        }
+        count += (child as Text).length
+      } else if (isUnit(child)) {
+        if (child !== container && child.contains(container)) {
+          done = true
+          return
+        }
+        if (child === container) {
+          done = true
+          return
+        }
+        count += 1
+      } else {
+        visit(child)
+      }
+    }
+    if (node === container) done = true
+  }
+  visit(root)
+  return count
+}
+
+function snapshotPoint(root: Node, node: Node, offset: number): SelectionPoint {
+  return {
+    offset: linearOffset(root, node, offset),
+    path: elementPath(root, node),
+    inText: node.nodeType === 3,
+  }
+}
+
+/** Seleção (com direção) como posições lineares dentro de `root` */
+export function captureSelection(
+  root: Node,
+  anchorNode: Node,
+  anchorOffset: number,
+  focusNode: Node,
+  focusOffset: number,
+): SelectionSnapshot {
+  return {
+    anchor: snapshotPoint(root, anchorNode, anchorOffset),
+    focus: snapshotPoint(root, focusNode, focusOffset),
+  }
+}
+
+// Ponto do DOM atual com a posição linear da ponta guardada; entre os candidatos
+// (a mesma posição pode ser o fim de um texto e o começo do seguinte), prefere o
+// do mesmo elemento e do mesmo tipo (dentro de texto ou entre elementos)
+function resolvePoint(root: Node, point: SelectionPoint): [Node, number] {
+  const found: { node: Node; offset: number; inText: boolean }[] = []
+  let count = 0
+  const visit = (node: Node): void => {
+    for (let i = 0; i <= node.childNodes.length; i++) {
+      if (count === point.offset) found.push({ node, offset: i, inText: false })
+      const child = node.childNodes[i]
+      if (!child) break
+      if (child.nodeType === 3) {
+        const length = (child as Text).length
+        if (point.offset >= count && point.offset <= count + length) {
+          found.push({ node: child, offset: point.offset - count, inText: true })
+        }
+        count += length
+      } else if (isUnit(child)) {
+        count += 1
+      } else {
+        visit(child)
+      }
+    }
+  }
+  visit(root)
+  const path = point.path.join('/')
+  const samePath = (c: (typeof found)[number]) => elementPath(root, c.node).join('/') === path
+  const best =
+    found.find((c) => samePath(c) && c.inText === point.inText) ??
+    found.find(samePath) ??
+    found.find((c) => c.inText === point.inText) ??
+    found[0]
+  return best ? [best.node, best.offset] : [root, root.childNodes.length]
+}
+
+/** Aplica a seleção guardada ao conteúdo atual de `root` (mantém a direção) */
+export function restoreSelection(root: Node, snapshot: SelectionSnapshot): Range | null {
+  const selection = window.getSelection()
+  if (!selection) return null
+  const [anchorNode, anchorOffset] = resolvePoint(root, snapshot.anchor)
+  const [focusNode, focusOffset] = resolvePoint(root, snapshot.focus)
+  selection.setBaseAndExtent(anchorNode, anchorOffset, focusNode, focusOffset)
+  return selection.rangeCount ? selection.getRangeAt(0).cloneRange() : null
+}
+
 export const isNodeWithinEditor = (editor: HTMLElement, node: Node): boolean =>
   node === editor || editor.contains(node)
 
