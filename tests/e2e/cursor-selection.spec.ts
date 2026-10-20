@@ -685,3 +685,86 @@ test.describe('links: criar, editar e remover sem espaços duros nem estilos ext
     expect(await t.dom()).toBe('<p>ir ao site agora</p>')
   })
 })
+
+test.describe('junção de blocos sem estilos artificiais (Backspace/Delete)', () => {
+  // Sem span de estilo criado pelo navegador; a formatação do usuário fica
+  const noStyleSpan = (html: string) => !/<span style="[^"]*">/.test(html)
+
+  for (const [name, html, at, offset, key] of [
+    ['Backspace entre parágrafos', '<p>um</p><p>dois</p>', 'dois', 0, 'Backspace'],
+    ['Delete entre parágrafos', '<p>um</p><p>dois</p>', 'um', 2, 'Delete'],
+  ] as const) {
+    test(`${name}: junta sem span e o cursor fica na junção`, async ({ page }) => {
+      const t = await mount(page, { initialContent: html })
+      await caretIn(page, at, offset)
+      await page.keyboard.press(key)
+      expect(await t.dom()).toBe('<p>umdois</p>')
+      await page.keyboard.type('X')
+      expect(await t.dom()).toBe('<p>umXdois</p>')
+    })
+  }
+
+  test('Backspace de um parágrafo para um título: o texto entra no título, sem estilo sem efeito', async ({
+    page,
+    browserName,
+  }) => {
+    const t = await mount(page, { initialContent: '<h2>titulo</h2><p>dois</p>' })
+    await caretIn(page, 'dois', 0)
+    await page.keyboard.press('Backspace')
+    // O Firefox deixa o texto com o tamanho do título. O Chromium e o WebKit
+    // mantêm o tamanho de parágrafo no texto movido (font-size com efeito, que
+    // fica); o caret-color, sem efeito, sai.
+    expect(await t.dom()).toBe(
+      browserName === 'firefox'
+        ? '<h2>titulodois</h2>'
+        : '<h2>titulo<span style="font-size: 12pt;">dois</span></h2>',
+    )
+  })
+
+  test('Backspace entre itens de lista: um item só, sem span', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<ul><li>um</li><li>dois</li></ul>' })
+    await caretIn(page, 'dois', 0)
+    await page.keyboard.press('Backspace')
+    const html = await t.dom()
+    expect(noStyleSpan(html), html).toBe(true)
+    await expect(t.content.locator('li')).toHaveCount(1)
+    await expect(t.content.locator('li')).toHaveText('umdois')
+  })
+
+  for (const [name, second, expected] of [
+    ['negrito', '<p><b>dois</b></p>', '<p>um<b>dois</b></p>'],
+    [
+      'cor própria',
+      '<p><span style="color: rgb(200, 0, 0);">dois</span></p>',
+      '<p>um<span style="color: rgb(200, 0, 0);">dois</span></p>',
+    ],
+    [
+      'tamanho igual ao herdado, escolhido pelo usuário',
+      '<p><span style="font-size: 12pt;">dois</span></p>',
+      '<p>um<span style="font-size: 12pt;">dois</span></p>',
+    ],
+  ] as const) {
+    test(`formatação do usuário (${name}) é mantida`, async ({ page }) => {
+      const t = await mount(page, { initialContent: `<p>um</p>${second}` })
+      await caretIn(page, 'dois', 0)
+      await page.keyboard.press('Backspace')
+      expect(await t.dom()).toBe(expected)
+    })
+  }
+
+  test('Backspace no meio do parágrafo apaga um caractere, como sempre', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>um</p><p>dois</p>' })
+    await caretIn(page, 'dois', 2)
+    await page.keyboard.press('Backspace')
+    expect(await t.dom()).toBe('<p>um</p><p>dis</p>')
+  })
+
+  test('desfazer a junção volta os dois parágrafos', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>um</p><p>dois</p>' })
+    await caretIn(page, 'dois', 0)
+    await page.keyboard.press('Backspace')
+    await page.waitForTimeout(500)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>um</p><p>dois</p>')
+  })
+})

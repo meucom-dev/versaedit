@@ -52,6 +52,7 @@ import {
   type TbBorderStyle,
 } from './objects'
 import { suspendMedia, suspendMediaInHtml } from './media'
+import { removeAddedRedundantStyles } from './cleanup'
 import { applyPendingStyleToFragment, buildPasteHtml } from './paste'
 import { applyVoiceCommands, formatDictatedText } from './speech'
 import { isSafeUrl, safeCssColor, sanitizeHtml } from './sanitize'
@@ -277,6 +278,15 @@ export class VersaEditCore {
   private ignoreNextClick = false
   // Esc foi a última tecla: o próximo Tab sai do editor em vez de inserir espaços
   private tabLeaves = false
+  // Registra o que uma operação de apagar do navegador muda (para tirar os estilos
+  // que ele acrescenta ao juntar blocos; ver cleanup.ts)
+  // (o navegador entrega os registros ao observador antes do evento input, por
+  // isso eles são acumulados aqui)
+  private deleteRecords: MutationRecord[] = []
+  private readonly deleteObserver = new MutationObserver((records) => {
+    this.deleteRecords.push(...records)
+  })
+  private watchingDelete = false
   private readonly pointer = createPointerTracker()
 
   // Seleção guardada enquanto o formulário de link está aberto
@@ -389,6 +399,7 @@ export class VersaEditCore {
     for (const [type, listener] of this.listeners) this.el.removeEventListener(type, listener)
     for (const type of INTERACTION_EVENTS)
       this.scope.removeEventListener(type, this.markBefore, true)
+    this.deleteObserver.disconnect()
   }
 
   setOptions(options: Partial<CoreOptions>): void {
@@ -1523,8 +1534,39 @@ export class VersaEditCore {
   }
 
   private handleInput = (): void => {
+    if (this.watchingDelete) this.cleanUpAfterDelete()
     this.enforceHeight()
     this.emitChange()
+  }
+
+  // Começo de uma operação de apagar do navegador: passa a registrar as mudanças
+  private watchDelete(): void {
+    // Operação anterior cancelada (sem input): os registros dela não valem
+    if (this.watchingDelete) this.deleteObserver.takeRecords()
+    this.deleteRecords = []
+    this.deleteObserver.observe(this.el, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['style'],
+      attributeOldValue: true,
+    })
+    this.watchingDelete = true
+  }
+
+  // Fim da operação: tira os estilos que ela acrescentou sem efeito, mantendo a
+  // seleção no mesmo ponto
+  private cleanUpAfterDelete(): void {
+    const records = [...this.deleteRecords, ...this.deleteObserver.takeRecords()]
+    this.deleteRecords = []
+    this.deleteObserver.disconnect()
+    this.watchingDelete = false
+    if (!records.length) return
+    const selection = this.selectionSnapshot()
+    if (removeAddedRedundantStyles(records, this.el) && selection) {
+      const range = restoreSelection(this.el, selection)
+      if (range) this.savedRange = range
+    }
   }
 
   private enforceHeight(): boolean {
@@ -1537,6 +1579,7 @@ export class VersaEditCore {
   // cancelada, e o texto sairia duplicado.
   private handleBeforeInput = (inputEvent: InputEvent): void => {
     if (this.preview) this.restorePreview()
+    if (inputEvent.inputType.startsWith('delete')) this.watchDelete()
     // Digitar com a imagem selecionada escreve depois dela e tira a seleção (senão
     // o próximo Backspace apagaria a imagem, e não a letra)
     if (this.selectedImg) this.deselectImage()
