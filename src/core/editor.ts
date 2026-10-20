@@ -55,6 +55,7 @@ import {
 import { suspendMedia, suspendMediaInHtml } from './media'
 import { removeAddedRedundantStyles } from './cleanup'
 import { applyPendingStyleToFragment, buildPasteHtml } from './paste'
+import { applyBlockPaste, planBlockPaste } from './paste-blocks'
 import { applyVoiceCommands, formatDictatedText } from './speech'
 import { isSafeUrl, safeCssColor, sanitizeHtml } from './sanitize'
 import {
@@ -1689,21 +1690,32 @@ export class VersaEditCore {
     const lastStyledSpan = hasPendingStyle
       ? applyPendingStyleToFragment(fragment, pendingStyle)
       : null
-    const lastInsertedNode = fragment.lastChild
-    range.insertNode(fragment)
-    if (lastStyledSpan?.lastChild) {
-      range.setStart(lastStyledSpan.lastChild, lastStyledSpan.lastChild.textContent?.length ?? 0)
-      range.collapse(true)
+    // Com blocos (parágrafos, títulos, listas, tabelas…), a colagem é planejada e
+    // aplicada sem gerar HTML inválido (ver paste-blocks.ts); sem blocos, como antes
+    const plan = planBlockPaste(fragment, range, editor)
+    if (plan) {
+      const caret = applyBlockPaste(plan, range)
       selection?.removeAllRanges()
-      selection?.addRange(range)
-      this.savedRange = range.cloneRange()
-      this.pendingStyle = {}
-    } else if (lastInsertedNode) {
-      range.setStartAfter(lastInsertedNode)
-      range.collapse(true)
-      selection?.removeAllRanges()
-      selection?.addRange(range)
-      this.savedRange = range.cloneRange()
+      selection?.addRange(caret)
+      this.savedRange = caret.cloneRange()
+      if (hasPendingStyle) this.pendingStyle = {}
+    } else {
+      const lastInsertedNode = fragment.lastChild
+      range.insertNode(fragment)
+      if (lastStyledSpan?.lastChild) {
+        range.setStart(lastStyledSpan.lastChild, lastStyledSpan.lastChild.textContent?.length ?? 0)
+        range.collapse(true)
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+        this.savedRange = range.cloneRange()
+        this.pendingStyle = {}
+      } else if (lastInsertedNode) {
+        range.setStartAfter(lastInsertedNode)
+        range.collapse(true)
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+        this.savedRange = range.cloneRange()
+      }
     }
     editor.focus()
     if (pasted.fontSizePt && !pendingStyle.fontSize) {
