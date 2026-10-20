@@ -1081,17 +1081,39 @@ export class VersaEditCore {
     img.classList.add('selected')
     this.selectedImg = img
     this.setObjType('image')
+    this.caretAfter(img)
     this.updateToolbarPosition(img)
     this.updateResizeHandlePosition(img)
   }
 
+  // Cursor logo depois do objeto selecionado: o texto digitado entra junto dele,
+  // e não onde o cursor estava antes (ou no início do editor)
+  private caretAfter(el: HTMLElement): void {
+    const range = document.createRange()
+    range.setStartAfter(el)
+    range.collapse(true)
+    this.setSelectionRange(range)
+  }
+
+  private setSelectionRange(range: Range): void {
+    const selection = window.getSelection()
+    selection?.removeAllRanges()
+    selection?.addRange(range)
+    this.savedRange = range.cloneRange()
+  }
+
   deleteSelectedImage = (): void => {
-    if (this.selectedImg) {
-      this.selectedImg.remove()
-      this.selectedImg = null
-      this.setObjType(null)
-      this.emitChange()
-    }
+    const img = this.selectedImg
+    if (!img) return
+    // O cursor fica no lugar da imagem
+    const caret = document.createRange()
+    caret.setStartBefore(img)
+    caret.collapse(true)
+    img.remove()
+    this.selectedImg = null
+    this.setObjType(null)
+    this.setSelectionRange(caret)
+    this.emitChange()
   }
 
   resizeSelectedImage = (pct: number): void => {
@@ -1165,6 +1187,8 @@ export class VersaEditCore {
       // no Firefox ele chega ao editor (o elemento mudou de lugar) e desmarcaria
       this.ignoreNextClick = true
       window.setTimeout(() => (this.ignoreNextClick = false), 0)
+      // A imagem mudou de lugar: o cursor vai junto
+      if (type === 'image') this.caretAfter(el)
     }
     this.updateObjectToolbar(el)
     this.updateResizeHandlePosition(el)
@@ -1317,6 +1341,9 @@ export class VersaEditCore {
   // cancelada, e o texto sairia duplicado.
   private handleBeforeInput = (inputEvent: InputEvent): void => {
     if (this.preview) this.restorePreview()
+    // Digitar com a imagem selecionada escreve depois dela e tira a seleção (senão
+    // o próximo Backspace apagaria a imagem, e não a letra)
+    if (this.selectedImg) this.deselectImage()
     if (inputEvent.inputType !== 'insertText' || inputEvent.data === null) {
       return
     }
@@ -1501,6 +1528,7 @@ export class VersaEditCore {
       if (e.key === 'ArrowUp') moveElementInFlow(target, -1)
       else if (e.key === 'ArrowDown') moveElementInFlow(target, 1)
       else setFloatSide(target, e.key === 'ArrowLeft' ? 'left' : 'right')
+      if (this.objType === 'image') this.caretAfter(target)
       this.updateObjectToolbar(target)
       this.updateResizeHandlePosition(target)
       this.emitChange()
