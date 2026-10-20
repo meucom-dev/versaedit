@@ -982,6 +982,12 @@ export class VersaEditCore {
     return previous instanceof HTMLElement ? previous : null
   }
 
+  // A seleção (ou o cursor) tem alguma ponta dentro do elemento
+  private selectionTouches(el: HTMLElement): boolean {
+    const range = this.getCurrentRange()
+    return !!range && (el.contains(range.startContainer) || el.contains(range.endContainer))
+  }
+
   // Seleciona o objeto de bloco, se o editor souber selecioná-lo (hoje, a caixa de
   // texto; novos objetos de bloco entram aqui). Devolve se selecionou.
   private selectBlockObject(el: HTMLElement): boolean {
@@ -1698,6 +1704,22 @@ export class VersaEditCore {
     if ((e.key === 'Delete' || e.key === 'Backspace') && this.selectedImg) {
       e.preventDefault()
       this.deleteSelectedImage()
+      return
+    }
+    // Delete com a caixa de texto selecionada como objeto (cursor fora dela, como
+    // depois do Backspace): exclui a caixa, como o botão do menu; o cursor fica
+    // onde está. Com o cursor dentro da caixa, o Delete apaga texto, como sempre.
+    if (
+      e.key === 'Delete' &&
+      !e.shiftKey &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      this.selectedTextbox &&
+      !this.selectionTouches(this.selectedTextbox)
+    ) {
+      e.preventDefault()
+      this.deleteSelectedTextbox()
       return
     }
     // Backspace no começo de um bloco logo depois de um objeto de bloco (caixa de

@@ -528,3 +528,57 @@ test.describe('desfazer / refazer devolvem a seleção', () => {
     expect(await t.dom()).toBe('<p>primeiro</p><p>segundoX</p>')
   })
 })
+
+test.describe('Delete com a caixa de texto selecionada', () => {
+  const CONTENT = `<p>a</p>${TEXTBOX}<p>depois</p>`
+  const box = (page: Page) => page.locator('#host .rich-textbox')
+  const settle = (page: Page) => page.waitForTimeout(500)
+
+  test('Backspace seleciona e Delete exclui a caixa; o cursor continua no parágrafo', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: CONTENT })
+    await caretIn(page, 'depois', 0)
+    await page.keyboard.press('Backspace')
+    await expect(box(page)).toHaveClass(/\bselected\b/)
+    await page.keyboard.press('Delete')
+    await expect(box(page)).toHaveCount(0)
+    await expect(page.locator('#host .ve-float-toolbar')).toHaveCount(0)
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe('<p>a</p><p>Xdepois</p>')
+  })
+
+  test('desfazer devolve a caixa, refazer a exclui de novo', async ({ page }) => {
+    const t = await mount(page, { initialContent: CONTENT })
+    await caretIn(page, 'depois', 0)
+    await page.keyboard.press('Backspace')
+    await page.keyboard.press('Delete')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    await expect(box(page)).toHaveCount(1)
+    expect(await box(page).textContent()).toBe('⠿Caixa')
+    expect(await t.dom()).toBe(CONTENT)
+    await page.keyboard.press('Control+y')
+    await expect(box(page)).toHaveCount(0)
+    expect(await t.dom()).toBe('<p>a</p><p>depois</p>')
+  })
+
+  test('com o cursor dentro da caixa, Delete apaga um caractere, não a caixa', async ({ page }) => {
+    const t = await mount(page, { initialContent: CONTENT })
+    await box(page).click()
+    await caretIn(page, 'Caixa', 0)
+    await page.keyboard.press('Delete')
+    await expect(box(page)).toHaveCount(1)
+    expect(await box(page).textContent()).toBe('⠿aixa')
+    expect(await t.html()).toContain('<p>depois</p>')
+  })
+
+  test('o segundo Backspace continua sem excluir a caixa', async ({ page }) => {
+    await mount(page, { initialContent: CONTENT })
+    await caretIn(page, 'depois', 0)
+    await page.keyboard.press('Backspace')
+    await page.keyboard.press('Backspace')
+    await expect(box(page)).toHaveCount(1)
+    await expect(box(page)).toHaveClass(/\bselected\b/)
+  })
+})
