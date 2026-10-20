@@ -229,6 +229,8 @@ function isUiStateMutation(record: MutationRecord, editor: HTMLElement): boolean
   const current = (record.target as Element).getAttribute('class')
   return withoutUiClasses(record.oldValue) === withoutUiClasses(current)
 }
+// Blocos que contêm texto corrido (o bloco de uma ponta da seleção)
+const TEXT_BLOCKS = 'p, h1, h2, h3, h4, h5, h6, li, blockquote, pre, td, th, caption, div'
 // Elementos que são conteúdo mesmo sem texto (vazios ou substituídos, do HTML)
 const REPLACED_ELEMENTS = 'img, hr, input, iframe, video, audio, object, embed, canvas, svg'
 
@@ -919,11 +921,38 @@ export class VersaEditCore {
     if (!url) return false
     const range = this.linkRange
     this.linkRange = null
+    const html = linkHtml(url, text.trim() || url)
+    // Dentro de um só bloco, o link entra pelo DOM, com o cursor logo depois dele.
+    // O insertHTML do navegador trocava os espaços vizinhos por &nbsp;, copiava
+    // estilos para o link (WebKit) e deixava o cursor dentro dele (Firefox).
+    // Seleção entre blocos: insertHTML, como antes (ele junta os blocos).
+    if (range && this.withinOneBlock(range)) {
+      this.restoreRange(range)
+      const template = document.createElement('template')
+      template.innerHTML = html
+      const anchor = template.content.firstChild as Node
+      range.deleteContents()
+      range.insertNode(anchor)
+      const caret = document.createRange()
+      caret.setStartAfter(anchor)
+      caret.collapse(true)
+      this.setSelectionRange(caret)
+      this.emitChange()
+      return true
+    }
     if (range) this.restoreRange(range)
     else this.el.focus()
-    insertHtml(linkHtml(url, text.trim() || url))
+    insertHtml(html)
     this.emitChange()
     return true
+  }
+
+  // As duas pontas no mesmo bloco de texto (parágrafo, título, item, célula…)
+  private withinOneBlock(range: Range): boolean {
+    const blockOf = (node: Node) =>
+      (node.nodeType === 3 ? node.parentElement : (node as Element))?.closest(TEXT_BLOCKS) ?? null
+    const start = blockOf(range.startContainer)
+    return !!start && this.el.contains(start) && start === blockOf(range.endContainer)
   }
 
   /** Fecha o formulário de link sem mudar nada e devolve a seleção */

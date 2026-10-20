@@ -582,3 +582,106 @@ test.describe('Delete com a caixa de texto selecionada', () => {
     await expect(box(page)).toHaveClass(/\bselected\b/)
   })
 })
+
+test.describe('links: criar, editar e remover sem espaços duros nem estilos extras', () => {
+  const A = (href: string, text: string) =>
+    `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`
+  const form = (page: Page) => page.locator('#host .ve-link-popover')
+
+  test('a partir da seleção: só o link muda, e o cursor fica depois dele', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>ir ao site agora</p>' })
+    await selectText(page, 'site')
+    await page.keyboard.press('Control+k')
+    await form(page).getByLabel('Link URL:').fill('example.com')
+    await form(page).getByLabel('Link URL:').press('Enter')
+    expect(await t.dom()).toBe(`<p>ir ao ${A('https://example.com', 'site')} agora</p>`)
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe(`<p>ir ao ${A('https://example.com', 'site')}X agora</p>`)
+  })
+
+  test('no cursor (sem seleção): o link entra no cursor e o cursor fica depois', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: '<p>ab</p>' })
+    await caretIn(page, 'ab', 1)
+    await page.keyboard.press('Control+k')
+    await form(page).getByLabel('Link URL:').fill('example.com')
+    await form(page).getByLabel('Link text:').fill('L')
+    await form(page).getByRole('button', { name: 'Apply' }).click()
+    expect(await t.dom()).toBe(`<p>a${A('https://example.com', 'L')}b</p>`)
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe(`<p>a${A('https://example.com', 'L')}Xb</p>`)
+  })
+
+  test('sem texto: o link mostra o endereço', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>ab</p>' })
+    await caretIn(page, 'ab', 2)
+    await page.keyboard.press('Control+k')
+    await form(page).getByLabel('Link URL:').fill('example.com')
+    await form(page).getByLabel('Link URL:').press('Enter')
+    expect(await t.dom()).toBe(`<p>ab${A('https://example.com', 'https://example.com')}</p>`)
+  })
+
+  test('editar um link existente: um link só, com o endereço novo; o cursor fica depois', async ({
+    page,
+  }) => {
+    const t = await mount(page, {
+      initialContent: `<p>ir ao ${A('https://a.com', 'site bom')} hoje</p>`,
+    })
+    await caretIn(page, 'site bom', 2)
+    await page.keyboard.press('Control+k')
+    await expect(form(page).getByLabel('Link URL:')).toHaveValue('https://a.com')
+    await expect(form(page).getByLabel('Link text:')).toHaveValue('site bom')
+    await form(page).getByLabel('Link URL:').fill('https://b.com')
+    await form(page).getByLabel('Link URL:').press('Enter')
+    expect(await t.dom()).toBe(`<p>ir ao ${A('https://b.com', 'site bom')} hoje</p>`)
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe(`<p>ir ao ${A('https://b.com', 'site bom')}X hoje</p>`)
+  })
+
+  test('seleção dentro do negrito: o link fica dentro do negrito', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>um <b>site bom</b></p>' })
+    await selectText(page, 'site')
+    await page.keyboard.press('Control+k')
+    await form(page).getByLabel('Link URL:').fill('example.com')
+    await form(page).getByLabel('Link URL:').press('Enter')
+    expect(await t.dom()).toBe(`<p>um <b>${A('https://example.com', 'site')} bom</b></p>`)
+  })
+
+  test('seleção entre parágrafos: cria um link só, como antes', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>um dois</p><p>tres quatro</p>' })
+    await page.evaluate(() => {
+      const ed = document.querySelector<HTMLElement>('#host .ve-content')!
+      ed.focus()
+      const [a, b] = ed.querySelectorAll('p')
+      getSelection()!.setBaseAndExtent(a.firstChild!, 3, b.firstChild!, 4)
+    })
+    await page.keyboard.press('Control+k')
+    await form(page).getByLabel('Link URL:').fill('example.com')
+    await form(page).getByLabel('Link URL:').press('Enter')
+    await expect(t.content.locator('a')).toHaveCount(1)
+  })
+
+  test('desfazer a criação do link devolve o texto e a seleção', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>ir ao site agora</p>' })
+    await selectText(page, 'site')
+    await page.keyboard.press('Control+k')
+    await form(page).getByLabel('Link URL:').fill('example.com')
+    await form(page).getByLabel('Link URL:').press('Enter')
+    await page.waitForTimeout(500)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>ir ao site agora</p>')
+    expect(await page.evaluate(() => getSelection()!.toString())).toBe('site')
+  })
+
+  test('remover o link criado (cursor dentro) devolve o texto original', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>ir ao site agora</p>' })
+    await selectText(page, 'site')
+    await page.keyboard.press('Control+k')
+    await form(page).getByLabel('Link URL:').fill('example.com')
+    await form(page).getByLabel('Link URL:').press('Enter')
+    await caretIn(page, 'site', 2)
+    await t.btn('Remove link').click()
+    expect(await t.dom()).toBe('<p>ir ao site agora</p>')
+  })
+})
