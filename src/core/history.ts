@@ -22,6 +22,12 @@ export interface EditorHistory<S = unknown> {
    * seleção custa, e na digitação contínua quase toda marcação é ignorada).
    */
   markBefore(selection: S | undefined | (() => S | undefined)): void
+  /**
+   * Fecha o grupo de mudanças em aberto, gravando o estado atual: a próxima
+   * mudança começa um passo novo (operações distintas não se juntam, mesmo em
+   * menos de 400 ms). Chamado antes da mudança seguinte.
+   */
+  close(getHtml: () => string): void
   /** Agenda o registro do estado atual (agrupa a digitação por ~400 ms) */
   schedule(getHtml: () => string, getSelection?: () => S | undefined): void
   /** Desfaz: devolve o HTML anterior, ou null se não houver */
@@ -202,6 +208,10 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
       // Grupo aberto sem seleção de antes (aberto por uma mudança que não veio de
       // uma interação): a primeira interação dentro dele a fornece
       else if (groupBefore === undefined) groupBefore = read()
+    },
+    close(getHtml) {
+      if (timer === null || restoring) return
+      flush(getHtml)
     },
     schedule(getHtml, getSelection) {
       if (restoring) return

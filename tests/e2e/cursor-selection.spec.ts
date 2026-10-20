@@ -986,3 +986,216 @@ test.describe('desfazer / refazer: seleção em ilhas editáveis', () => {
     expect(after.focus).toBe('legenda:2')
   })
 })
+
+test.describe('desfazer: operações distintas em passos separados, mesmo em menos de 400 ms', () => {
+  const settle = (page: Page) => page.waitForTimeout(500)
+  const sel = (page: Page) => page.evaluate(() => getSelection()!.toString())
+
+  test('digitar e logo aplicar negrito: dois passos, cada um com a sua seleção', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: '<p>um dois</p>' })
+    await caretIn(page, 'dois', 4)
+    await page.keyboard.type('X')
+    await selectText(page, 'um')
+    await t.btn('Bold (Ctrl+B)').click()
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>um doisX</p>')
+    expect(await sel(page)).toBe('um')
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>um dois</p>')
+    await page.keyboard.press('Control+y')
+    expect(await t.dom()).toBe('<p>um doisX</p>')
+    await page.keyboard.press('Control+y')
+    expect(await t.dom()).toBe('<p><b>um</b> doisX</p>')
+    expect(await sel(page)).toBe('um')
+  })
+
+  test('negrito e logo digitar: dois passos', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>um dois</p>' })
+    await selectText(page, 'um')
+    await t.btn('Bold (Ctrl+B)').click()
+    await caretIn(page, 'dois', 4)
+    await page.keyboard.type('Y')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p><b>um</b> dois</p>')
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>um dois</p>')
+  })
+
+  test('digitar e logo colar: dois passos', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>ola mundo</p>' })
+    await caretIn(page, 'ola mundo', 3)
+    await page.keyboard.type('X')
+    await page.evaluate(() => {
+      const h = '<h2>T</h2><p>corpo</p>'
+      const data = new DataTransfer()
+      data.setData('text/html', h)
+      data.setData('text/plain', 'T corpo')
+      const event = new ClipboardEvent('paste', {
+        clipboardData: data,
+        bubbles: true,
+        cancelable: true,
+      })
+      const delivered = event.clipboardData?.getData('text/html') === h
+      document.querySelector('#host .ve-content')!.dispatchEvent(event)
+      if (delivered) return
+      const core = window.__ref.current!.core as unknown as { handlePaste(e: unknown): void }
+      core.handlePaste({
+        clipboardData: { getData: (type: string) => (type === 'text/html' ? h : 'T corpo') },
+        preventDefault: () => {},
+      })
+    })
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>olaX mundo</p>')
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>ola mundo</p>')
+  })
+
+  test('digitar e logo criar um link: dois passos', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>ir ao site</p>' })
+    await caretIn(page, 'site', 4)
+    await page.keyboard.type('X')
+    await selectText(page, 'ir')
+    await page.keyboard.press('Control+k')
+    await page.locator('#host .ve-link-popover').getByLabel('Link URL:').fill('a.com')
+    await page.locator('#host .ve-link-popover').getByLabel('Link URL:').press('Enter')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>ir ao siteX</p>')
+    expect(await sel(page)).toBe('ir')
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>ir ao site</p>')
+  })
+
+  test('criar um link e logo digitar: dois passos (o formulário não conta como digitação)', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: '<p>ir ao site</p>' })
+    await selectText(page, 'site')
+    await page.keyboard.press('Control+k')
+    await page.locator('#host .ve-link-popover').getByLabel('Link URL:').fill('a.com')
+    await page.locator('#host .ve-link-popover').getByLabel('Link URL:').press('Enter')
+    await page.keyboard.type('X')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toMatch(/^<p>ir ao <a [^>]+>site<\/a><\/p>$/)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>ir ao site</p>')
+  })
+
+  test('digitar e logo inserir caixa de texto: dois passos', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>ab</p>' })
+    await caretIn(page, 'ab', 2)
+    await page.keyboard.type('X')
+    await t.btn('Insert text box').click()
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>abX</p>')
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>ab</p>')
+  })
+
+  test('digitar e logo inserir imagem: dois passos', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>ab</p>' })
+    await caretIn(page, 'ab', 2)
+    await page.keyboard.type('X')
+    const chooser = page.waitForEvent('filechooser')
+    await t.btn('Insert image').click()
+    await (await chooser).setFiles(pngFile())
+    await expect(t.content.locator('img')).toHaveCount(1)
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    await expect(t.content.locator('img')).toHaveCount(0)
+    expect(await t.dom()).toBe('<p>abX</p>')
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>ab</p>')
+  })
+
+  test('digitar e logo mover a imagem pelo teclado (Alt+↓): dois passos', async ({ page }) => {
+    const t = await mount(page, { initialContent: `<p>um</p><p>${IMG}</p><p>tres</p>` })
+    await caretIn(page, 'um', 2)
+    await page.keyboard.type('X')
+    await t.content.locator('img').click()
+    await page.keyboard.press('Alt+ArrowDown')
+    await settle(page)
+    const moved = await clean(page)
+    await page.keyboard.press('Control+z')
+    const once = await clean(page)
+    expect(once).not.toBe(moved)
+    expect(once).toContain('<p>umX</p>')
+    await page.keyboard.press('Control+z')
+    expect(await clean(page)).toContain('<p>um</p>')
+  })
+
+  test('arrastar a imagem é um passo só, separado da digitação', async ({ page }) => {
+    const t = await mount(page, {
+      initialContent: `<p>um texto longo para soltar</p><p>${IMG}</p>`,
+    })
+    await caretIn(page, 'um', 2)
+    await page.keyboard.type('X')
+    const img = t.content.locator('img')
+    const box = (await img.boundingBox())!
+    const target = (await t.content.locator('p').first().boundingBox())!
+    await page.mouse.move(box.x + 10, box.y + 10)
+    await page.mouse.down()
+    for (let i = 1; i <= 8; i++)
+      await page.mouse.move(
+        box.x + 10 + (target.x + 60 - box.x) * (i / 8),
+        box.y + 10 + (target.y - box.y) * (i / 8),
+      )
+    await page.mouse.up()
+    await settle(page)
+    const dragged = await clean(page)
+    await page.keyboard.press('Control+z')
+    expect(await clean(page), 'um desfazer desfaz o arrasto inteiro').not.toBe(dragged)
+    expect(await clean(page)).toContain('umX')
+    await page.keyboard.press('Control+z')
+    expect(await clean(page)).toContain('<p>um texto longo para soltar</p>')
+  })
+
+  test('digitar, clicar em outro lugar e digitar: dois passos', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>primeiro</p><p>segundo</p>' })
+    await caretIn(page, 'primeiro', 8)
+    await page.keyboard.type('A')
+    await t.content.locator('p').nth(1).click()
+    await page.keyboard.press('End')
+    await page.keyboard.type('B')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>primeiroA</p><p>segundo</p>')
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>primeiro</p><p>segundo</p>')
+  })
+
+  test('digitar, mover o cursor com as setas e digitar: dois passos', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>abcdef</p>' })
+    await caretIn(page, 'abcdef', 6)
+    await page.keyboard.type('X')
+    await page.keyboard.press('Home')
+    await page.keyboard.type('Y')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>abcdefX</p>')
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>abcdef</p>')
+  })
+
+  test('digitação contínua (com Backspace, Enter e Shift) continua um passo só', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: '<p>um</p>' })
+    await caretIn(page, 'um', 2)
+    await page.keyboard.type(' dois')
+    await page.keyboard.press('Backspace')
+    await page.keyboard.type('s Tres')
+    await page.keyboard.press('Enter')
+    await page.keyboard.type('quatro')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>um</p>')
+  })
+})

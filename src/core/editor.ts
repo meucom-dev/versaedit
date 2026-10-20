@@ -200,6 +200,13 @@ const toHex = (n: string) => Number(n).toString(16).padStart(2, '0')
 const CLICK_TOLERANCE_PX = 3
 // Eventos que começam uma interação do usuário (na fase de captura, antes de
 // qualquer mudança): teclado, mouse/toque e a digitação nativa
+type InteractionKind = 'typing' | 'move' | 'command' | null
+const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'AltGraph', 'Meta', 'CapsLock', 'OS'])
+// Teclas que editam como digitação (Ctrl+Backspace/Delete apagam palavras: também)
+const EDITING_KEYS = new Set(['Backspace', 'Delete', 'Enter', 'Tab'])
+const NAVIGATION_KEY = /^(Arrow(Up|Down|Left|Right)|Home|End|PageUp|PageDown)$/
+// inputType da digitação (a do teclado do celular chega só pelo beforeinput)
+const TYPING_INPUT = /^(insertText|insertCompositionText|insertParagraph|insertLineBreak|delete)/
 const INTERACTION_EVENTS = [
   'keydown',
   'pointerdown',
@@ -326,9 +333,49 @@ export class VersaEditCore {
     for (const type of INTERACTION_EVENTS) this.scope.addEventListener(type, this.markBefore, true)
   }
 
-  // Seleção do começo da interação: "antes" da próxima mudança no histórico
-  private readonly markBefore = (): void => {
+  // Começo de uma interação: fecha o passo aberto se esta for uma operação
+  // distinta (comando, navegação, ou digitação depois de outra coisa; a digitação
+  // contínua continua num passo só) e guarda a seleção de "antes" da próxima
+  // mudança. Sem evento: inserção assíncrona (imagem, ditado), um comando.
+  private lastInteraction: InteractionKind = null
+  private readonly markBefore = (e?: Event): void => {
+    const kind = e ? this.interactionKind(e) : 'command'
+    if (kind === null) return
+    if (kind !== 'typing' || this.lastInteraction !== 'typing') {
+      this.history.close(this.currentSnapshot)
+    }
+    this.lastInteraction = kind
     this.history.markBefore(() => this.selectionSnapshot())
+  }
+
+  // Tipo da interação, para o histórico: digitação (letras, Backspace, Delete,
+  // Enter, Tab, composição), navegação (setas, Home, End, PageUp/PageDown), comando
+  // (cliques e toques, atalhos, colar, recortar, arrastar, formatação do navegador)
+  // ou nada (teclas modificadoras sozinhas, Esc). Teclas fora da área de edição
+  // (formulário de link, menus) são da interface: contam como comando.
+  private interactionKind(e: Event): InteractionKind {
+    const target = e.target as Node | null
+    if (
+      (e.type === 'keydown' || e.type === 'beforeinput') &&
+      !(target && isNodeWithinEditor(this.el, target))
+    ) {
+      return 'command'
+    }
+    if (e.type === 'beforeinput') {
+      return TYPING_INPUT.test((e as InputEvent).inputType) ? 'typing' : 'command'
+    }
+    if (e.type !== 'keydown') return 'command'
+    const key = e as KeyboardEvent
+    if (MODIFIER_KEYS.has(key.key) || key.key === 'Escape') return null
+    if (key.isComposing || key.key === 'Process' || key.key === 'Dead') return 'typing'
+    const modified = key.ctrlKey || key.metaKey || key.altKey
+    if (NAVIGATION_KEY.test(key.key)) {
+      // Com uma imagem ou caixa selecionada, Ctrl/Alt + seta movem o objeto
+      return modified && (this.selectedImg || this.selectedTextbox) ? 'command' : 'move'
+    }
+    if (EDITING_KEYS.has(key.key) && !key.altKey && !key.metaKey) return 'typing'
+    if (key.key.length === 1 && !modified) return 'typing'
+    return 'command'
   }
 
   // Seleção atual no editor (com direção); fora dele, a última seleção guardada

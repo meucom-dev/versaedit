@@ -13,6 +13,10 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Changed
 
+- Experimental undo/redo: distinct operations are separate undo steps even when they happen less
+  than 400 ms apart (typing then formatting, pasting, inserting a link, image or text box, moving
+  or dragging an object, clicking elsewhere or moving the cursor with the keys). Continuous typing,
+  including Backspace, Enter and Shift, is still grouped into one step.
 - Playground: the sample contents (formatted text, table, image, text box, long content) load in
   the selected language, with the same HTML structure; content being edited is not changed by
   switching the language, only by loading a sample again.
