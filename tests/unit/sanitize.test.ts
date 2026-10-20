@@ -144,6 +144,46 @@ describe('sanitizeHtml (carregar conteúdo)', () => {
   })
 })
 
+describe('sanitizeHtml — atributos ficam onde estavam', () => {
+  it('class e style mantêm a posição', () => {
+    const handle = '<span class="textbox-handle" contenteditable="false" title="Mover">⠿</span>'
+    expect(sanitizeHtml(handle)).toBe(handle)
+    const img =
+      '<img src="data:image/png;base64,iVBORw0KGgo=" class="pos-left" draggable="false" style="max-width: 50%;" alt="foto">'
+    expect(sanitizeHtml(img)).toBe(img)
+  })
+  it('atributos funcionais, semânticos e de acessibilidade continuam, na ordem', () => {
+    const p =
+      '<p class="pos-left" id="p1" dir="rtl" lang="en" title="t" aria-label="a" role="note" style="color: red;">t</p>'
+    expect(sanitizeHtml(p)).toBe(p)
+    const cell =
+      '<table><tbody><tr><td style="background-color: rgb(255, 255, 0);" colspan="2">c</td></tr></tbody></table>'
+    expect(sanitizeHtml(cell)).toBe(cell)
+  })
+  it('a filtragem não muda: classe estranha e estilo proibido saem, no lugar', () => {
+    expect(
+      sanitizeHtml('<p class="x pos-left y" title="t" style="margin: 9px; color: red;">t</p>'),
+    ).toBe('<p class="pos-left" title="t" style="color: red;">t</p>')
+    expect(sanitizeHtml('<p class="x" title="t" style="margin: 9px;">t</p>')).toBe(
+      '<p title="t">t</p>',
+    )
+  })
+  it('cor antiga (bgcolor) vira style, como antes', () => {
+    expect(
+      sanitizeHtml('<table><tbody><tr><td bgcolor="#ff0" colspan="2">c</td></tr></tbody></table>'),
+    ).toBe(
+      '<table><tbody><tr><td colspan="2" style="background-color: rgb(255, 255, 0);">c</td></tr></tbody></table>',
+    )
+  })
+  it('vários ciclos seguidos dão o mesmo HTML', () => {
+    const doc =
+      '<p style="color: red;" class="pos-left" title="t">a</p><div class="rich-textbox" style="width: 200px;"><span class="textbox-handle" contenteditable="false">⠿</span>b</div>'
+    let html = doc
+    for (let i = 0; i < 5; i++) html = sanitizeHtml(html)
+    expect(html).toBe(doc)
+  })
+})
+
 describe('escapeHtml e safeCssColor', () => {
   it('escapa os cinco caracteres especiais', () => {
     expect(escapeHtml(`<a href="x">'&'</a>`)).toBe(

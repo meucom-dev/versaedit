@@ -160,8 +160,10 @@ export function sanitizeHtml(html: string): string {
     const textDecoration = inlineStyle?.textDecoration || ''
     const textAlign = inlineStyle?.textAlign || ''
     const lineHeight = Number.parseFloat(inlineStyle?.lineHeight ?? '')
-    el.removeAttribute('style')
-    el.removeAttribute('class')
+    // style e class são esvaziados no lugar (não removidos e recriados), para
+    // que os atributos mantenham a posição; os vazios saem no fim
+    if (inlineStyle && el.hasAttribute('style')) inlineStyle.cssText = ''
+    if (el.hasAttribute('class')) el.setAttribute('class', editorClasses.join(' '))
     el.removeAttribute('data-paper')
     // Marcador interno da mídia suspensa (core/media.ts): nunca aceito de fora
     el.removeAttribute('data-ve-media')
@@ -196,7 +198,8 @@ export function sanitizeHtml(html: string): string {
         if (value) el.style.setProperty(property, value)
       }
     }
-    if (editorClasses.length) el.classList.add(...editorClasses)
+    if (el.getAttribute('style') === '') el.removeAttribute('style')
+    if (el.getAttribute('class') === '') el.removeAttribute('class')
     // Remove tags <font> antigas, mantendo o conteúdo
     if (el.tagName === 'FONT') {
       const parent = el.parentNode

@@ -75,6 +75,12 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Fixed
 
+- Loading content no longer moves the `class` and `style` attributes to the end of the element
+  (`<span class="textbox-handle" contenteditable="false">` came back as
+  `<span contenteditable="false" class="textbox-handle">`): they are filtered in place, so saving
+  and reopening a document gives the same HTML. The filtering itself is unchanged; only the text
+  inside `style` can be rewritten by the browser (`margin:0` becomes `margin: 0px;`), with the same
+  meaning.
 - Links that open in a new tab keep `target="_blank"` when the content is loaded again
   (`setHTML`, `initialContent`/`value`, opening a `.html` file); it used to be removed, so a link
   created in the editor changed after saving and reopening. `target` is kept only on links and only

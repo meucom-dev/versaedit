@@ -593,7 +593,7 @@ test('caixa de texto editável no editor, sem contenteditable no HTML publicado'
   const t = await mount(page, { initialContent: legacy })
   // Conteúdo antigo com o atributo: o HTML entregue sai limpo
   expect(await page.evaluate(() => window.__ref.current!.getHTML())).toBe(
-    '<p>a</p><div class="rich-textbox"><span contenteditable="false" class="textbox-handle">⠿</span>caixa</div>',
+    '<p>a</p><div class="rich-textbox"><span class="textbox-handle" contenteditable="false">⠿</span>caixa</div>',
   )
   // No editor a caixa continua editável (digitação dentro dela)
   await t.content.locator('.rich-textbox').click({ position: { x: 80, y: 12 } })
@@ -603,5 +603,5 @@ test('caixa de texto editável no editor, sem contenteditable no HTML publicado'
   const html = (await t.html())!
   expect(html).toContain('caixa nova</div>')
   expect(html).not.toContain('contenteditable="true"')
-  expect(html).toContain('<span contenteditable="false" class="textbox-handle">')
+  expect(html).toContain('<span class="textbox-handle" contenteditable="false">')
 })
