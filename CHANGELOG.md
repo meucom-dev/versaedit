@@ -71,6 +71,12 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Fixed
 
+- Links are inserted through the DOM when the selection is within one block: the browser no longer
+  turns the surrounding spaces into `&nbsp;`, no longer copies styles onto the link (WebKit), and
+  the cursor ends right after the link, so typing no longer extends it (Firefox). Selections across
+  blocks keep the previous behavior.
+- Delete removes a text box selected as an object (the state Backspace leaves it in); the removal
+  is undoable. With the cursor inside the box, Delete still deletes text.
 - Keyboard trap: Tab still inserts spaces, but Shift+Tab now moves focus back to the toolbar and
   Esc followed by Tab moves it to the next element on the page. The editing area describes this to
   screen readers (new `keyboardHint` label, in English, Portuguese and Spanish).
