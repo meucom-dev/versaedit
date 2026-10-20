@@ -161,3 +161,51 @@ describe('seleção guardada e restaurada depois de reler o HTML', () => {
     expect(window.getSelection()!.anchorOffset).toBe(1)
   })
 })
+
+describe('ilhas editáveis dentro de objetos não editáveis', () => {
+  const FIGURE =
+    '<p>a</p><figure contenteditable="false"><img src="x.png"><figcaption contenteditable="true">legenda</figcaption></figure><p>b</p>'
+
+  it('cursor dentro da legenda editável volta à legenda', () => {
+    const r = roundtrip(FIGURE, (root) => {
+      const t = text(root.querySelector('figcaption'))
+      return [t, 3, t, 3]
+    })
+    expect(r.anchor).toBe('"legenda":3 em FIGCAPTION')
+  })
+
+  it('seleção de trás para frente, do parágrafo seguinte até dentro da legenda', () => {
+    const r = roundtrip(FIGURE, (root) => [
+      text(root.querySelectorAll('p')[1]),
+      1,
+      text(root.querySelector('figcaption')),
+      2,
+    ])
+    expect([r.anchor, r.focus]).toEqual(['"b":1 em P', '"legenda":2 em FIGCAPTION'])
+  })
+
+  it('ilhas aninhadas (editável dentro de não editável dentro de editável)', () => {
+    const html =
+      '<div contenteditable="false"><span>rótulo</span><div contenteditable="true">fora<span contenteditable="false">x<em contenteditable="true">dentro</em></span></div></div>'
+    const r = roundtrip(html, (root) => {
+      const t = text(root.querySelector('em'))
+      return [t, 4, t, 4]
+    })
+    expect(r.anchor).toBe('"dentro":4 em EM')
+  })
+
+  it('ilha plaintext-only também é editável', () => {
+    const html = '<div contenteditable="false"><p contenteditable="plaintext-only">nota</p></div>'
+    const r = roundtrip(html, (root) => {
+      const t = text(root.querySelector('p'))
+      return [t, 2, t, 2]
+    })
+    expect(r.anchor).toBe('"nota":2 em P')
+  })
+
+  it('objeto não editável sem ilhas continua uma unidade (posições iguais às de antes)', () => {
+    setup('<p>ab<span contenteditable="false">xyz</span>cd</p>')
+    const t = root.querySelector('p')!.lastChild!
+    expect(captureSelection(root, t, 1, t, 1).anchor.offset).toBe(2 + 1 + 1)
+  })
+})

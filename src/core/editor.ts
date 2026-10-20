@@ -1900,11 +1900,19 @@ export class VersaEditCore {
 
   undo = (): void => {
     this.applyHistory(this.history.undo(this.currentSnapshot))
-    this.el.focus()
+    this.focusKeepingSelection()
   }
 
   redo = (): void => {
     this.applyHistory(this.history.redo(this.currentSnapshot))
-    this.el.focus()
+    this.focusKeepingSelection()
+  }
+
+  // Foca o editor só se o foco estiver fora dele: com a seleção restaurada numa
+  // ilha editável (outro host de edição dentro do editor), focar a área de
+  // edição de novo levaria o cursor para o começo
+  private focusKeepingSelection(): void {
+    const active = document.activeElement
+    if (!active || !isNodeWithinEditor(this.el, active)) this.el.focus()
   }
 }

@@ -47,9 +47,10 @@ export function rangeAtTextOffset(root: Node, offset: number): Range {
 
 // ─── SELEÇÃO QUE SOBREVIVE À TROCA DO HTML (desfazer / refazer) ───
 // Cada ponta da seleção vira uma posição linear: os caracteres de texto mais uma
-// unidade por elemento sem conteúdo (img, br, hr, iframe…) ou não editável
-// (contenteditable="false", como a alça da caixa de texto e futuros
-// incorporados), em ordem de documento. Não depende dos nós (o HTML relido gera
+// unidade por elemento sem conteúdo (img, br, hr, iframe…) ou não editável e
+// sem ilhas editáveis dentro (contenteditable="false", como a alça da caixa de
+// texto e futuros incorporados), em ordem de documento. Num objeto não editável
+// com ilhas editáveis (como uma legenda), a posição entra nas ilhas. Não depende dos nós (o HTML relido gera
 // nós novos, e nós de texto vizinhos se fundem) nem do texto (texto repetido não
 // confunde). O caminho do elemento que contém a ponta desempata as fronteiras
 // (fim do negrito × começo do texto seguinte). Não conhece tipos de objeto.
@@ -70,9 +71,16 @@ export interface SelectionSnapshot {
   focus: SelectionPoint
 }
 
+// Descendente efetivamente editável ("true", vazio ou "plaintext-only"): uma ilha
+// editável dentro de um objeto não editável (por exemplo, a legenda de um
+// incorporado). Um objeto com ilhas não é uma unidade fechada: a posição entra nele.
+const EDITABLE_ISLAND = '[contenteditable]:not([contenteditable="false"])'
+
 const isUnit = (node: Node): boolean =>
   node.nodeType === 1 &&
-  (!node.firstChild || (node as Element).getAttribute('contenteditable') === 'false')
+  (!node.firstChild ||
+    ((node as Element).getAttribute('contenteditable') === 'false' &&
+      !(node as Element).querySelector(EDITABLE_ISLAND)))
 
 function elementPath(root: Node, node: Node): number[] {
   const path: number[] = []

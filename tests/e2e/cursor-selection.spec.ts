@@ -926,3 +926,63 @@ test.describe('desfazer / refazer: o cursor fica visível, com o menor deslocame
     })
   })
 })
+
+test.describe('desfazer / refazer: seleção em ilhas editáveis', () => {
+  const settle = (page: Page) => page.waitForTimeout(500)
+  // Objeto não editável com uma legenda editável (como um incorporado futuro),
+  // montado direto no DOM
+  const withFigure = async (page: Page) => {
+    const t = await mount(page, { initialContent: '<p>antes</p><p>depois</p>' })
+    await page.evaluate(() => {
+      const ed = document.querySelector<HTMLElement>('#host .ve-content')!
+      const figure = document.createElement('figure')
+      figure.setAttribute('contenteditable', 'false')
+      figure.innerHTML =
+        '<span>objeto</span><figcaption contenteditable="true">legenda</figcaption>'
+      ed.querySelectorAll('p')[0].after(figure)
+    })
+    await settle(page)
+    return t
+  }
+
+  test('desfazer a digitação na legenda devolve o cursor à legenda', async ({ page }) => {
+    const t = await withFigure(page)
+    await caretIn(page, 'legenda', 7)
+    await page.keyboard.type('X')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    await expect(t.content.locator('figcaption')).toHaveText('legenda')
+    expect(
+      await page.evaluate(() => {
+        const s = getSelection()!
+        return `${s.anchorNode?.parentElement?.tagName}:${s.anchorOffset}`
+      }),
+    ).toBe('FIGCAPTION:7')
+  })
+
+  test('seleção de trás para frente que entra na legenda volta igual', async ({ page }) => {
+    const t = await withFigure(page)
+    await page.evaluate(() => {
+      const ed = document.querySelector<HTMLElement>('#host .ve-content')!
+      ed.focus()
+      const depois = ed.querySelectorAll('p')[1].firstChild!
+      const legenda = ed.querySelector('figcaption')!.firstChild!
+      getSelection()!.setBaseAndExtent(depois, 3, legenda, 2)
+    })
+    const before = await page.evaluate(() => getSelection()!.toString())
+    await t.btn('Bold (Ctrl+B)').click()
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    const after = await page.evaluate(() => {
+      const s = getSelection()!
+      return {
+        text: s.toString(),
+        anchor: `${s.anchorNode?.textContent}:${s.anchorOffset}`,
+        focus: `${s.focusNode?.textContent}:${s.focusOffset}`,
+      }
+    })
+    expect(after.text).toBe(before)
+    expect(after.anchor).toBe('depois:3')
+    expect(after.focus).toBe('legenda:2')
+  })
+})
