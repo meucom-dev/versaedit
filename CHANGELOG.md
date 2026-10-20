@@ -32,6 +32,10 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Added
 
+- Experimental: undo restores the selection from before the undone step, and redo the selection
+  after the redone step, keeping its direction (it used to put the cursor at the start of the
+  editor). The selection is stored as linear positions that survive the HTML being reloaded and do
+  not depend on object types; the history keeps its grouping and its previous API.
 - Spanish interface (`locale="es"`): every toolbar, menu, tooltip, form, message and accessibility
   text, plus dictation in `es-ES` with spoken punctuation ("coma", "punto final", "nueva línea"…;
   closing ? and ! only, no ¿ and ¡). English and Brazilian Portuguese are unchanged. The Playground
@@ -67,6 +71,12 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Fixed
 
+- Keyboard trap: Tab still inserts spaces, but Shift+Tab now moves focus back to the toolbar and
+  Esc followed by Tab moves it to the next element on the page. The editing area describes this to
+  screen readers (new `keyboardHint` label, in English, Portuguese and Spanish).
+- Backspace at the start of a paragraph right after a text box selects the box (selection outline,
+  menu and a screen reader announcement; new `imageSelected`/`textboxSelected` labels) instead of
+  merging the paragraph into it; nothing is deleted. Esc deselects any selected object.
 - Cursor after selecting an image: typing now writes right after the image (and deselects it, so
   the next Backspace deletes the letter, not the image); Delete/Backspace or the menu's delete
   button leaves the cursor where the image was. Before, the cursor stayed wherever it had been, or
