@@ -283,6 +283,29 @@ describe('seleção guardada em cada passo (desfazer/refazer)', () => {
     vi.useRealTimers()
   })
 
+  it('seleção passada como função só é lida quando vai ser guardada', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('a')
+    let reads = 0
+    const read = () => {
+      reads++
+      return 'antes'
+    }
+    h.markBefore(read) // grupo fechado: lida
+    expect(reads).toBe(1)
+    h.schedule(
+      () => 'ab',
+      () => 'depois',
+    )
+    for (let i = 0; i < 10; i++) h.markBefore(read) // grupo aberto (já tem "antes"): ignorada
+    expect(reads).toBe(1)
+    vi.advanceTimersByTime(500)
+    expect(h.undo(() => 'ab')).toBe('a')
+    expect(h.restoredSelection()).toBe('antes')
+    vi.useRealTimers()
+  })
+
   it('reset esquece as seleções', () => {
     vi.useFakeTimers()
     const h = createEditorHistory<string>()

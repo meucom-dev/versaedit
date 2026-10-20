@@ -88,7 +88,8 @@ describe('seleção guardada e restaurada depois de reler o HTML', () => {
       const t = root.querySelector('.rich-textbox')!.lastChild!
       return [t, 2, t, 2]
     })
-    expect(r.snapshot.anchor.offset).toBe(1 + 1 + 2)
+    // Segundo bloco; dentro dele, a alça (1) + "Ca" (2)
+    expect([r.snapshot.anchor.block, r.snapshot.anchor.offset]).toEqual([1, 1 + 2])
     expect(r.anchor).toBe('"Caixa":2 em DIV')
   })
 
@@ -147,18 +148,68 @@ describe('seleção guardada e restaurada depois de reler o HTML', () => {
       const fim = text(root.querySelectorAll('p')[1])
       return [cd, 1, fim, 2]
     })
-    expect(r.snapshot.anchor.offset).toBe(1 + 1 + 1 + 2 + 1)
+    // Tabela (bloco 1): "ab" (2) + "c" (1); "fim" é o bloco 3
+    expect([r.snapshot.anchor.block, r.snapshot.anchor.offset]).toEqual([1, 2 + 1])
+    expect([r.snapshot.focus.block, r.snapshot.focus.offset]).toEqual([3, 2])
     expect([r.anchor, r.focus]).toEqual(['"cd":1 em TD', '"fim":2 em P'])
   })
 
-  it('conteúdo que encolheu: a ponta vai para o fim, sem erro', () => {
+  it('conteúdo que encolheu: a ponta vai para o fim do bloco, sem erro', () => {
     setup('<p>um texto longo</p>')
     const t = text(root.querySelector('p'))
     const snapshot = captureSelection(root, t, 10, t, 10)
     root.innerHTML = '<p>curto</p>'
     restoreSelection(root, snapshot)
+    expect(window.getSelection()!.anchorNode).toBe(root.querySelector('p'))
+    expect(window.getSelection()!.anchorOffset).toBe(1)
+  })
+
+  it('bloco que não existe mais: a ponta vai para o fim do editor, sem erro', () => {
+    setup('<p>a</p><p>b</p><p>c</p>')
+    const t = text(root.querySelectorAll('p')[2])
+    const snapshot = captureSelection(root, t, 1, t, 1)
+    root.innerHTML = '<p>a</p>'
+    restoreSelection(root, snapshot)
     expect(window.getSelection()!.anchorNode).toBe(root)
     expect(window.getSelection()!.anchorOffset).toBe(1)
+  })
+})
+
+describe('posição contada dentro do bloco (custo independente do tamanho do documento)', () => {
+  it('a posição no último bloco não depende de quantos blocos vêm antes', () => {
+    for (const before of [1, 500]) {
+      setup('<p>x</p>'.repeat(before) + '<p>alvo <b>aqui</b></p>')
+      const t = text(root.querySelector('b'))
+      const snapshot = captureSelection(root, t, 2, t, 2)
+      expect(snapshot.anchor).toEqual({ block: before, offset: 5 + 2, path: [0], inText: true })
+      root.remove()
+    }
+  })
+
+  it('texto solto na raiz e ponto entre blocos usam a posição desde o começo do editor', () => {
+    const r = roundtrip('solto<p>b</p>', (root) => [root.firstChild!, 3, root, 2])
+    expect(r.snapshot.anchor.block).toBe(-1)
+    expect(r.snapshot.focus.block).toBe(-1)
+    expect([r.anchor, r.focus]).toEqual(['"solto":3 em DIV', 'DIV:2'])
+  })
+
+  it('seleção que atravessa muitos blocos volta igual, nos dois sentidos', () => {
+    const html = Array.from({ length: 40 }, (_, i) => `<p>linha ${i}</p>`).join('')
+    const forward = roundtrip(html, (root) => [
+      text(root.querySelectorAll('p')[3]),
+      2,
+      text(root.querySelectorAll('p')[37]),
+      4,
+    ])
+    expect([forward.anchor, forward.focus]).toEqual(['"linha 3":2 em P', '"linha 37":4 em P'])
+    root.remove()
+    const backward = roundtrip(html, (root) => [
+      text(root.querySelectorAll('p')[37]),
+      4,
+      text(root.querySelectorAll('p')[3]),
+      2,
+    ])
+    expect([backward.anchor, backward.focus]).toEqual(['"linha 37":4 em P', '"linha 3":2 em P'])
   })
 })
 

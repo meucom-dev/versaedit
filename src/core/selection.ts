@@ -57,9 +57,15 @@ export function rangeAtTextOffset(root: Node, offset: number): Range {
 
 /** Uma ponta da seleção */
 export interface SelectionPoint {
-  /** Posição linear desde o começo do editor */
+  /**
+   * Bloco de primeiro nível que contém a ponta (índice entre os elementos-filho
+   * do editor, que o HTML relido mantém); -1 quando a ponta está na própria raiz
+   * (texto solto ou ponto entre blocos)
+   */
+  block: number
+  /** Posição linear desde o começo do bloco (ou do editor, se block = -1) */
   offset: number
-  /** Índices dos elementos, do editor até o elemento que contém a ponta */
+  /** Índices dos elementos, do bloco (ou do editor) até o elemento que contém a ponta */
   path: number[]
   /** A ponta estava dentro de um nó de texto */
   inText: boolean
@@ -131,10 +137,22 @@ function linearOffset(root: Node, container: Node, offset: number): number {
   return count
 }
 
+// Elemento de primeiro nível (filho direto de root) que contém o nó
+function topLevelElement(root: Node, node: Node): Element | null {
+  let current: Node | null = node
+  while (current && current.parentNode !== root) current = current.parentNode
+  return current instanceof Element ? current : null
+}
+
+// A posição é contada dentro do bloco de primeiro nível da ponta: o custo é o do
+// bloco, não o do documento inteiro (que crescia a cada tecla em textos longos)
 function snapshotPoint(root: Node, node: Node, offset: number): SelectionPoint {
+  const block = node === root ? null : topLevelElement(root, node)
+  const scope = block ?? root
   return {
-    offset: linearOffset(root, node, offset),
-    path: elementPath(root, node),
+    block: block ? Array.prototype.indexOf.call((root as Element).children, block) : -1,
+    offset: linearOffset(scope, node, offset),
+    path: elementPath(scope, node),
     inText: node.nodeType === 3,
   }
 }
@@ -192,8 +210,13 @@ function resolvePoint(root: Node, point: SelectionPoint): [Node, number] {
 export function restoreSelection(root: Node, snapshot: SelectionSnapshot): Range | null {
   const selection = window.getSelection()
   if (!selection) return null
-  const [anchorNode, anchorOffset] = resolvePoint(root, snapshot.anchor)
-  const [focusNode, focusOffset] = resolvePoint(root, snapshot.focus)
+  const resolve = (point: SelectionPoint): [Node, number] => {
+    if (point.block < 0) return resolvePoint(root, point)
+    const block = (root as Element).children[point.block]
+    return block ? resolvePoint(block, point) : [root, root.childNodes.length]
+  }
+  const [anchorNode, anchorOffset] = resolve(snapshot.anchor)
+  const [focusNode, focusOffset] = resolve(snapshot.focus)
   selection.setBaseAndExtent(anchorNode, anchorOffset, focusNode, focusOffset)
   return selection.rangeCount ? selection.getRangeAt(0).cloneRange() : null
 }

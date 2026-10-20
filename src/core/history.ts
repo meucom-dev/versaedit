@@ -17,9 +17,11 @@ export interface EditorHistory<S = unknown> {
   reset(html: string): void
   /**
    * Seleção no começo de uma interação do usuário. Vale como "antes" da próxima
-   * mudança; ignorada enquanto um grupo de mudanças está em aberto.
+   * mudança; ignorada enquanto um grupo de mudanças está em aberto. Pode ser uma
+   * função: ela só é chamada quando a seleção vai ser guardada (codificar a
+   * seleção custa, e na digitação contínua quase toda marcação é ignorada).
    */
-  markBefore(selection: S | undefined): void
+  markBefore(selection: S | undefined | (() => S | undefined)): void
   /** Agenda o registro do estado atual (agrupa a digitação por ~400 ms) */
   schedule(getHtml: () => string, getSelection?: () => S | undefined): void
   /** Desfaz: devolve o HTML anterior, ou null se não houver */
@@ -194,10 +196,12 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
     },
     markBefore(selection) {
       if (restoring) return
-      if (timer === null) candidate = selection
+      const read = () =>
+        typeof selection === 'function' ? (selection as () => S | undefined)() : selection
+      if (timer === null) candidate = read()
       // Grupo aberto sem seleção de antes (aberto por uma mudança que não veio de
       // uma interação): a primeira interação dentro dele a fornece
-      else if (groupBefore === undefined) groupBefore = selection
+      else if (groupBefore === undefined) groupBefore = read()
     },
     schedule(getHtml, getSelection) {
       if (restoring) return

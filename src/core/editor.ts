@@ -328,7 +328,7 @@ export class VersaEditCore {
 
   // Seleção do começo da interação: "antes" da próxima mudança no histórico
   private readonly markBefore = (): void => {
-    this.history.markBefore(this.selectionSnapshot())
+    this.history.markBefore(() => this.selectionSnapshot())
   }
 
   // Seleção atual no editor (com direção); fora dele, a última seleção guardada
