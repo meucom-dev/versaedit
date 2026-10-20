@@ -186,6 +186,30 @@ test.describe('formulário de link', () => {
     await expect(form).toBeHidden()
     expect(await page.evaluate(() => getSelection()!.toString())).toBe('now')
   })
+
+  test('link criado: exportar e reabrir (setHTML e arquivo) mantém target e rel', async ({
+    page,
+  }) => {
+    await mount(page, { initialContent: '<p>ir ao site</p>' })
+    const form = page.locator('#host .ve-link-popover')
+    await selectText(page, 'site')
+    await page.keyboard.press('Control+k')
+    await form.getByLabel('Link URL:').fill('a.com')
+    await form.getByLabel('Link URL:').press('Enter')
+    const exported = await page.evaluate(() => window.__ref.current!.getHTML())
+    expect(exported).toContain('<a href="https://a.com" target="_blank" rel="noopener noreferrer">')
+    const reopened = await page.evaluate((html) => {
+      const ref = window.__ref.current!
+      ref.setHTML('<p>outro</p>')
+      ref.setHTML(html)
+      const viaSetHtml = ref.getHTML()
+      ref.setHTML('<p>outro</p>')
+      const core = ref.core as unknown as { loadFileContent(html: string): void }
+      core.loadFileContent(`<!doctype html><html><body>${html}</body></html>`)
+      return [viaSetHtml, ref.getHTML()]
+    }, exported)
+    expect(reopened).toEqual([exported, exported])
+  })
 })
 
 test.describe('teclado na barra (padrão toolbar)', () => {

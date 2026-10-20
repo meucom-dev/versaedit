@@ -31,6 +31,16 @@ export function isSafeUrl(attribute: string, value: string): boolean {
   return !/^(javascript|vbscript|data):/.test(url)
 }
 
+// rel de um link em nova aba: tira "opener" e garante noopener e noreferrer,
+// mantendo os demais valores (ex.: nofollow) na ordem em que vieram
+function safeLinkRel(rel: string | null): string {
+  const tokens = (rel ?? '').split(/\s+/).filter((t) => t && t.toLowerCase() !== 'opener')
+  for (const required of ['noopener', 'noreferrer']) {
+    if (!tokens.some((t) => t.toLowerCase() === required)) tokens.push(required)
+  }
+  return tokens.join(' ')
+}
+
 // Criado no primeiro uso (sempre no navegador): no servidor (SSR) não existe
 // DOM, e criar o DOMPurify ao importar o módulo quebrava a página
 let purifier: ReturnType<typeof DOMPurify> | null = null
@@ -43,10 +53,27 @@ function getPurifier(): ReturnType<typeof DOMPurify> {
     throw new Error('VersaEdit: a sanitização de HTML precisa de um DOM (navegador)')
   }
   // Regra própria de URLs, mais estrita que a padrão do DOMPurify (ex.: data:image/svg+xml)
-  instance.addHook('uponSanitizeAttribute', (_node, data) => {
+  instance.addHook('uponSanitizeAttribute', (node, data) => {
     if (URL_ATTRIBUTES.has(data.attrName) && !isSafeUrl(data.attrName, data.attrValue)) {
       data.keepAttr = false
     }
+    // Links em nova aba (o único destino que o editor cria) ficam, no lugar em
+    // que estão; qualquer outro target continua removido pelo DOMPurify
+    if (
+      data.attrName === 'target' &&
+      node.nodeName === 'A' &&
+      data.attrValue.toLowerCase() === '_blank'
+    ) {
+      data.forceKeepAttr = true
+    }
+  })
+  // Nova aba sempre sem acesso à página de origem (noopener noreferrer)
+  instance.addHook('afterSanitizeAttributes', (node) => {
+    if (node.nodeName !== 'A' || !node.hasAttribute('target')) return
+    if (node.getAttribute('target') !== '_blank') node.setAttribute('target', '_blank')
+    const rel = node.getAttribute('rel')
+    const safe = safeLinkRel(rel)
+    if (safe !== rel) node.setAttribute('rel', safe)
   })
   purifier = instance
   return instance

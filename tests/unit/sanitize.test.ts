@@ -53,6 +53,44 @@ describe('purifyHtml — conteúdo do editor preservado', () => {
   })
 })
 
+describe('links em nova aba (target="_blank")', () => {
+  const editorLink = '<a href="https://a.com" target="_blank" rel="noopener noreferrer">a</a>'
+  it('o link criado pelo editor volta igual (purify e carregamento)', () => {
+    expect(purifyHtml(editorLink)).toBe(editorLink)
+    expect(sanitizeHtml(`<p>${editorLink}</p>`)).toBe(`<p>${editorLink}</p>`)
+  })
+  it('sem rel, ganha rel seguro', () => {
+    expect(purifyHtml('<a href="https://a.com" target="_blank">a</a>')).toBe(editorLink)
+  })
+  it('rel com "opener" perde o opener; outros valores ficam', () => {
+    expect(purifyHtml('<a href="https://a.com" target="_blank" rel="opener nofollow">a</a>')).toBe(
+      '<a href="https://a.com" target="_blank" rel="nofollow noopener noreferrer">a</a>',
+    )
+  })
+  it('_BLANK maiúsculo é normalizado', () => {
+    expect(purifyHtml('<a href="https://a.com" target="_BLANK">a</a>')).toBe(editorLink)
+  })
+  it('outros destinos e outros elementos continuam sem target', () => {
+    expect(purifyHtml('<a href="https://a.com" target="_self">a</a>')).toBe(
+      '<a href="https://a.com">a</a>',
+    )
+    expect(purifyHtml('<a href="https://a.com" target="janela">a</a>')).toBe(
+      '<a href="https://a.com">a</a>',
+    )
+    expect(purifyHtml('<p target="_blank">t</p>')).toBe('<p>t</p>')
+  })
+  it('link sem target fica como estava (inclusive o rel)', () => {
+    expect(purifyHtml('<a href="https://a.com" rel="nofollow">a</a>')).toBe(
+      '<a href="https://a.com" rel="nofollow">a</a>',
+    )
+  })
+  it('href perigoso continua removido, mesmo com target', () => {
+    expect(purifyHtml('<a href="javascript:alert(1)" target="_blank">x</a>')).toBe(
+      '<a target="_blank" rel="noopener noreferrer">x</a>',
+    )
+  })
+})
+
 describe('isSafeUrl', () => {
   it.each([
     ['href', 'https://a.com', true],

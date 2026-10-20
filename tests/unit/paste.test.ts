@@ -44,6 +44,14 @@ describe('colagem sem atributos vazios', () => {
       '<h2>T</h2><ul><li>a<ul><li>b</li></ul></li></ul><p>ver <a href="https://ok.com">s</a></p>',
     )
   })
+  it('link colado continua só com o href (sem target nem rel)', () => {
+    expect(
+      sanitizeRichPaste(
+        '<p><a href="https://ok.com" target="_blank" rel="noopener noreferrer">s</a></p>',
+        FAMILIES,
+      ),
+    ).toBe('<p><a href="https://ok.com">s</a></p>')
+  })
   it('mantém o estilo quando há propriedade permitida', () => {
     expect(sanitizeRichPaste('<p style="color:red;margin:3px">x</p>', FAMILIES)).toBe(
       '<p style="color: red;">x</p>',

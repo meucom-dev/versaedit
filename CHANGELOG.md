@@ -75,6 +75,12 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Fixed
 
+- Links that open in a new tab keep `target="_blank"` when the content is loaded again
+  (`setHTML`, `initialContent`/`value`, opening a `.html` file); it used to be removed, so a link
+  created in the editor changed after saving and reopening. `target` is kept only on links and only
+  with `_blank` (other values are still removed), always with `rel` containing
+  `noopener noreferrer` (`opener` is removed; other values such as `nofollow` are kept). This also
+  applies to `purifyHtml`. Pasted links are unchanged (`href` only).
 - Pasting HTML blocks (paragraphs, headings, lists, tables…) in the middle of a block no longer
   nests blocks (`<p>ola <p>um</p>…</p>`, invalid HTML that changed when saved and reopened). The
   paste is planned first and then applied to the DOM: a text block is split at the cursor (inline
