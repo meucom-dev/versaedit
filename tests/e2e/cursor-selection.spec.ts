@@ -2,7 +2,7 @@
 // operação entra no ponto esperado. Lote 1: imagem selecionada, Enter dentro da
 // caixa de texto e remover link com o cursor dentro dele.
 import { expect, test, type Page } from '@playwright/test'
-import { mount, PNG, selectText } from './helpers'
+import { mount, PNG, pngFile, selectText } from './helpers'
 
 const IMG = `<img src="data:image/png;base64,${PNG}" style="width: 60px">`
 const TEXTBOX =
@@ -344,5 +344,187 @@ test.describe('Backspace logo depois da caixa de texto', () => {
     await expect(t.content.locator('p')).toHaveCount(1)
     await expect(t.content.locator('p')).toHaveText('umdois')
     await expect(t.content.locator('.rich-textbox')).toHaveCount(0)
+  })
+})
+
+test.describe('desfazer / refazer devolvem a seleção', () => {
+  // O histórico agrupa a digitação por ~400 ms
+  const settle = (page: Page) => page.waitForTimeout(500)
+  const selection = (page: Page) =>
+    page.evaluate(() => {
+      const s = getSelection()!
+      const where = (n: Node | null, o: number) =>
+        n?.nodeType === 3 ? `${(n as Text).data}:${o}` : `${n?.nodeName}:${o}`
+      return {
+        text: s.toString(),
+        anchor: where(s.anchorNode, s.anchorOffset),
+        focus: where(s.focusNode, s.focusOffset),
+      }
+    })
+
+  test('desfazer a digitação: o cursor volta ao ponto onde ela começou', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>um dois</p><p>tres quatro</p>' })
+    await caretIn(page, 'quatro', 6)
+    await page.keyboard.type(' cinco')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe('<p>um dois</p><p>tres quatroX</p>')
+  })
+
+  test('refazer: o cursor volta ao fim do trecho refeito', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>um dois</p><p>tres</p>' })
+    await caretIn(page, 'tres', 4)
+    await page.keyboard.type(' quatro')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    await page.keyboard.press('Control+y')
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe('<p>um dois</p><p>tres quatroX</p>')
+  })
+
+  test('texto repetido: volta à ocorrência certa', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>aa aa aa</p>' })
+    await caretIn(page, 'aa aa aa', 5)
+    await page.keyboard.type('X')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    await page.keyboard.type('Y')
+    expect(await t.dom()).toBe('<p>aa aaY aa</p>')
+  })
+
+  test('desfazer e refazer uma formatação mantêm o trecho selecionado', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>um dois tres</p>' })
+    await selectText(page, 'dois')
+    // Botão da barra: no Firefox, o Ctrl+B do Playwright não formata
+    await t.btn('Bold (Ctrl+B)').click()
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>um dois tres</p>')
+    expect((await selection(page)).text).toBe('dois')
+    await page.keyboard.press('Control+y')
+    expect(await t.dom()).toBe('<p>um <b>dois</b> tres</p>')
+    expect((await selection(page)).text).toBe('dois')
+  })
+
+  test('seleção de trás para frente entre vários nós: mesma direção e mesmo trecho', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: '<p>um <i>dois</i> tres</p><p>quatro</p>' })
+    await page.evaluate(() => {
+      const ed = document.querySelector<HTMLElement>('#host .ve-content')!
+      ed.focus()
+      const [a, b] = ed.querySelectorAll('p')
+      getSelection()!.setBaseAndExtent(b.firstChild!, 3, a.firstChild!, 1)
+    })
+    const before = await selection(page)
+    // Botão da barra: no Firefox, o Ctrl+B do Playwright não formata
+    await t.btn('Bold (Ctrl+B)').click()
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>um <i>dois</i> tres</p><p>quatro</p>')
+    const after = await selection(page)
+    expect(after).toEqual(before)
+    expect(after.anchor).toBe('quatro:3')
+  })
+
+  test('desfazer a inserção de imagem: o cursor volta ao ponto da inserção', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>ab</p>' })
+    await caretIn(page, 'ab', 1)
+    const chooser = page.waitForEvent('filechooser')
+    await t.btn('Insert image').click()
+    await (await chooser).setFiles(pngFile())
+    await expect(t.content.locator('img')).toHaveCount(1)
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    await expect(t.content.locator('img')).toHaveCount(0)
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe('<p>aXb</p>')
+  })
+
+  test('desfazer a exclusão da imagem: ela volta e o cursor fica junto dela', async ({ page }) => {
+    const t = await mount(page, { initialContent: `<p>a${IMG}b</p>` })
+    await t.content.locator('img').click()
+    await page.keyboard.press('Delete')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    await expect(t.content.locator('img')).toHaveCount(1)
+    await page.keyboard.type('X')
+    expect(await clean(page)).toBe('<p>a<img>Xb</p>')
+  })
+
+  test('desfazer a inserção da caixa de texto: o cursor volta ao ponto da inserção', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: '<p>ab</p>' })
+    await caretIn(page, 'ab', 1)
+    await t.btn('Insert text box').click()
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    await expect(t.content.locator('.rich-textbox')).toHaveCount(0)
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe('<p>aXb</p>')
+  })
+
+  test('desfazer a colagem: o cursor volta ao ponto onde se colou', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName === 'firefox', 'o Firefox descarta dados de colagem sintética')
+    const t = await mount(page, { initialContent: '<p>ola mundo</p>' })
+    await caretIn(page, 'ola mundo', 4)
+    await page.evaluate(() => {
+      const data = new DataTransfer()
+      data.setData('text/plain', 'lindo ')
+      const event = new ClipboardEvent('paste', {
+        clipboardData: data,
+        bubbles: true,
+        cancelable: true,
+      })
+      document.querySelector('#host .ve-content')!.dispatchEvent(event)
+    })
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe('<p>ola Xmundo</p>')
+  })
+
+  test('vários desfazer e refazer seguidos', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>ab</p>' })
+    await caretIn(page, 'ab', 1)
+    await page.keyboard.type('1')
+    await settle(page)
+    await page.keyboard.type('2')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    await page.keyboard.press('Control+z')
+    expect(await t.dom()).toBe('<p>ab</p>')
+    expect((await selection(page)).anchor).toBe('ab:1')
+    await page.keyboard.press('Control+y')
+    await page.keyboard.press('Control+y')
+    expect(await t.dom()).toBe('<p>a12b</p>')
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe('<p>a12Xb</p>')
+  })
+
+  test('pelo botão da barra, com o foco fora do editor', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>um dois</p>' })
+    await caretIn(page, 'dois', 4)
+    await page.keyboard.type(' tres')
+    await settle(page)
+    await t.btn('Undo (Ctrl+Z)').click()
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe('<p>um doisX</p>')
+  })
+
+  test('clicar em outro lugar no meio do grupo não muda o ponto de volta', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>primeiro</p><p>segundo</p>' })
+    await caretIn(page, 'segundo', 7)
+    await page.keyboard.type('abc')
+    // Antes de o grupo fechar, o cursor vai para outro parágrafo
+    await caretIn(page, 'primeiro', 0)
+    await page.keyboard.press('Control+z')
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe('<p>primeiro</p><p>segundoX</p>')
   })
 })

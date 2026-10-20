@@ -56,12 +56,16 @@ import { applyPendingStyleToFragment, buildPasteHtml } from './paste'
 import { applyVoiceCommands, formatDictatedText } from './speech'
 import { isSafeUrl, safeCssColor, sanitizeHtml } from './sanitize'
 import {
+  captureSelection,
+  isNodeWithinEditor,
   isRangeWithinEditor,
   rangeAtTextOffset,
+  restoreSelection,
   setPreviewWrapperStyle,
   textOffsetIn,
   type PendingTypingStyle,
   type SelectionPreview,
+  type SelectionSnapshot,
   type SelectionType,
 } from './selection'
 
@@ -191,6 +195,40 @@ const toHex = (n: string) => Number(n).toString(16).padStart(2, '0')
 
 // Movimento menor que isto ao soltar imagem/caixa conta como clique, não arrasto
 const CLICK_TOLERANCE_PX = 3
+// Eventos que começam uma interação do usuário (na fase de captura, antes de
+// qualquer mudança): teclado, mouse/toque e a digitação nativa
+const INTERACTION_EVENTS = [
+  'keydown',
+  'pointerdown',
+  'beforeinput',
+  'paste',
+  'cut',
+  'drop',
+] as const
+
+// Classes e atributos que o editor usa só como estado da interface: não entram
+// no conteúdo salvo (ver file.ts) nem no histórico
+const UI_CLASSES = new Set(['selected', 'dragging'])
+const UI_ATTRIBUTES = new Set(['draggable', 'contenteditable'])
+const withoutUiClasses = (value: string | null) =>
+  (value ?? '')
+    .split(/\s+/)
+    .filter((name) => name && !UI_CLASSES.has(name))
+    .sort()
+    .join(' ')
+
+// Mudança que só toca o estado da interface: atributos da própria área de
+// edição (fora o estilo, que guarda a cor do papel), atributos de interface e
+// classes de interface
+function isUiStateMutation(record: MutationRecord, editor: HTMLElement): boolean {
+  if (record.type !== 'attributes' || !record.attributeName) return false
+  const name = record.attributeName
+  if (record.target === editor) return name !== 'style'
+  if (UI_ATTRIBUTES.has(name)) return true
+  if (name !== 'class') return false
+  const current = (record.target as Element).getAttribute('class')
+  return withoutUiClasses(record.oldValue) === withoutUiClasses(current)
+}
 // Elementos que são conteúdo mesmo sem texto (vazios ou substituídos, do HTML)
 const REPLACED_ELEMENTS = 'img, hr, input, iframe, video, audio, object, embed, canvas, svg'
 
@@ -207,7 +245,10 @@ export class VersaEditCore {
   // Último conteúdo conhecido (emitido ou carregado): onChange só dispara quando
   // o HTML for diferente dele
   private lastKnown: string | null = null
-  private readonly history = createEditorHistory()
+  private readonly history = createEditorHistory<SelectionSnapshot>()
+  // Onde começam as interações do usuário com o editor (barra, menus e área de
+  // edição): a seleção lida ali é a de antes da mudança, para o desfazer
+  private scope: HTMLElement
   private observer: MutationObserver | null = null
 
   // Seleção de texto
@@ -249,18 +290,61 @@ export class VersaEditCore {
     this.cb = callbacks
     // Registra no histórico toda alteração do editor (texto, formatação, imagens,
     // caixas e cor do papel), agrupando a digitação
-    this.observer = new MutationObserver(() => {
+    this.observer = new MutationObserver((records) => {
       if (this.preview) return
-      this.history.schedule(() => snapshotEditor(this.el, this.paper))
+      // Só marcas da interface (seleção, arrasto): o conteúdo não mudou
+      if (records.every((record) => isUiStateMutation(record, el))) return
+      this.history.schedule(
+        () => snapshotEditor(this.el, this.paper),
+        () => this.selectionSnapshot(),
+      )
     })
     this.observer.observe(el, {
       childList: true,
       subtree: true,
       characterData: true,
       attributes: true,
+      attributeOldValue: true,
     })
     document.addEventListener('selectionchange', this.handleSelectionChange)
     for (const [type, listener] of this.listeners) el.addEventListener(type, listener)
+    this.scope = (el.closest('.ve-root') as HTMLElement | null) ?? el
+    for (const type of INTERACTION_EVENTS) this.scope.addEventListener(type, this.markBefore, true)
+  }
+
+  // Seleção do começo da interação: "antes" da próxima mudança no histórico
+  private readonly markBefore = (): void => {
+    this.history.markBefore(this.selectionSnapshot())
+  }
+
+  // Seleção atual no editor (com direção); fora dele, a última seleção guardada
+  private selectionSnapshot(): SelectionSnapshot | undefined {
+    const selection = window.getSelection()
+    const { anchorNode, focusNode } = selection ?? {}
+    if (
+      selection?.rangeCount &&
+      anchorNode &&
+      focusNode &&
+      isNodeWithinEditor(this.el, anchorNode) &&
+      isNodeWithinEditor(this.el, focusNode)
+    ) {
+      return captureSelection(
+        this.el,
+        anchorNode,
+        selection.anchorOffset,
+        focusNode,
+        selection.focusOffset,
+      )
+    }
+    const saved = this.savedRange
+    if (!saved || !isRangeWithinEditor(this.el, saved)) return undefined
+    return captureSelection(
+      this.el,
+      saved.startContainer,
+      saved.startOffset,
+      saved.endContainer,
+      saved.endOffset,
+    )
   }
 
   // Eventos nativos da área de edição (o núcleo não depende de framework)
@@ -301,6 +385,8 @@ export class VersaEditCore {
     if (this.scrollFrame) cancelAnimationFrame(this.scrollFrame)
     document.removeEventListener('selectionchange', this.handleSelectionChange)
     for (const [type, listener] of this.listeners) this.el.removeEventListener(type, listener)
+    for (const type of INTERACTION_EVENTS)
+      this.scope.removeEventListener(type, this.markBefore, true)
   }
 
   setOptions(options: Partial<CoreOptions>): void {
@@ -749,6 +835,8 @@ export class VersaEditCore {
     pickFile('image/*', (file) => {
       const insert = (src: string) => {
         if (!isSafeUrl('src', src)) return
+        // Inserção assíncrona (leitura do arquivo ou envio): a seleção de antes é a de agora
+        this.markBefore()
         this.el.focus()
         this.collapseSelectionToEnd()
         insertHtml(imageHtml(src, this.opts.labels.imageAlt))
@@ -776,6 +864,8 @@ export class VersaEditCore {
    * maiúscula no início de frase.
    */
   insertDictation = (spoken: string): void => {
+    // O microfone pode estar fora do editor: a seleção de antes é a de agora
+    this.markBefore()
     const editor = this.el
     let range = this.getCurrentRange()
     if (!range) {
@@ -1662,6 +1752,14 @@ export class VersaEditCore {
     this.suspendExternalMedia()
     this.deselectImage()
     this.deselectTextbox()
+    // Seleção de antes do passo desfeito, ou de depois do passo refeito. Sem ela
+    // (passos antigos), o foco põe o cursor no começo, como antes.
+    const selection = this.history.restoredSelection()
+    if (selection) {
+      this.el.focus({ preventScroll: true })
+      const range = restoreSelection(this.el, selection)
+      if (range) this.savedRange = range
+    }
     this.emitChange()
   }
 

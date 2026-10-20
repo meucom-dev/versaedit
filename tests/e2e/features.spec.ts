@@ -484,12 +484,13 @@ test.describe('histórico com imagem embutida', () => {
     await page.keyboard.press('Control+y')
     expect(await html()).toBe('<p>textoXY</p>')
     const afterRedo = await caret()
-    // Cursor igual ao do histórico anterior à otimização (medido com os dois):
-    // desfazer/refazer recolocam o cursor no início do editor
-    const atStart = { node: 'DIV', offset: 0, collapsed: true }
-    expect(afterUndo1).toEqual({ ...atStart, text: 'textoXY' })
-    expect(afterUndo2).toEqual({ ...atStart, text: 'texto' })
-    expect(afterRedo).toEqual({ ...atStart, text: 'textoXY' })
+    // Cursor no ponto de cada passo (antes, desfazer/refazer o recolocavam no
+    // início do editor): desfazer a exclusão devolve a imagem e o cursor fica logo
+    // depois dela; desfazer a digitação, no fim de "texto"; refazer as duas, onde
+    // a imagem estava
+    expect(afterUndo1).toEqual({ node: 'DIV', text: 'textoXY', offset: 2, collapsed: true })
+    expect(afterUndo2).toEqual({ node: '#text', text: 'texto', offset: 5, collapsed: true })
+    expect(afterRedo).toEqual({ node: 'DIV', text: 'textoXY', offset: 1, collapsed: true })
   })
 })
 
