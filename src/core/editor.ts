@@ -842,6 +842,16 @@ export class VersaEditCore {
     this.execCommand('unlink')
   }
 
+  // Seleção (ou cursor) com as duas pontas dentro da mesma caixa de texto
+  private selectionInOneTextbox(): boolean {
+    const range = this.getCurrentRange()
+    if (!range) return false
+    const boxOf = (n: Node) =>
+      (n.nodeType === 3 ? n.parentElement : (n as Element))?.closest('.rich-textbox') ?? null
+    const box = boxOf(range.startContainer)
+    return !!box && this.el.contains(box) && boxOf(range.endContainer) === box
+  }
+
   insertHorizontalRule = (): void => {
     this.el.focus()
     this.collapseSelectionToEnd()
@@ -1466,6 +1476,20 @@ export class VersaEditCore {
         this.cb.onOverflowChange?.(true)
         return
       }
+    }
+    // Enter e Shift+Enter dentro da caixa de texto: quebra de linha na própria
+    // caixa. O Enter nativo divide o bloco e cria uma segunda caixa, sem a alça.
+    if (
+      e.key === 'Enter' &&
+      !e.isComposing &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      this.selectionInOneTextbox()
+    ) {
+      e.preventDefault()
+      exec('insertLineBreak')
+      return
     }
     // Tab: insere espaços dentro do editor
     if (e.key === 'Tab' && !e.ctrlKey && !e.metaKey && !e.altKey) {
