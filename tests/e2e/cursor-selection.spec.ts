@@ -768,3 +768,39 @@ test.describe('junção de blocos sem estilos artificiais (Backspace/Delete)', (
     expect(await t.dom()).toBe('<p>um</p><p>dois</p>')
   })
 })
+test.describe('Delete logo antes da caixa de texto', () => {
+  const CONTENT = `<p>antes</p>${TEXTBOX}<p>depois</p>`
+  const box = (page: Page) => page.locator('#host .rich-textbox')
+
+  test('seleciona a caixa, sem juntar nem mudar a estrutura', async ({ page }) => {
+    const t = await mount(page, { initialContent: CONTENT })
+    await caretIn(page, 'antes', 5)
+    await page.keyboard.press('Delete')
+    await expect(box(page)).toHaveClass(/\bselected\b/)
+    await expect(box(page)).toHaveCount(1)
+    expect(await box(page).textContent()).toBe('⠿Caixa')
+    await expect(t.content.locator('p')).toHaveText(['antes', 'depois'])
+  })
+
+  test('Delete de novo exclui a caixa (como depois do Backspace); desfazer a devolve', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: CONTENT })
+    await caretIn(page, 'antes', 5)
+    await page.keyboard.press('Delete')
+    await page.keyboard.press('Delete')
+    await expect(box(page)).toHaveCount(0)
+    expect(await t.dom()).toBe('<p>antes</p><p>depois</p>')
+    await page.waitForTimeout(500)
+    await page.keyboard.press('Control+z')
+    await expect(box(page)).toHaveCount(1)
+  })
+
+  test('Delete no meio do parágrafo apaga um caractere, como sempre', async ({ page }) => {
+    const t = await mount(page, { initialContent: CONTENT })
+    await caretIn(page, 'antes', 2)
+    await page.keyboard.press('Delete')
+    await expect(t.content.locator('p').first()).toHaveText('anes')
+    await expect(box(page)).not.toHaveClass(/\bselected\b/)
+  })
+})

@@ -1022,6 +1022,30 @@ export class VersaEditCore {
     return previous instanceof HTMLElement ? previous : null
   }
 
+  // O mesmo para o lado de depois: elemento logo depois do bloco do cursor, se o
+  // cursor estiver no fim de um bloco de primeiro nível
+  private blockAfterCaret(): HTMLElement | null {
+    const selection = window.getSelection()
+    if (!selection?.rangeCount || !selection.isCollapsed) return null
+    const range = selection.getRangeAt(0)
+    if (!isRangeWithinEditor(this.el, range)) return null
+    let next: Node | null
+    if (range.startContainer === this.el) {
+      next = this.el.childNodes[range.startOffset] ?? null
+    } else {
+      let block: Node = range.startContainer
+      while (block.parentNode && block.parentNode !== this.el) block = block.parentNode
+      const rest = document.createRange()
+      rest.setStart(range.startContainer, range.startOffset)
+      rest.setEnd(block, block.nodeType === 3 ? (block as Text).length : block.childNodes.length)
+      const content = rest.cloneContents()
+      if (content.textContent || content.querySelector(REPLACED_ELEMENTS)) return null
+      next = block.nextSibling
+    }
+    while (next && next.nodeType === 3 && !next.textContent?.trim()) next = next.nextSibling
+    return next instanceof HTMLElement ? next : null
+  }
+
   // A seleção (ou o cursor) tem alguma ponta dentro do elemento
   private selectionTouches(el: HTMLElement): boolean {
     const range = this.getCurrentRange()
@@ -1793,6 +1817,16 @@ export class VersaEditCore {
       e.preventDefault()
       this.deleteSelectedTextbox()
       return
+    }
+    // Delete no fim de um bloco logo antes de um objeto de bloco: seleciona o
+    // objeto, sem mudar a estrutura (o Delete nativo juntaria o objeto ao bloco).
+    // Um segundo Delete o exclui (regra acima).
+    if (e.key === 'Delete' && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const after = this.blockAfterCaret()
+      if (after && this.selectBlockObject(after)) {
+        e.preventDefault()
+        return
+      }
     }
     // Backspace no começo de um bloco logo depois de um objeto de bloco (caixa de
     // texto): seleciona o objeto, sem apagá-lo. O Backspace nativo juntaria o
