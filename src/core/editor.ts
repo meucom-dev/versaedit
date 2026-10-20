@@ -57,7 +57,9 @@ import { applyVoiceCommands, formatDictatedText } from './speech'
 import { isSafeUrl, safeCssColor, sanitizeHtml } from './sanitize'
 import {
   isRangeWithinEditor,
+  rangeAtTextOffset,
   setPreviewWrapperStyle,
+  textOffsetIn,
   type PendingTypingStyle,
   type SelectionPreview,
   type SelectionType,
@@ -838,8 +840,25 @@ export class VersaEditCore {
     else this.el.focus()
   }
 
+  // Com o cursor dentro de um link (sem seleção), o unlink do navegador não faz
+  // nada: seleciona o link inteiro, remove e devolve o cursor ao mesmo ponto
+  // (guardado em caracteres, porque o navegador pode recriar os nós de texto)
   removeLink = (): void => {
+    const range = this.getCurrentRange()
+    const node = range?.collapsed ? range.startContainer : null
+    const element = node && (node.nodeType === 3 ? node.parentElement : (node as Element))
+    const anchor = element?.closest('a')
+    const parent = anchor?.parentNode
+    if (!range || !anchor || !parent || !this.el.contains(anchor)) {
+      this.execCommand('unlink')
+      return
+    }
+    const offset = textOffsetIn(parent, range.startContainer, range.startOffset)
+    const whole = document.createRange()
+    whole.selectNodeContents(anchor)
+    this.restoreRange(whole)
     this.execCommand('unlink')
+    this.restoreRange(rangeAtTextOffset(parent, offset))
   }
 
   // Seleção (ou cursor) com as duas pontas dentro da mesma caixa de texto

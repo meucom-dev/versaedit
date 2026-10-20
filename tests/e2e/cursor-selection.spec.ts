@@ -1,7 +1,8 @@
 // Cursor e seleção nas operações do editor: o texto digitado depois de cada
-// operação entra no ponto esperado. Imagem selecionada e Enter dentro da caixa de texto.
+// operação entra no ponto esperado. Lote 1: imagem selecionada, Enter dentro da
+// caixa de texto e remover link com o cursor dentro dele.
 import { expect, test, type Page } from '@playwright/test'
-import { mount, PNG } from './helpers'
+import { mount, PNG, selectText } from './helpers'
 
 const IMG = `<img src="data:image/png;base64,${PNG}" style="width: 60px">`
 const TEXTBOX =
@@ -141,5 +142,38 @@ test.describe('Enter dentro da caixa de texto', () => {
     await page.keyboard.press('Enter')
     await page.keyboard.type('X')
     expect(await t.dom()).toBe('<p>a</p><p>Xb</p>')
+  })
+})
+
+test.describe('remover link', () => {
+  const CONTENT = '<p>ir ao <a href="https://a.com">site bom</a> hoje</p>'
+
+  test('com o cursor dentro do link: remove o link inteiro e o cursor fica no lugar', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: CONTENT })
+    await caretIn(page, 'site bom', 2)
+    await t.btn('Remove link').click()
+    expect(await t.dom()).toBe('<p>ir ao site bom hoje</p>')
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe('<p>ir ao siXte bom hoje</p>')
+  })
+
+  test('com o link selecionado: remove o link (como antes)', async ({ page }) => {
+    const t = await mount(page, { initialContent: CONTENT })
+    await selectText(page, 'site bom')
+    await t.btn('Remove link').click()
+    expect(await t.dom()).toBe('<p>ir ao site bom hoje</p>')
+  })
+
+  test('com o cursor fora de qualquer link: nada muda e o cursor fica no lugar', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: CONTENT })
+    await caretIn(page, 'hoje', 2)
+    await t.btn('Remove link').click()
+    expect(await t.dom()).toBe(CONTENT)
+    await page.keyboard.type('X')
+    expect(await t.dom()).toBe('<p>ir ao <a href="https://a.com">site bom</a> hoXje</p>')
   })
 })

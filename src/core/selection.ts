@@ -17,6 +17,34 @@ export function getCaretRangeFromPoint(x: number, y: number): Range | null {
   return null
 }
 
+// Posição como número de caracteres desde o início de `root`: sobrevive a
+// operações do navegador que recriam os nós de texto (como o unlink)
+export function textOffsetIn(root: Node, node: Node, offset: number): number {
+  const range = document.createRange()
+  range.selectNodeContents(root)
+  range.setEnd(node, offset)
+  return range.toString().length
+}
+
+// Cursor no caractere `offset` de `root` (no fim, se o texto for menor)
+export function rangeAtTextOffset(root: Node, offset: number): Range {
+  const range = document.createRange()
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  let left = offset
+  while (walker.nextNode()) {
+    const text = walker.currentNode as Text
+    if (left <= text.length) {
+      range.setStart(text, left)
+      range.collapse(true)
+      return range
+    }
+    left -= text.length
+  }
+  range.selectNodeContents(root)
+  range.collapse(false)
+  return range
+}
+
 export const isNodeWithinEditor = (editor: HTMLElement, node: Node): boolean =>
   node === editor || editor.contains(node)
 
