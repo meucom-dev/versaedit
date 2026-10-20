@@ -71,6 +71,14 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Fixed
 
+- Pasting HTML blocks (paragraphs, headings, lists, tables…) in the middle of a block no longer
+  nests blocks (`<p>ola <p>um</p>…</p>`, invalid HTML that changed when saved and reopened). The
+  paste is planned first and then applied to the DOM: a text block is split at the cursor (inline
+  elements around it too), loose text and a plain paragraph at either end join the halves (as in
+  Word), headings, lists, tables and rules go in whole, empty halves are dropped, and paragraphs
+  pasted into a list item become items. In table cells, text boxes and the editing area itself the
+  blocks go in at the cursor; in a code block only the text does. The cursor ends after the pasted
+  content. Pastes without blocks are unchanged.
 - Joining blocks with Backspace/Delete (paragraphs, heading, list items) no longer leaves the
   styles that Chromium and WebKit copy onto the moved text (`<span style="font-size: 12pt;
 caret-color: …">`, or the same declarations added to the user's own elements). Only what the
