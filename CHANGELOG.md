@@ -67,6 +67,14 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Fixed
 
+- Cursor after selecting an image: typing now writes right after the image (and deselects it, so
+  the next Backspace deletes the letter, not the image); Delete/Backspace or the menu's delete
+  button leaves the cursor where the image was. Before, the cursor stayed wherever it had been, or
+  at the start of the content, and the text went there.
+- Enter (and Shift+Enter in WebKit) inside a text box no longer splits it into a second box without
+  the drag handle; it inserts a line break in the same box.
+- "Remove link" with the cursor inside a link (no selection) removes the whole link and keeps the
+  cursor in place; before, it did nothing.
 - Tapping an image on a phone no longer scrolls the page or leaves the image unselected. Before
   measuring, the image/text box menu was drawn at a provisional position that could overflow the
   right edge of the screen; mobile browsers briefly widened the page and scrolled it, and the tap's
