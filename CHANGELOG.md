@@ -71,6 +71,16 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Fixed
 
+- Joining blocks with Backspace/Delete (paragraphs, heading, list items) no longer leaves the
+  styles that Chromium and WebKit copy onto the moved text (`<span style="font-size: 12pt;
+caret-color: …">`, or the same declarations added to the user's own elements). Only what the
+  operation itself added and that changes nothing on screen is removed; the user's formatting
+  stays, even when it matches the inherited style.
+- Delete at the end of a paragraph right before a text box selects the box instead of merging it;
+  a second Delete removes it (undoable).
+- Experimental undo/redo: the restored cursor is scrolled into view with the smallest movement
+  (editing area, scrollable containers, then the page; a fixed-height area is not scrolled), and
+  selections inside editable parts of non-editable objects (such as a caption) are restored there.
 - Links are inserted through the DOM when the selection is within one block: the browser no longer
   turns the surrounding spaces into `&nbsp;`, no longer copies styles onto the link (WebKit), and
   the cursor ends right after the link, so typing no longer extends it (Firefox). Selections across
