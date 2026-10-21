@@ -287,6 +287,48 @@ describe('seleção guardada em cada passo (desfazer/refazer)', () => {
     vi.useRealTimers()
   })
 
+  it('composição: pausas longas não fecham o passo; o texto final depois do fim entra nele', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('um')
+    h.markBefore('antes da composição')
+    h.compose(true, () => 'umnih')
+    for (const html of ['umn', 'umni', 'umnih']) {
+      h.schedule(
+        () => html,
+        () => 'durante',
+      )
+      vi.advanceTimersByTime(2000)
+    }
+    // Pedido de fechar no meio da composição: adiado
+    h.close(() => 'umnih')
+    h.compose(false, () => 'umにほ')
+    // Texto final que chega depois do compositionend (Safari)
+    h.schedule(
+      () => 'umにほ',
+      () => 'depois',
+    )
+    vi.advanceTimersByTime(500)
+    expect(h.undo(() => 'umにほ')).toBe('um')
+    expect(h.restoredSelection()).toBe('antes da composição')
+    expect(h.redo(() => 'um')).toBe('umにほ')
+    vi.useRealTimers()
+  })
+
+  it('composição cancelada (volta ao texto de antes): nenhum passo novo', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('um')
+    h.markBefore('b')
+    h.compose(true, () => 'um')
+    h.schedule(() => 'umk')
+    h.schedule(() => 'um')
+    h.compose(false, () => 'um')
+    vi.advanceTimersByTime(500)
+    expect(h.undo(() => 'um')).toBe(null)
+    vi.useRealTimers()
+  })
+
   it('vários passos: cada desfazer volta ao "antes" do seu passo', () => {
     vi.useFakeTimers()
     const h = createEditorHistory<string>()

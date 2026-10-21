@@ -106,6 +106,14 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Fixed
 
+- Undo/redo with character composition (IME for Japanese, Chinese, Korean; accents typed with dead
+  keys): the whole composition is one undo step, from the selection and content before it. Long
+  pauses during the composition (choosing a candidate) no longer split it, so undo/redo never shows
+  intermediate text (such as the romaji before conversion), and a cancelled composition leaves the
+  content and the cursor as they were, without a new step. The final text that Safari inserts after
+  `compositionend` belongs to the same step. Ctrl+Z/Ctrl+Y during a composition are left to the
+  composition. Covered by real composition in Chromium (DevTools protocol) and by synthetic events
+  in the three engines; system IME keyboards have not been checked by hand yet.
 - Indentation survives saving and reopening, and no longer turns into a quote. In Chromium and
   WebKit an indented paragraph (a `<blockquote>` with a left margin and no border) lost its style
   when the content was loaded again and was shown as a quote (italic, border, background); in

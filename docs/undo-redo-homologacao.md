@@ -9,6 +9,12 @@ automáticos (Chromium, Firefox e WebKit; React 18 e 19) e na homologação manu
 menus no Chrome e no Firefox (Windows 11). Versão homologada: commit `d035855` (lotes
 D1 a D7), com a suíte permanente de `cf035bd`.
 
+**Pendência conhecida: composição de caracteres (IME).** Teclados de composição
+(japonês, chinês, coreano) e acentos compostos por tecla morta: a correção P1 faz da
+composição um passo só, comprovado por composição real no Chromium e por eventos
+sintéticos nos três motores; a verificação com teclados IME reais do sistema (caso M9)
+ainda não foi feita. Até lá, não há cobertura completa de IME declarada.
+
 **Safari: não homologado manualmente.** O motor WebKit está coberto pelos testes
 automáticos, mas o Safari real (macOS) não teve os menus verificados. O roteiro da
 seção 3 continua disponível para essa execução.
@@ -36,6 +42,8 @@ que prova o tratamento no editor, não o comportamento do navegador.
 | `beforeinput` `historyUndo`/`historyRedo` cancelável é encaminhado ao histórico do editor | **sintético** | `cursor-selection.spec.ts` |
 | Desfazer em campo fora do editor e em outro editor não mexe no editor | real | `cursor-selection.spec.ts` |
 | Desfazer nativo com um passo ainda aberto (logo depois de digitar) | real | `cursor-selection.spec.ts` |
+| Composição (IME) com pausas longas, digitação seguida de composição, composição cancelada e interrompida por clique: um passo, sem estados intermediários; outro editor e campo externo não afetados | real (CDP, só Chromium) | `composition.spec.ts` |
+| Composição na ordem da especificação: texto final antes do `compositionend` (Chromium, Firefox) e depois dele (Safari: `deleteCompositionText` + `insertFromComposition`) | **sintético** (Safari: Firefox e WebKit; o Chromium não constrói esses `inputType`) | `composition.spec.ts` |
 | Fronteira da API: `instanceof`, identidade, métodos extraídos, ouvintes, dois núcleos, métodos futuros | real (navegador) e jsdom | `features.spec.ts`, `tests/unit/core-api.test.ts` |
 | Desempenho por tecla em 300, 1.500 e 5.000 parágrafos igual ao de antes do histórico com seleção | medição lado a lado (não versionada) | relatórios dos lotes D1 a D7 |
 
@@ -190,6 +198,15 @@ no primeiro; no segundo, digitar "segundo", Negrito pela barra dele, esperar 1 s
 cursor no segundo, menu → Desfazer.
 Esperado: só o segundo editor muda.
 
+**M9. Composição de caracteres (IME real).** Com um teclado de composição do sistema
+(Windows: IME japonês da Microsoft; macOS: Japonês – Romaji; e, em português, acentos
+por tecla morta, como ´ + a), compor uma palavra com pausas de mais de 1 s entre as
+teclas (inclusive escolhendo um candidato na lista), confirmar, esperar 1 s e desfazer
+(Ctrl+Z, botão e menu). Repetir cancelando a composição (Esc) e clicando fora no meio.
+Esperado: um desfazer tira a palavra composta inteira; nunca aparece o texto
+intermediário (por exemplo, o romaji antes da conversão ou o acento sozinho); depois de
+cancelar, o conteúdo e o cursor ficam como antes, sem passo novo.
+
 **M8. Caixa de texto.** Inserir uma caixa de texto, digitar dentro dela (rápido),
 esperar 1 s, menu → Desfazer com o cursor dentro da caixa.
 Esperado: a digitação dentro da caixa sai; o resto do documento não muda.
@@ -206,6 +223,7 @@ Esperado: a digitação dentro da caixa sai; o resto do documento não muda.
 | M6 | aprovado (campo de texto) | aprovado | — | não verificado |
 | M7 | aprovado | aprovado | — | não verificado |
 | M8 | aprovado | aprovado | — | não verificado |
+| M9 (IME real) | não executado | não executado | não executado | não verificado |
 
 O menu Editar não existe no Chrome para Windows. "—": não executado nesse menu (o menu
 Editar cobriu o caso no Firefox).
@@ -254,6 +272,7 @@ título). Rastreada em `integration.spec.ts` (I2, `test.fixme`).
 | C8 | Undo/redo fora do editor (campos, outros editores) não afetado | ✅ comprovado (automático e manual: M6, M7) | VersaEdit |
 | C9 | Limitações L1–L3 documentadas para quem integra | ✅ CHANGELOG e este documento | navegador |
 | C10 | Suíte permanente cobre os casos acima e é estável | ✅ `integration.spec.ts` (3 repetições sem falha em cada motor) | VersaEdit |
+| C11 | Composição de caracteres (IME, acentos compostos) é um passo de desfazer/refazer, sem estados intermediários; cancelar ou interromper mantém conteúdo e seleção | ✅ automático (composição real no Chromium; sintético nos três motores); ⏳ **pendência conhecida**: teclados IME reais (M9) | VersaEdit |
 
 Como ler um resultado manual (vale para novas execuções):
 

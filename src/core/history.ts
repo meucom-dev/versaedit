@@ -34,6 +34,13 @@ export interface EditorHistory<S = unknown> {
    * menos de 400 ms). Chamado antes da mudança seguinte.
    */
   close(getHtml: () => string): void
+  /**
+   * Composição de caracteres (IME, acentos compostos) começando (true) ou
+   * terminando (false). Durante ela, o grupo aberto não fecha por tempo nem por
+   * pedido: a composição inteira é um passo. No fim, o grupo segue aberto por um
+   * instante, porque o texto final pode chegar depois do compositionend (Safari).
+   */
+  compose(active: boolean, getHtml: () => string): void
   /** Agenda o registro do estado atual (agrupa a digitação por ~400 ms) */
   schedule(getHtml: () => string, getSelection?: () => S | undefined): void
   /** Desfaz: devolve o HTML anterior, ou null se não houver */
@@ -91,6 +98,11 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
   let stack: Item[] = []
   let index = -1
   let timer: number | null = null
+  // Grupo de mudanças em aberto (sem temporizador durante uma composição)
+  let open = false
+  // Composição de caracteres em andamento, e um fechamento pedido durante ela
+  let composing = false
+  let closeAfterComposition = false
   // Enquanto o editor é restaurado pelo histórico, as mutações não são registradas
   let restoring = false
   // Seleção do começo da interação atual, e as do grupo de mudanças em aberto
@@ -171,6 +183,8 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
   }
 
   const commit = (html: string) => {
+    open = false
+    closeAfterComposition = false
     const entry = encode(html)
     entry.before = groupBefore
     entry.after = groupAfter
@@ -190,6 +204,14 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
   const flush = (getHtml: () => string) => {
     cancelPending()
     commit(getHtml())
+  }
+
+  const closeLater = (getHtml: () => string, delay: number) => {
+    cancelPending()
+    timer = window.setTimeout(() => {
+      timer = null
+      commit(getHtml())
+    }, delay)
   }
 
   // Mostra um estado do histórico: as mudanças que isso causa não são registradas
@@ -215,6 +237,7 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
     reset(html) {
       cancelPending()
       candidate = groupBefore = groupAfter = moved = undefined
+      open = composing = closeAfterComposition = false
       for (const entry of stack) release(entry)
       const entry = encode(html)
       stack = [entry]
@@ -225,29 +248,46 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
       if (restoring) return
       const read = () =>
         typeof selection === 'function' ? (selection as () => S | undefined)() : selection
-      if (timer === null) candidate = read()
+      if (!open) candidate = read()
       // Grupo aberto sem seleção de antes (aberto por uma mudança que não veio de
       // uma interação): a primeira interação dentro dele a fornece
       else if (groupBefore === undefined) groupBefore = read()
     },
     markCurrent(selection) {
-      if (restoring || timer !== null) return
+      if (restoring || open) return
       candidate = selection()
     },
     close(getHtml) {
-      if (timer === null || restoring) return
+      if (!open || restoring) return
+      // No meio de uma composição, o passo só fecha quando ela termina
+      if (composing) {
+        closeAfterComposition = true
+        return
+      }
       flush(getHtml)
+    },
+    compose(active, getHtml) {
+      composing = active
+      if (active || !open) {
+        closeAfterComposition = false
+        return
+      }
+      // Fim da composição: o texto final ainda pode chegar (Safari); um fechamento
+      // pedido durante ela acontece logo em seguida
+      closeLater(getHtml, closeAfterComposition ? 0 : GROUP_DELAY_MS)
+      closeAfterComposition = false
     },
     schedule(getHtml, getSelection) {
       if (restoring) return
       // Primeira mudança de um grupo: a seleção "antes" é a do começo da interação
-      if (timer === null) groupBefore = candidate
+      if (!open) {
+        groupBefore = candidate
+        open = true
+      }
       if (getSelection) groupAfter = getSelection()
-      cancelPending()
-      timer = window.setTimeout(() => {
-        timer = null
-        commit(getHtml())
-      }, GROUP_DELAY_MS)
+      // Durante uma composição, nada fecha o grupo por tempo
+      if (composing) cancelPending()
+      else closeLater(getHtml, GROUP_DELAY_MS)
     },
     undo(getHtml) {
       flush(getHtml)
@@ -258,11 +298,12 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
       return move(1)
     },
     external(delta, current) {
-      if (timer !== null) {
+      if (open) {
         if (delta > 0) return null
         cancelPending()
         const before = groupBefore
         groupBefore = groupAfter = candidate = undefined
+        open = closeAfterComposition = false
         return show(before)
       }
       return move(delta) ?? show(current)

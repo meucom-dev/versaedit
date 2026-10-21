@@ -208,7 +208,8 @@ const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'AltGraph', 'Meta', 'C
 const EDITING_KEYS = new Set(['Backspace', 'Delete', 'Enter', 'Tab'])
 const NAVIGATION_KEY = /^(Arrow(Up|Down|Left|Right)|Home|End|PageUp|PageDown)$/
 // inputType da digitação (a do teclado do celular chega só pelo beforeinput)
-const TYPING_INPUT = /^(insertText|insertCompositionText|insertParagraph|insertLineBreak|delete)/
+const TYPING_INPUT =
+  /^(insertText|insertCompositionText|insertFromComposition|insertParagraph|insertLineBreak|delete)/
 // Desfazer/refazer do próprio navegador (beforeinput/input)
 const NATIVE_HISTORY = /^history(Undo|Redo)$/
 // Interações fora do editor que encerram o passo aberto
@@ -452,6 +453,8 @@ export class VersaEditCore {
     ['keydown', (e) => this.handleKeyDown(e as KeyboardEvent)],
     ['beforeinput', (e) => this.handleBeforeInput(e as InputEvent)],
     ['paste', (e) => this.handlePaste(e as ClipboardEvent)],
+    ['compositionstart', () => this.handleCompositionStart()],
+    ['compositionend', () => this.handleCompositionEnd()],
     ['input', (e) => this.handleInput(e as InputEvent)],
     ['focusin', (e) => this.handleFocusIn(e as FocusEvent)],
     ['focusout', (e) => this.handleBlur(e as FocusEvent)],
@@ -1705,7 +1708,7 @@ export class VersaEditCore {
     // Desfazer/refazer do navegador (menu, atalho do sistema, script): o histórico
     // é o do editor. Sem poder cancelar, o input seguinte reconcilia.
     if (NATIVE_HISTORY.test(inputEvent.inputType)) {
-      if (!inputEvent.cancelable) return
+      if (!inputEvent.cancelable || inputEvent.isComposing) return
       inputEvent.preventDefault()
       if (inputEvent.inputType === 'historyRedo') this.redo()
       else this.undo()
@@ -1887,8 +1890,9 @@ export class VersaEditCore {
       this.emitChange()
       return
     }
-    // Desfazer / refazer próprios: Ctrl+Z, Ctrl+Y e Ctrl+Shift+Z; Ctrl+K: link
-    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+    // Desfazer / refazer próprios: Ctrl+Z, Ctrl+Y e Ctrl+Shift+Z; Ctrl+K: link.
+    // Durante uma composição de caracteres, os atalhos são do teclado de composição
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.isComposing) {
       const key = e.key.toLowerCase()
       // Formatação desligada na barra: o atalho do navegador também não formata
       if (!this.opts.shortcuts.format && ['b', 'i', 'u'].includes(key) && !e.shiftKey) {
@@ -2016,6 +2020,25 @@ export class VersaEditCore {
   }
 
   private currentSnapshot = (): string => snapshotEditor(this.el, this.paper)
+
+  // Começo de uma composição de caracteres (IME, acentos compostos): ela é um passo
+  // próprio, com a seleção e o conteúdo de antes dela, e só fecha depois do fim
+  // dela, mesmo com pausas longas (escolha de candidatos)
+  private handleCompositionStart(): void {
+    this.recordMutations(this.observer?.takeRecords() ?? [])
+    this.history.close(this.currentSnapshot)
+    this.lastInteraction = 'typing'
+    this.history.markBefore(() => this.selectionSnapshot())
+    this.history.compose(true, this.currentSnapshot)
+  }
+
+  // Fim da composição: o texto final que ainda chegar (o Safari o insere depois do
+  // compositionend) é digitação do mesmo passo, mesmo que uma chamada à API no meio
+  // da composição tenha contado como comando
+  private handleCompositionEnd(): void {
+    this.lastInteraction = 'typing'
+    this.history.compose(false, this.currentSnapshot)
+  }
 
   // Desfazer/refazer que o navegador já aplicou: as mudanças dele não viram passo;
   // o editor mostra o estado do seu próprio histórico (o passo anterior ou seguinte)
