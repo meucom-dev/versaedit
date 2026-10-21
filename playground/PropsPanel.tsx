@@ -1,6 +1,7 @@
 // Painel "Propriedades" do playground: muda props do editor ao vivo, carrega
 // conteúdos de exemplo, registra os eventos e mostra o JSX equivalente.
 // Recolhido por padrão; sem mudanças, o editor recebe as props de sempre.
+import { useState, type CSSProperties } from 'react'
 import {
   TOOLBAR_GROUPS,
   type ToolbarGroup,
@@ -317,6 +318,62 @@ export const PANEL_TEXT = {
   },
 } as const satisfies Record<VersaEditLocale, unknown>
 
+// Campo numérico com rascunho: o que se digita fica só no campo até ser confirmado
+// (Enter ou sair do campo); Esc volta ao valor confirmado. Na confirmação, o valor
+// vai para o limite mais próximo, e um campo vazio ou inválido volta ao anterior.
+// As setas (teclado ou do próprio campo) geram valores válidos e aplicam na hora.
+function NumberField({
+  value,
+  min,
+  max,
+  step,
+  onCommit,
+  style,
+}: {
+  value: number
+  min: number
+  max: number
+  step: number
+  onCommit: (value: number) => void
+  style?: CSSProperties
+}) {
+  const [draft, setDraft] = useState<string | null>(null)
+  const commit = (text: string) => {
+    const typed = Math.round(Number(text))
+    setDraft(null)
+    if (text.trim() === '' || !Number.isFinite(typed)) return
+    const next = Math.min(max, Math.max(min, typed))
+    if (next !== value) onCommit(next)
+  }
+  return (
+    <input
+      type="number"
+      min={min}
+      max={max}
+      step={step}
+      value={draft ?? String(value)}
+      aria-invalid={draft !== null && !(Number(draft) >= min && Number(draft) <= max)}
+      onChange={(e) => {
+        // Digitar, apagar ou colar: rascunho. Passo das setas (sem inputType no
+        // Chromium e no WebKit; insertReplacementText no Firefox): confirma
+        const type = (e.nativeEvent as InputEvent).inputType
+        const editing = !!type && type !== 'insertReplacementText'
+        if (editing) setDraft(e.target.value)
+        else commit(e.target.value)
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && draft !== null) commit(draft)
+        if (e.key === 'Escape' && draft !== null) {
+          e.preventDefault()
+          setDraft(null)
+        }
+      }}
+      onBlur={() => draft !== null && commit(draft)}
+      style={style}
+    />
+  )
+}
+
 const fieldset = { border: '1px solid #ddd', borderRadius: 6, margin: '8px 0', padding: 8 } as const
 const row = { display: 'flex', flexWrap: 'wrap', gap: '4px 16px', alignItems: 'center' } as const
 
@@ -376,13 +433,12 @@ export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, even
           </label>
           <label>
             {T.height}{' '}
-            <input
-              type="number"
+            <NumberField
               min={150}
               max={900}
               step={10}
               value={s.height}
-              onChange={(e) => set('height', Number(e.target.value) || DEFAULT_SETTINGS.height)}
+              onCommit={(height) => set('height', height)}
               style={{ width: 70 }}
             />
           </label>
