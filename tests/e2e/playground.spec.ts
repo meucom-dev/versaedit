@@ -237,10 +237,10 @@ test('trocar o idioma não muda o conteúdo em edição; o exemplo muda só ao c
   await page.keyboard.type(' editado')
   const edited = await editor.innerHTML()
   expect(edited).toContain('Bread editado')
-  // Segundo editor (onSave): aberto em inglês e editado
+  // Segundo editor (onSave): aberto vazio e editado
   await page.getByRole('button', { name: 'Show editor with onSave' }).click()
   const second = page.locator('.ve-content').nth(1)
-  await expect(second).toContainText('Second editor with')
+  await expect(second).toBeVisible()
   await second.click()
   await page.keyboard.press('Control+End')
   await page.keyboard.type(' texto meu')

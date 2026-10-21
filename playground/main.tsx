@@ -8,7 +8,6 @@ const TEXT = {
   en: {
     locale: 'Language',
     showHtml: 'Show HTML',
-    second: '<p>Second editor with <i>onSave</i>.</p>',
     useOnSave: 'Show editor with onSave',
     hideOnSave: 'Hide editor with onSave',
     siteNote:
@@ -17,7 +16,6 @@ const TEXT = {
   'pt-BR': {
     locale: 'Idioma',
     showHtml: 'Ver HTML',
-    second: '<p>Segundo editor com <i>onSave</i>.</p>',
     useOnSave: 'Mostrar editor com onSave',
     hideOnSave: 'Esconder editor com onSave',
     siteNote:
@@ -26,7 +24,6 @@ const TEXT = {
   es: {
     locale: 'Idioma',
     showHtml: 'Ver HTML',
-    second: '<p>Segundo editor con <i>onSave</i>.</p>',
     useOnSave: 'Mostrar editor con onSave',
     hideOnSave: 'Ocultar editor con onSave',
     siteNote:
@@ -72,7 +69,6 @@ function App() {
   const [saved, setSaved] = useState<string | null>(null)
   // Conteúdo inicial do segundo editor, no idioma de quando ele foi aberto: trocar
   // o idioma depois não recarrega o editor (o que apagaria o que foi digitado)
-  const [secondInitial, setSecondInitial] = useState('')
   const editorRef = useRef<VersaEditHandle>(null)
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const editorWidth = useFitWidth(settings.width)
@@ -171,19 +167,12 @@ function App() {
           </>
         )}
         <p style={{ fontSize: 12, color: '#666' }}>
-          <button
-            type="button"
-            onClick={() => {
-              if (saved === null) setSecondInitial(T.second)
-              setSaved(saved === null ? '' : null)
-            }}
-          >
+          <button type="button" onClick={() => setSaved(saved === null ? '' : null)}>
             {saved === null ? T.useOnSave : T.hideOnSave}
           </button>
         </p>
         {saved !== null && (
           <VersaEdit
-            initialContent={secondInitial}
             onSave={setSaved}
             locale={locale}
             width={secondWidth}
