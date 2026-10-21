@@ -219,6 +219,39 @@ describe('seleção guardada em cada passo (desfazer/refazer)', () => {
     vi.useRealTimers()
   })
 
+  it('markCurrent (comando pela API): troca o "antes" guardado num clique anterior', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('a')
+    h.markBefore('antes do clique')
+    h.markCurrent(() => 'no começo do comando')
+    change(h, 'ab', 'depois')
+    expect(h.undo(() => 'ab')).toBe('a')
+    expect(h.restoredSelection()).toBe('no começo do comando')
+    vi.useRealTimers()
+  })
+
+  it('markCurrent não mexe num grupo aberto, nem lê a seleção nele', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('')
+    h.markBefore('s0')
+    h.schedule(
+      () => 'a',
+      () => 's1',
+    )
+    let reads = 0
+    h.markCurrent(() => {
+      reads++
+      return 'ignorado'
+    })
+    change(h, 'ab', 's2')
+    expect(reads).toBe(0)
+    expect(h.undo(() => 'ab')).toBe('')
+    expect(h.restoredSelection()).toBe('s0')
+    vi.useRealTimers()
+  })
+
   it('vários passos: cada desfazer volta ao "antes" do seu passo', () => {
     vi.useFakeTimers()
     const h = createEditorHistory<string>()

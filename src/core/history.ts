@@ -23,6 +23,12 @@ export interface EditorHistory<S = unknown> {
    */
   markBefore(selection: S | undefined | (() => S | undefined)): void
   /**
+   * Seleção atual no começo de um comando que não veio de uma interação (a API
+   * chamada pelo app): substitui o "antes" guardado, que pode ser de antes de um
+   * clique ter movido o cursor. Ignorada enquanto um grupo está em aberto.
+   */
+  markCurrent(selection: () => S | undefined): void
+  /**
    * Fecha o grupo de mudanças em aberto, gravando o estado atual: a próxima
    * mudança começa um passo novo (operações distintas não se juntam, mesmo em
    * menos de 400 ms). Chamado antes da mudança seguinte.
@@ -208,6 +214,10 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
       // Grupo aberto sem seleção de antes (aberto por uma mudança que não veio de
       // uma interação): a primeira interação dentro dele a fornece
       else if (groupBefore === undefined) groupBefore = read()
+    },
+    markCurrent(selection) {
+      if (restoring || timer !== null) return
+      candidate = selection()
     },
     close(getHtml) {
       if (timer === null || restoring) return

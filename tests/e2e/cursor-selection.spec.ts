@@ -1199,3 +1199,190 @@ test.describe('desfazer: operações distintas em passos separados, mesmo em men
     expect(await t.dom()).toBe('<p>um</p>')
   })
 })
+
+test.describe('desfazer: seleção certa quando o app chama a API do editor', () => {
+  const settle = (page: Page) => page.waitForTimeout(500)
+  // Seleção descrita por texto: o selecionado, o bloco, a posição no bloco e a direção
+  const where = (page: Page, host = '#host') =>
+    page.evaluate((host) => {
+      const s = getSelection()!
+      if (!s.rangeCount || !s.anchorNode || !s.focusNode) return 'sem seleção'
+      const ed = document.querySelector(`${host} .ve-content`)!
+      if (!ed.contains(s.anchorNode)) return 'fora do editor'
+      const at = (node: Node, offset: number) => {
+        const el = node.nodeType === 1 ? (node as Element) : node.parentElement!
+        const block = el.closest('p, h2, li, blockquote') ?? ed
+        const pre = document.createRange()
+        pre.setStart(block, 0)
+        pre.setEnd(node, offset)
+        return `"${(block.textContent ?? '').slice(0, 16)}"@${pre.toString().length}`
+      }
+      const text = JSON.stringify(s.toString())
+      return `${text} ${at(s.anchorNode, s.anchorOffset)}→${at(s.focusNode, s.focusOffset)}`
+    }, host)
+  const dom = (page: Page, host = '#host') =>
+    page.locator(`${host} .ve-content`).evaluate((el) => el.innerHTML)
+  // Barra do app, fora do editor: botões que chamam a API (sem tirar o foco) e um campo
+  const externalToolbar = (page: Page) =>
+    page.evaluate(() => {
+      const bar = document.createElement('div')
+      bar.id = 'ext'
+      bar.innerHTML =
+        '<button id="ext-h2">H2</button><button id="ext-p">P</button><input id="ext-input">'
+      document.body.prepend(bar)
+      const core = () => window.__ref.current!.core as unknown as { formatBlock(tag: string): void }
+      for (const [id, tag] of [
+        ['ext-h2', 'h2'],
+        ['ext-p', 'p'],
+      ]) {
+        const button = document.getElementById(id)!
+        button.addEventListener('mousedown', (e) => e.preventDefault())
+        button.addEventListener('click', () => core().formatBlock(tag))
+      }
+    })
+  const api = (page: Page, tag: string) =>
+    page.evaluate((tag) => {
+      const core = window.__ref.current!.core as unknown as { formatBlock(t: string): void }
+      core.formatBlock(tag)
+    }, tag)
+
+  test('clicar em outro parágrafo e logo chamar a API: desfazer e refazer devolvem a seleção certa', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: '<p>um dois</p><p>tres quatro</p>' })
+    await caretIn(page, 'dois', 4)
+    await page.keyboard.type('X')
+    await settle(page)
+    await t.content.locator('p').nth(1).click()
+    const before = await where(page)
+    await api(page, 'h2')
+    const after = await where(page)
+    await settle(page)
+    expect(await dom(page)).toBe('<p>um doisX</p><h2>tres quatro</h2>')
+    await page.keyboard.press('Control+z')
+    expect(await dom(page)).toBe('<p>um doisX</p><p>tres quatro</p>')
+    expect(await where(page)).toBe(before)
+    await page.keyboard.press('Control+y')
+    expect(await dom(page)).toBe('<p>um doisX</p><h2>tres quatro</h2>')
+    expect(await where(page)).toBe(after)
+  })
+
+  test('barra externa logo depois de digitar: passo próprio, com a seleção de antes', async ({
+    page,
+  }) => {
+    await mount(page, { initialContent: '<p>um dois</p><p>tres</p>' })
+    await externalToolbar(page)
+    await caretIn(page, 'dois', 4)
+    await page.keyboard.type('X')
+    const before = await where(page)
+    await page.locator('#ext-h2').click()
+    await settle(page)
+    expect(await dom(page)).toBe('<h2>um doisX</h2><p>tres</p>')
+    await page.keyboard.press('Control+z')
+    expect(await dom(page)).toBe('<p>um doisX</p><p>tres</p>')
+    expect(await where(page)).toBe(before)
+    await page.keyboard.press('Control+z')
+    expect(await dom(page)).toBe('<p>um dois</p><p>tres</p>')
+  })
+
+  test('foco num campo fora do editor: vale a última seleção do editor', async ({ page }) => {
+    await mount(page, { initialContent: '<p>um dois</p><p>tres quatro</p>' })
+    await externalToolbar(page)
+    await caretIn(page, 'tres', 2)
+    const before = await where(page)
+    await page.locator('#ext-input').click()
+    await page.keyboard.type('abc')
+    await page.evaluate(() => {
+      const ref = window.__ref.current!
+      ref.focus()
+      const core = ref.core as unknown as { formatBlock(t: string): void }
+      core.formatBlock('h2')
+    })
+    await settle(page)
+    expect(await dom(page)).not.toBe('<p>um dois</p><p>tres quatro</p>')
+    await page.keyboard.press('Control+z')
+    expect(await dom(page)).toBe('<p>um dois</p><p>tres quatro</p>')
+    expect(await where(page)).toBe(before)
+    expect(await page.locator('#ext-input').inputValue()).toBe('abc')
+  })
+
+  test('dois editores: a seleção de um nunca vai para o histórico do outro', async ({ page }) => {
+    await mount(
+      page,
+      { initialContent: '<p>um dois</p><p>tres quatro</p>' },
+      { secondEditor: '<p>outro editor</p>' },
+    )
+    await caretIn(page, 'tres', 2)
+    const aBefore = await where(page)
+    await page.keyboard.type('Y')
+    await settle(page)
+    await page.locator('#host2 .ve-content').click()
+    await page.keyboard.press('End')
+    await page.keyboard.type('Z')
+    await settle(page)
+    const b = await dom(page, '#host2')
+    // O app desfaz no editor A com a seleção no B: A volta à sua própria seleção
+    await page.evaluate(() => window.__ref.current!.undo())
+    expect(await dom(page)).toBe('<p>um dois</p><p>tres quatro</p>')
+    expect(await dom(page, '#host2')).toBe(b)
+    expect(await where(page)).toBe(aBefore)
+    await page.evaluate(() => window.__ref2.current!.undo())
+    expect(await dom(page, '#host2')).toBe('<p>outro editor</p>')
+    expect(await dom(page)).toBe('<p>um dois</p><p>tres quatro</p>')
+    expect(await where(page, '#host2')).toContain('"outro editor"@12')
+  })
+
+  test('seleção da direita para a esquerda, comando pela API: a direção volta igual', async ({
+    page,
+  }) => {
+    await mount(page, { initialContent: '<p>um dois tres</p><p>fim</p>' })
+    await caretIn(page, 'fim', 3)
+    await page.keyboard.type('!')
+    await settle(page)
+    await page.evaluate(() => {
+      const text = document.querySelector('#host .ve-content p')!.firstChild!
+      getSelection()!.setBaseAndExtent(text, 7, text, 3)
+    })
+    const before = await where(page)
+    expect(before).toContain('"dois"')
+    await page.evaluate(() => {
+      const core = window.__ref.current!.core as unknown as { execCommand(c: string): void }
+      core.execCommand('bold')
+    })
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await where(page)).toBe(before)
+  })
+
+  test('documento de 5.000 parágrafos: clique e API no meio dele', async ({ page }) => {
+    const big = Array.from({ length: 5000 }, (_, i) => `<p>Parágrafo ${i + 1}.</p>`).join('')
+    await mount(page, { initialContent: big, height: 400 })
+    await caretIn(page, 'Parágrafo 1.', 3)
+    await page.keyboard.type('Q')
+    await settle(page)
+    await caretIn(page, 'Parágrafo 4000.', 5)
+    const before = await where(page)
+    await api(page, 'h2')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await where(page)).toBe(before)
+    await page.keyboard.press('Control+z')
+    expect(await where(page)).toContain('"Parágrafo 1."@3')
+  })
+
+  test('app que lê getHTML a cada tecla: a digitação contínua continua um passo só', async ({
+    page,
+  }) => {
+    await mount(page, { initialContent: '<p>um</p>' })
+    await page.evaluate(() =>
+      document.addEventListener('input', () => window.__ref.current!.getHTML()),
+    )
+    await caretIn(page, 'um', 2)
+    const before = await where(page)
+    await page.keyboard.type(' dois tres')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await dom(page)).toBe('<p>um</p>')
+    expect(await where(page)).toBe(before)
+  })
+})

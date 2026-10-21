@@ -17,6 +17,14 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
   than 400 ms apart (typing then formatting, pasting, inserting a link, image or text box, moving
   or dragging an object, clicking elsewhere or moving the cursor with the keys). Continuous typing,
   including Backspace, Enter and Shift, is still grouped into one step.
+- Experimental undo/redo: commands called by the application (its own toolbar, the `ref`, the core
+  API) start their undo step from the selection at the moment of the call, so undo returns to the
+  right place even right after the user clicked elsewhere (it used to return to where the cursor
+  was before that click). Interacting with controls outside the editor (buttons, fields, another
+  editor) ends the step in progress, like a command inside it. Each editor only uses its own
+  selection. This applies to every public method of the core, without a list of methods.
+- `focus()` (ref and core): coming from outside the editor, it returns to the last selection in the
+  editor instead of the browser's default position (usually the start).
 - Playground: the sample contents (formatted text, table, image, text box, long content) load in
   the selected language, with the same HTML structure; content being edited is not changed by
   switching the language, only by loading a sample again.

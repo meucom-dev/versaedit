@@ -30,6 +30,7 @@ import {
   splitPaper,
 } from './file'
 import { closestFontSizeOption, matchFontFamily } from './fonts'
+import { withCallBoundary } from './boundary'
 import { createEditorHistory } from './history'
 import { resolveLabels, type VersaEditLabels, type VersaEditLocale } from './i18n'
 import { markIndentBlockquotes } from './indent'
@@ -208,6 +209,8 @@ const EDITING_KEYS = new Set(['Backspace', 'Delete', 'Enter', 'Tab'])
 const NAVIGATION_KEY = /^(Arrow(Up|Down|Left|Right)|Home|End|PageUp|PageDown)$/
 // inputType da digitação (a do teclado do celular chega só pelo beforeinput)
 const TYPING_INPUT = /^(insertText|insertCompositionText|insertParagraph|insertLineBreak|delete)/
+// Interações fora do editor que encerram o passo aberto
+const OUTSIDE_EVENTS = ['pointerdown', 'keydown']
 const INTERACTION_EVENTS = [
   'keydown',
   'pointerdown',
@@ -312,15 +315,7 @@ export class VersaEditCore {
     this.cb = callbacks
     // Registra no histórico toda alteração do editor (texto, formatação, imagens,
     // caixas e cor do papel), agrupando a digitação
-    this.observer = new MutationObserver((records) => {
-      if (this.preview) return
-      // Só marcas da interface (seleção, arrasto): o conteúdo não mudou
-      if (records.every((record) => isUiStateMutation(record, el))) return
-      this.history.schedule(
-        () => snapshotEditor(this.el, this.paper),
-        () => this.selectionSnapshot(),
-      )
-    })
+    this.observer = new MutationObserver(this.recordMutations)
     this.observer.observe(el, {
       childList: true,
       subtree: true,
@@ -332,6 +327,44 @@ export class VersaEditCore {
     for (const [type, listener] of this.listeners) el.addEventListener(type, listener)
     this.scope = (el.closest('.ve-root') as HTMLElement | null) ?? el
     for (const type of INTERACTION_EVENTS) this.scope.addEventListener(type, this.markBefore, true)
+    for (const type of OUTSIDE_EVENTS)
+      document.addEventListener(type, this.outsideInteraction, true)
+    // Chamadas do app (barra própria, ref, outro componente) passam pela fronteira
+    // da API: o passo seguinte começa da seleção do momento da chamada
+    return withCallBoundary(this, {
+      enter: () => {
+        // Mudanças ainda não registradas são da operação anterior
+        this.recordMutations(this.observer?.takeRecords() ?? [])
+        this.history.markCurrent(() => this.selectionSnapshot())
+      },
+      exit: () => {
+        // O comando mudou o conteúdo: a digitação seguinte é outro passo
+        if (this.recordMutations(this.observer?.takeRecords() ?? [])) {
+          this.lastInteraction = 'command'
+        }
+      },
+    })
+  }
+
+  // Registra no histórico as mudanças do conteúdo; false se não houve nenhuma
+  private readonly recordMutations = (records: MutationRecord[]): boolean => {
+    if (!records.length || this.preview) return false
+    // Só marcas da interface (seleção, arrasto): o conteúdo não mudou
+    if (records.every((record) => isUiStateMutation(record, this.el))) return false
+    this.history.schedule(
+      () => snapshotEditor(this.el, this.paper),
+      () => this.selectionSnapshot(),
+    )
+    return true
+  }
+
+  // Interação fora do editor (barra ou campo do app, outro editor): fecha o passo
+  // aberto, como um comando. A seleção de antes é lida no começo do comando.
+  private readonly outsideInteraction = (e: Event): void => {
+    const target = e.target as Node | null
+    if (target && this.scope.contains(target)) return
+    this.history.close(this.currentSnapshot)
+    this.lastInteraction = 'command'
   }
 
   // Começo de uma interação: fecha o passo aberto se esta for uma operação
@@ -449,6 +482,8 @@ export class VersaEditCore {
     for (const [type, listener] of this.listeners) this.el.removeEventListener(type, listener)
     for (const type of INTERACTION_EVENTS)
       this.scope.removeEventListener(type, this.markBefore, true)
+    for (const type of OUTSIDE_EVENTS)
+      document.removeEventListener(type, this.outsideInteraction, true)
     this.deleteObserver.disconnect()
   }
 
@@ -537,8 +572,13 @@ export class VersaEditCore {
     }
   }
 
+  /** Foco no editor; vindo de fora (campo ou botão do app), volta à última seleção */
   focus(): void {
-    this.el.focus()
+    const active = document.activeElement
+    if (active && isNodeWithinEditor(this.el, active)) return
+    const saved = this.savedRange
+    if (saved && isRangeWithinEditor(this.el, saved)) this.restoreRange(saved)
+    else this.el.focus()
   }
 
   // Cor do papel: colore a superfície do editor, sem afetar o texto

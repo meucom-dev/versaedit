@@ -32,6 +32,8 @@ export interface HarnessOptions {
   captureErrors?: boolean
   /** Liga o onConfirm com a resposta dada (sem ele, o editor usa confirm) */
   confirm?: 'yes' | 'no' | 'async-yes' | 'async-no'
+  /** Segundo editor na página (#host2, fora de #host), com este conteúdo; ref em window.__ref2 */
+  secondEditor?: string
 }
 
 /** Controle do reconhecimento de voz falso usado nos testes */
@@ -62,6 +64,7 @@ declare global {
     __mount: (props: Partial<VersaEditProps>, options?: HarnessOptions) => Promise<void>
     __out: HarnessOutput
     __ref: { current: VersaEditHandle | null }
+    __ref2: { current: VersaEditHandle | null }
     __speech: FakeSpeech
   }
 }
@@ -109,9 +112,13 @@ function createFakeSpeech(): { control: FakeSpeech; ctor: SpeechRecognitionConst
 }
 
 let root: Root | null = null
+let secondRoot: Root | null = null
 
 window.__mount = async (props, options = {}) => {
   root?.unmount()
+  secondRoot?.unmount()
+  secondRoot = null
+  document.getElementById('host2')?.remove()
   const out: HarnessOutput = {
     html: null,
     overflow: null,
@@ -198,6 +205,24 @@ window.__mount = async (props, options = {}) => {
       />
     </>,
   )
+  if (options.secondEditor !== undefined) {
+    const host2 = document.createElement('div')
+    host2.id = 'host2'
+    host2.style.marginTop = '16px'
+    document.getElementById('host')!.after(host2)
+    const ref2 = createRef<VersaEditHandle>()
+    window.__ref2 = ref2
+    secondRoot = createRoot(host2)
+    secondRoot.render(
+      <VersaEdit ref={ref2} width={900} height={200} initialContent={options.secondEditor} />,
+    )
+    const started2 = performance.now()
+    while (performance.now() - started2 < 5000) {
+      const ready = ref2.current?.core && document.querySelector('#host2 .ve-content')?.innerHTML
+      if (ready) break
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    }
+  }
   // Espera o editor ficar pronto (núcleo criado e conteúdo inicial carregado),
   // em vez de um tempo fixo — em navegador lento, 150 ms não bastavam
   const expectsContent = Boolean(props.initialContent)
