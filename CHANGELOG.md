@@ -13,28 +13,35 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Changed
 
-- Experimental undo/redo: distinct operations are separate undo steps even when they happen less
+- Undo/redo is stable (no longer experimental): covered by the automated tests in Chromium, Firefox
+  and WebKit with React 18 and 19, and checked by hand through the browsers' Edit and context menus
+  in Chrome and Firefox (Windows). Safari was not checked by hand; its engine (WebKit) is covered by
+  the automated tests. See `docs/undo-redo-homologacao.md`.
+- Undo/redo: distinct operations are separate undo steps even when they happen less
   than 400 ms apart (typing then formatting, pasting, inserting a link, image or text box, moving
   or dragging an object, clicking elsewhere or moving the cursor with the keys). Continuous typing,
   including Backspace, Enter and Shift, is still grouped into one step.
-- Experimental undo/redo: commands called by the application (its own toolbar, the `ref`, the core
+- Undo/redo: commands called by the application (its own toolbar, the `ref`, the core
   API) start their undo step from the selection at the moment of the call, so undo returns to the
   right place even right after the user clicked elsewhere (it used to return to where the cursor
   was before that click). Interacting with controls outside the editor (buttons, fields, another
   editor) ends the step in progress, like a command inside it. Each editor only uses its own
   selection. This applies to every public method of the core, without a list of methods.
-- Experimental undo/redo: the browser's own undo/redo (Edit menu, context menu, scripts calling
+- Undo/redo: the browser's own undo/redo (Edit menu, context menu, scripts calling
   `document.execCommand('undo')`) goes through the editor's history, so there is a single history
   and no contradictory steps (before, undoing from the menu was recorded as a new edit, and the
   next Ctrl+Z redid it). When the browser announces it with a cancelable `beforeinput`
   (`historyUndo`/`historyRedo`), the editor cancels it and undoes/redoes itself; when the browser
   only reports it afterwards (`input`, as Chromium and Firefox do for `execCommand`), the editor
   discards the browser's change and shows the previous or next step of its own history. Undo/redo
-  in other fields, forms or editors is not affected. Browser limitations: browsers only keep their
-  own edits in their native stack, so after an undo/redo done by the editor the menu's Redo is
-  usually unavailable, and in Firefox the menu's Undo may do nothing until the next edit; in both
-  cases nothing changes and no step is created. The Edit menu and context menu cannot be driven by
-  the automated tests; they were checked through the same editing command (`execCommand`).
+  in other fields, forms or editors is not affected. The Edit menu and the context menu were checked
+  by hand in Chrome and Firefox (Windows): both announce the undo with a cancelable `beforeinput`,
+  and the editor undoes through its own history. Browser limitations (not of the editor's history):
+  the menus only offer Redo when the browser's own stack has something to redo, and since the editor
+  cancels the browser's undo, the menu's Redo is missing or greyed out (Ctrl+Y and the Redo button
+  still work); in Firefox, `document.execCommand('undo')` called by a script right after an
+  undo/redo done by the editor may do nothing (no event, nothing changes, no step is created), which
+  the real menus do not do.
 - `focus()` (ref and core): coming from outside the editor, it returns to the last selection in the
   editor instead of the browser's default position (usually the start).
 - Playground: the sample contents (formatted text, table, image, text box, long content) load in
@@ -56,7 +63,7 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Added
 
-- Experimental: undo restores the selection from before the undone step, and redo the selection
+- Undo restores the selection from before the undone step, and redo the selection
   after the redone step, keeping its direction (it used to put the cursor at the start of the
   editor). The selection is stored as linear positions that survive the HTML being reloaded and do
   not depend on object types; the history keeps its grouping and its previous API.
@@ -134,7 +141,7 @@ caret-color: …">`, or the same declarations added to the user's own elements).
   stays, even when it matches the inherited style.
 - Delete at the end of a paragraph right before a text box selects the box instead of merging it;
   a second Delete removes it (undoable).
-- Experimental undo/redo: the restored cursor is scrolled into view with the smallest movement
+- Undo/redo: the restored cursor is scrolled into view with the smallest movement
   (editing area, scrollable containers, then the page; a fixed-height area is not scrolled), and
   selections inside editable parts of non-editable objects (such as a caption) are restored there.
 - Links are inserted through the DOM when the selection is within one block: the browser no longer
