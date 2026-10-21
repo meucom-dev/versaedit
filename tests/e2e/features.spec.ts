@@ -20,7 +20,8 @@ test.describe('props e idiomas', () => {
     await expect(t.btn('Negrito (Ctrl+B)')).toHaveCount(1)
     await t.caretToEnd()
     await t.btn('Inserir caixa de texto').click()
-    expect(await t.html()).toContain('Caixa de texto')
+    // A caixa nova começa vazia; o texto traduzido inserido é o título da alça
+    expect(await t.html()).toContain('title="Arrastar caixa de texto">⠿</span></div>')
     await t.content.evaluate((el) => (el.innerHTML = ''))
     await expect(t.content).toHaveAttribute('data-placeholder', 'Digite o conteúdo aqui...')
   })
@@ -108,8 +109,39 @@ test.describe('inserções sem apagar a seleção', () => {
     await selectText(page, 'this')
     await t.btn('Insert text box').click()
     expect(await t.html()).toBe(
-      '<p>keep this text</p><div class="rich-textbox"><span class="textbox-handle" contenteditable="false" title="Drag text box">⠿</span>Text box</div>',
+      '<p>keep this text</p><div class="rich-textbox"><span class="textbox-handle" contenteditable="false" title="Drag text box">⠿</span></div>',
     )
+  })
+
+  test('caixa de texto nova começa vazia: digitar entra nela; caixas existentes não mudam', async ({
+    page,
+  }) => {
+    const existing =
+      '<div class="rich-textbox"><span class="textbox-handle" contenteditable="false" title="Drag text box">⠿</span>já escrita</div>'
+    const t = await mount(page, { initialContent: `<p>um</p>${existing}` })
+    const html = () => page.evaluate(() => window.__ref.current!.getHTML())
+    await page.waitForTimeout(300)
+    // A caixa que já existia chega inteira, com o texto dela
+    expect(await html()).toBe(`<p>um</p>${existing}`)
+    await t.content.locator('p').first().click()
+    await page.keyboard.press('End')
+    await t.btn('Insert text box').click()
+    const empty =
+      '<div class="rich-textbox"><span class="textbox-handle" contenteditable="false" title="Drag text box">⠿</span></div>'
+    // Nenhum texto de exemplo no conteúdo (nem no HTML salvo)
+    expect(await html()).toBe(`<p>um</p>${empty}${existing}`)
+    expect(await html()).not.toContain('Text box<')
+    // O cursor está dentro da caixa nova: o que se digita entra nela
+    await page.keyboard.type('nova')
+    expect(await html()).toBe(
+      `<p>um</p>${empty.replace('</span></div>', '</span>nova</div>')}${existing}`,
+    )
+    // Desfazer: a digitação e depois a inserção da caixa
+    await page.waitForTimeout(500)
+    await page.keyboard.press('Control+z')
+    expect(await html()).toBe(`<p>um</p>${empty}${existing}`)
+    await page.keyboard.press('Control+z')
+    expect(await html()).toBe(`<p>um</p>${existing}`)
   })
 
   test('linha separadora mantém o trecho selecionado', async ({ page }) => {

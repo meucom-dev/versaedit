@@ -74,6 +74,7 @@ export const ptBR: VersaEditLabels = {
   dictationNoMicrophone: 'Nenhum microfone foi encontrado.',
   dictationNetwork: 'O reconhecimento de voz precisa de conexão com a internet.',
   dictationError: 'O reconhecimento de voz falhou ({error}).',
+  // Não é mais usado (a caixa nova começa vazia); mantido para os rótulos já personalizados
   textboxDefault: 'Caixa de texto',
   textboxHandle: 'Arrastar caixa de texto',
   fileTitle: 'Conteúdo do editor',

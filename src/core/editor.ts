@@ -1182,7 +1182,8 @@ export class VersaEditCore {
     editor.focus()
     const range = this.getCurrentRange()
     const template = document.createElement('template')
-    template.innerHTML = textboxHtml(L.textboxHandle, L.textboxDefault)
+    // Caixa nova vazia (só a alça): o que se digita é o conteúdo dela
+    template.innerHTML = textboxHtml(L.textboxHandle, '')
     const box = template.content.firstElementChild as HTMLElement
     if (range && range.endContainer === editor) {
       editor.insertBefore(box, editor.childNodes[range.endOffset] ?? null)
@@ -1194,7 +1195,7 @@ export class VersaEditCore {
     } else {
       editor.appendChild(box)
     }
-    // Cursor no fim do texto da caixa
+    // Cursor dentro da caixa, depois da alça
     const caret = document.createRange()
     caret.selectNodeContents(box)
     caret.collapse(false)

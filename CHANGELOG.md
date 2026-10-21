@@ -17,6 +17,10 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
   and WebKit with React 18 and 19, and checked by hand through the browsers' Edit and context menus
   in Chrome and Firefox (Windows). Safari was not checked by hand; its engine (WebKit) is covered by
   the automated tests. See `docs/undo-redo-homologacao.md`.
+- A new text box starts empty (only the drag handle), with the cursor inside it: what is typed is
+  its content. It used to contain the text "Text box" (or its translation), which had to be erased
+  first. Existing text boxes are unchanged. The `textboxDefault` label is no longer used and is kept
+  so that existing custom labels still type-check.
 - Undo/redo: distinct operations are separate undo steps even when they happen less
   than 400 ms apart (typing then formatting, pasting, inserting a link, image or text box, moving
   or dragging an object, clicking elsewhere or moving the cursor with the keys). Continuous typing,

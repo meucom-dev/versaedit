@@ -74,6 +74,7 @@ export const es: VersaEditLabels = {
   dictationNoMicrophone: 'No se encontró ningún micrófono.',
   dictationNetwork: 'El reconocimiento de voz necesita conexión a internet.',
   dictationError: 'El reconocimiento de voz falló ({error}).',
+  // Não é mais usado (a caixa nova começa vazia); mantido para os rótulos já personalizados
   textboxDefault: 'Cuadro de texto',
   textboxHandle: 'Arrastrar cuadro de texto',
   fileTitle: 'Contenido del editor',

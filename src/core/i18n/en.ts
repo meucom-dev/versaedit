@@ -72,6 +72,7 @@ export const en = {
   dictationNoMicrophone: 'No microphone was found.',
   dictationNetwork: 'Speech recognition needs an internet connection.',
   dictationError: 'Speech recognition failed ({error}).',
+  // Não é mais usado (a caixa nova começa vazia); mantido para os rótulos já personalizados
   textboxDefault: 'Text box',
   textboxHandle: 'Drag text box',
   fileTitle: 'Editor content',

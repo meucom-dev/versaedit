@@ -161,7 +161,9 @@ for (const locale of LOCALES) {
       const t = await mount(page, { locale, initialContent: '<p>a</p>' })
       await t.caretToEnd()
       await t.btn(L.insertTextbox).click()
-      expect(await t.html()).toContain(L.textboxDefault)
+      // A caixa nova começa vazia: nenhum texto de exemplo, em nenhum idioma
+      expect(await t.html()).not.toContain(L.textboxDefault)
+      expect(await t.html()).toContain('⠿</span></div>')
       await expect(page.locator('#host .textbox-handle')).toHaveAttribute('title', L.textboxHandle)
       const download = page.waitForEvent('download')
       await t.btn(L.saveFile).click()
