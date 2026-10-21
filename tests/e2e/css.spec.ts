@@ -41,3 +41,30 @@ test('CSS de exibição: alça escondida, imagem posicionada, tabela com borda',
     await box.locator('.rich-textbox').evaluate((el) => getComputedStyle(el).borderTopStyle),
   ).toBe('dashed')
 })
+
+test('CSS de exibição: recuo antigo (sem role) não vira citação; citações não mudam', async ({
+  page,
+}) => {
+  await page.goto('/harness.html')
+  await page.waitForFunction(() => typeof window.__showContent === 'function')
+  const LEGACY = 'margin: 0 0 0 40px; border: none; padding: 0px;'
+  await page.evaluate(
+    (html) => window.__showContent(html),
+    [
+      `<blockquote id="legado" style="${LEGACY}"><p>recuo antigo</p></blockquote>`,
+      `<blockquote id="novo" style="${LEGACY}" role="presentation"><p>recuo novo</p></blockquote>`,
+      '<blockquote id="citacao"><p>citação</p></blockquote>',
+      `<blockquote style="${LEGACY}"><blockquote id="dentro"><p>citação recuada</p></blockquote></blockquote>`,
+      '<blockquote id="firefox" style="margin-left: 40px;"><p>citação recuada (Firefox)</p></blockquote>',
+      '<blockquote id="borda" style="margin: 0 0 0 40px; border-left: 3px solid red;"><p>citação com margem</p></blockquote>',
+    ].join(''),
+  )
+  const fontStyle = (id: string) =>
+    page.locator(`#${id}`).evaluate((el) => getComputedStyle(el).fontStyle)
+  expect(await fontStyle('legado')).toBe('normal')
+  expect(await fontStyle('novo')).toBe('normal')
+  expect(await fontStyle('citacao')).toBe('italic')
+  expect(await fontStyle('dentro')).toBe('italic')
+  expect(await fontStyle('firefox')).toBe('italic')
+  expect(await fontStyle('borda')).toBe('italic')
+})

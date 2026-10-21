@@ -128,3 +128,16 @@ describe('fontes', () => {
     )
   })
 })
+
+describe('CSS: recuo identificado pelo papel, não pelo texto do style', async () => {
+  const { CONTENT_CSS, EDITOR_CSS } = await import('../../src/core/styles')
+  it('o editor não usa o texto do style para reconhecer o recuo', () => {
+    expect(EDITOR_CSS).not.toMatch(/style\*=/)
+    expect(EDITOR_CSS).toContain('blockquote[role="presentation"]')
+  })
+  it('no CSS de exibição, a regra pelo texto do style só vale para blockquote sem role', () => {
+    const literal = CONTENT_CSS.split('\n').filter((line) => line.includes('style*='))
+    expect(literal.length).toBeGreaterThan(0)
+    for (const line of literal) expect(line).toContain('blockquote:not([role])')
+  })
+})

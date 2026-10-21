@@ -84,7 +84,9 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
   quotation, and screen readers no longer announce it as one), and the left margin of indented
   blocks is kept when it is a multiple of 40px. Quotes are unchanged. Documents saved by earlier
   versions are recognized when loaded; for HTML published without passing through the editor
-  again, `versaedit-content.css` keeps the previous rule as a fallback.
+  again, `versaedit-content.css` keeps a compatibility rule, limited to indentation blockquotes
+  without `role` saved in the exact form those browsers wrote (left margin and `border: none`), so
+  it never affects a quote.
 - Loading content no longer moves the `class` and `style` attributes to the end of the element
   (`<span class="textbox-handle" contenteditable="false">` came back as
   `<span contenteditable="false" class="textbox-handle">`): they are filtered in place, so saving

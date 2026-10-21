@@ -157,7 +157,15 @@ export const CONTENT_CSS = `
 .versaedit-content code { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
 .versaedit-content blockquote { border-left: 3px solid var(--ve-accent); margin: 0; padding: 8px 16px; font-style: italic; }
 .versaedit-content blockquote[role="presentation"] { font-style: normal; }
-/* Compatibilidade: recuo salvo antes da marcação (só o HTML publicado sem passar
-   de novo pelo editor; ao ser carregado no editor ele ganha o role) */
-.versaedit-content blockquote[style*="margin: 0 0 0 40px"] { font-style: normal; }
+
+/* ── COMPATIBILIDADE (documentos publicados antes do role="presentation") ──
+   Finalidade: HTML salvo por versões anteriores e publicado sem passar de novo
+   pelo editor, em que o recuo do Chromium/WebKit é um blockquote sem role.
+   Condições: só blockquote sem role, e só com o texto exato que esses navegadores
+   gravavam (a margem do recuo E border: none). Uma citação nunca tem border: none
+   no style, então nenhuma citação é afetada.
+   Documentos novos ou reabertos no editor não dependem desta regra: eles recebem
+   o role ao serem criados ou carregados (core/indent.ts), e o CSS do editor não a
+   tem. Não remover enquanto houver conteúdo publicado nesse formato. */
+.versaedit-content blockquote:not([role])[style*="margin: 0 0 0 40px"][style*="border: none"] { font-style: normal; }
 `
