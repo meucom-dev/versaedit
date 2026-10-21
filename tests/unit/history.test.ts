@@ -252,6 +252,41 @@ describe('seleção guardada em cada passo (desfazer/refazer)', () => {
     vi.useRealTimers()
   })
 
+  it('external (o navegador já desfez): volta um passo sem criar passo novo', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('a')
+    h.markBefore('b1')
+    change(h, 'ab', 'a1')
+    expect(h.external(-1, 'atual')).toBe('a')
+    expect(h.restoredSelection()).toBe('b1')
+    // O refazer continua disponível: nada foi gravado no lugar dele
+    expect(h.redo(() => 'a')).toBe('ab')
+    // Sem passo para onde ir: o estado atual, com a seleção atual
+    expect(h.external(1, 'atual')).toBe('ab')
+    expect(h.restoredSelection()).toBe('atual')
+    expect(h.undo(() => 'ab')).toBe('a')
+    vi.useRealTimers()
+  })
+
+  it('external com um passo aberto: a edição aberta sai; refazer nativo não faz nada', () => {
+    vi.useFakeTimers()
+    const h = createEditorHistory<string>()
+    h.reset('a')
+    h.markBefore('antes da digitação')
+    h.schedule(
+      () => 'ab',
+      () => 'depois',
+    )
+    expect(h.external(1)).toBe(null)
+    expect(h.external(-1)).toBe('a')
+    expect(h.restoredSelection()).toBe('antes da digitação')
+    vi.advanceTimersByTime(500)
+    // O grupo descartado não volta a ser gravado
+    expect(h.undo(() => 'a')).toBe(null)
+    vi.useRealTimers()
+  })
+
   it('vários passos: cada desfazer volta ao "antes" do seu passo', () => {
     vi.useFakeTimers()
     const h = createEditorHistory<string>()

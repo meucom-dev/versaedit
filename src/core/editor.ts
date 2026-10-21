@@ -209,6 +209,8 @@ const EDITING_KEYS = new Set(['Backspace', 'Delete', 'Enter', 'Tab'])
 const NAVIGATION_KEY = /^(Arrow(Up|Down|Left|Right)|Home|End|PageUp|PageDown)$/
 // inputType da digitação (a do teclado do celular chega só pelo beforeinput)
 const TYPING_INPUT = /^(insertText|insertCompositionText|insertParagraph|insertLineBreak|delete)/
+// Desfazer/refazer do próprio navegador (beforeinput/input)
+const NATIVE_HISTORY = /^history(Undo|Redo)$/
 // Interações fora do editor que encerram o passo aberto
 const OUTSIDE_EVENTS = ['pointerdown', 'keydown']
 const INTERACTION_EVENTS = [
@@ -450,7 +452,7 @@ export class VersaEditCore {
     ['keydown', (e) => this.handleKeyDown(e as KeyboardEvent)],
     ['beforeinput', (e) => this.handleBeforeInput(e as InputEvent)],
     ['paste', (e) => this.handlePaste(e as ClipboardEvent)],
-    ['input', () => this.handleInput()],
+    ['input', (e) => this.handleInput(e as InputEvent)],
     ['focusin', (e) => this.handleFocusIn(e as FocusEvent)],
     ['focusout', (e) => this.handleBlur(e as FocusEvent)],
     ['dragstart', (e) => e.preventDefault()],
@@ -1649,7 +1651,12 @@ export class VersaEditCore {
     this.cb.onBlur?.()
   }
 
-  private handleInput = (): void => {
+  private handleInput = (e?: InputEvent): void => {
+    // O navegador desfez/refez sozinho (sem beforeinput que pudesse ser cancelado)
+    if (e && NATIVE_HISTORY.test(e.inputType)) {
+      this.reconcileNativeHistory(e.inputType === 'historyRedo' ? 1 : -1)
+      return
+    }
     if (this.watchingDelete) this.cleanUpAfterDelete()
     this.enforceHeight()
     this.emitChange()
@@ -1694,6 +1701,15 @@ export class VersaEditCore {
   // Só 'insertText': a composição de IME (insertCompositionText) não pode ser
   // cancelada, e o texto sairia duplicado.
   private handleBeforeInput = (inputEvent: InputEvent): void => {
+    // Desfazer/refazer do navegador (menu, atalho do sistema, script): o histórico
+    // é o do editor. Sem poder cancelar, o input seguinte reconcilia.
+    if (NATIVE_HISTORY.test(inputEvent.inputType)) {
+      if (!inputEvent.cancelable) return
+      inputEvent.preventDefault()
+      if (inputEvent.inputType === 'historyRedo') this.redo()
+      else this.undo()
+      return
+    }
     if (this.preview) this.restorePreview()
     if (inputEvent.inputType.startsWith('delete')) this.watchDelete()
     // Digitar com a imagem selecionada escreve depois dela e tira a seleção (senão
@@ -1999,6 +2015,16 @@ export class VersaEditCore {
   }
 
   private currentSnapshot = (): string => snapshotEditor(this.el, this.paper)
+
+  // Desfazer/refazer que o navegador já aplicou: as mudanças dele não viram passo;
+  // o editor mostra o estado do seu próprio histórico (o passo anterior ou seguinte)
+  private reconcileNativeHistory(delta: -1 | 1): void {
+    const current = this.selectionSnapshot()
+    const html = this.history.external(delta, current)
+    if (html === null) return
+    this.observer?.takeRecords()
+    this.applyHistory(html)
+  }
 
   undo = (): void => {
     this.applyHistory(this.history.undo(this.currentSnapshot))

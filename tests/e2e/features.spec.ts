@@ -235,6 +235,57 @@ test.describe('teclado na barra (padrão toolbar)', () => {
   })
 })
 
+test('ref.core no navegador: identidade, métodos extraídos, ouvintes, instanceof e dois editores', async ({
+  page,
+}) => {
+  await mount(page, { initialContent: '<p>um</p>' }, { secondEditor: '<p>dois</p>' })
+  const r = await page.evaluate(() => {
+    type Core = {
+      getHTML(): string
+      setHTML(html: string): void
+      undo(): void
+      constructor: new (...args: never[]) => unknown
+    }
+    const a = window.__ref.current!.core as unknown as Core
+    const b = window.__ref2.current!.core as unknown as Core
+    const { getHTML, setHTML } = a
+    setHTML('<p>um extraído</p>')
+    const button = document.createElement('button')
+    document.body.append(button)
+    let calls = 0
+    const count = () => calls++
+    button.addEventListener('click', a.undo)
+    button.addEventListener('click', count)
+    button.click()
+    button.removeEventListener('click', a.undo)
+    const afterUndo = a.getHTML()
+    button.click()
+    return {
+      sameCore: window.__ref.current!.core === window.__ref.current!.core,
+      sameMethod: a.getHTML === a.getHTML,
+      extracted: getHTML(),
+      instance: a instanceof a.constructor && a.constructor.name === 'VersaEditCore',
+      sameClass: a.constructor === b.constructor,
+      distinct: a !== b && a.getHTML !== b.getHTML,
+      second: b.getHTML(),
+      afterUndo,
+      afterRemove: a.getHTML(),
+      calls,
+    }
+  })
+  expect(r.sameCore).toBe(true)
+  expect(r.sameMethod).toBe(true)
+  expect(r.extracted).toBe('<p>um extraído</p>')
+  expect(r.instance).toBe(true)
+  expect(r.sameClass).toBe(true)
+  expect(r.distinct).toBe(true)
+  expect(r.second).toBe('<p>dois</p>')
+  // setHTML reinicia o histórico: o undo do ouvinte não tem o que desfazer
+  expect(r.afterUndo).toBe('<p>um extraído</p>')
+  expect(r.afterRemove).toBe('<p>um extraído</p>')
+  expect(r.calls).toBe(2)
+})
+
 test.describe('API por ref', () => {
   test('getHTML, setHTML, focus, clear, undo, core', async ({ page }) => {
     await mount(page, { initialContent: '<p>start</p>' })

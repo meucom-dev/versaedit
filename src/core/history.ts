@@ -40,6 +40,15 @@ export interface EditorHistory<S = unknown> {
   undo(getHtml: () => string): string | null
   /** Refaz: devolve o HTML seguinte, ou null se não houver */
   redo(getHtml: () => string): string | null
+  /**
+   * O navegador já desfez (-1) ou refez (+1) por conta própria, sem um evento que
+   * pudesse ser cancelado: devolve o HTML a mostrar, segundo este histórico (o
+   * passo anterior ou seguinte; sem ele, o estado atual), e nada disso vira um
+   * passo novo. Com um passo ainda aberto, o desfazer do navegador desfez essa
+   * edição: ela sai. `current` é a seleção a manter quando não há passo para ir.
+   * null: nada a fazer (refazer com um passo aberto).
+   */
+  external(delta: -1 | 1, current?: S): string | null
   /** Seleção a restaurar depois do último desfazer/refazer (undefined: nenhuma) */
   restoredSelection(): S | undefined
   /** Cancela registros pendentes (ao desmontar o editor) */
@@ -183,17 +192,23 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
     commit(getHtml())
   }
 
-  const move = (delta: number): string | null => {
-    const target = index + delta
-    if (target < 0 || target >= stack.length) return null
-    // Desfazer volta à seleção de antes do passo desfeito; refazer, à de depois
-    moved = delta < 0 ? stack[index].before : stack[target].after
-    index = target
+  // Mostra um estado do histórico: as mudanças que isso causa não são registradas
+  const show = (selection: S | undefined): string => {
+    moved = selection
     restoring = true
     window.setTimeout(() => {
       restoring = false
     }, 0)
     return decode(stack[index])
+  }
+
+  const move = (delta: number): string | null => {
+    const target = index + delta
+    if (target < 0 || target >= stack.length) return null
+    // Desfazer volta à seleção de antes do passo desfeito; refazer, à de depois
+    const selection = delta < 0 ? stack[index].before : stack[target].after
+    index = target
+    return show(selection)
   }
 
   return {
@@ -241,6 +256,16 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
     redo(getHtml) {
       flush(getHtml)
       return move(1)
+    },
+    external(delta, current) {
+      if (timer !== null) {
+        if (delta > 0) return null
+        cancelPending()
+        const before = groupBefore
+        groupBefore = groupAfter = candidate = undefined
+        return show(before)
+      }
+      return move(delta) ?? show(current)
     },
     restoredSelection() {
       return moved

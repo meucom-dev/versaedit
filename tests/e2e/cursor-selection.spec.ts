@@ -1,7 +1,7 @@
 // Cursor e seleção nas operações do editor: o texto digitado depois de cada
 // operação entra no ponto esperado. Lote 1: imagem selecionada, Enter dentro da
 // caixa de texto e remover link com o cursor dentro dele.
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { mount, PNG, pngFile, selectText } from './helpers'
 
 const IMG = `<img src="data:image/png;base64,${PNG}" style="width: 60px">`
@@ -1384,5 +1384,205 @@ test.describe('desfazer: seleção certa quando o app chama a API do editor', ()
     await page.keyboard.press('Control+z')
     expect(await dom(page)).toBe('<p>um</p>')
     expect(await where(page)).toBe(before)
+  })
+})
+
+// Desfazer/refazer do próprio navegador (menu Editar, menu de contexto, scripts com
+// document.execCommand): o histórico é um só, o do editor. A automação não abre os
+// menus do navegador; document.execCommand('undo'/'redo') executa o mesmo comando
+// de edição e produz eventos reais (isTrusted): no WebKit, beforeinput cancelável;
+// no Chromium e no Firefox, só o input, depois de o navegador já ter desfeito.
+// Modelo do histórico linear do editor: cada operação do editor anda exatamente um
+// passo; uma operação nativa pode ficar no lugar (o navegador não tinha o que
+// fazer) ou andar um passo na direção pedida. Qualquer outro estado seria um
+// passo contraditório. `log` diz o que cada navegador atendeu.
+class HistoryModel {
+  log: string[] = []
+  constructor(
+    private page: Page,
+    public states: string[],
+    public index: number,
+  ) {}
+  private dom() {
+    return this.page.locator('#host .ve-content').evaluate((el) => el.innerHTML)
+  }
+  private async expectAt(index: number, what: string) {
+    this.index = Math.max(0, Math.min(this.states.length - 1, index))
+    expect(await this.dom(), what).toBe(this.states[this.index])
+  }
+  async key(combo: string) {
+    await this.page.keyboard.press(combo)
+    await this.expectAt(this.index + (/z$/i.test(combo) ? -1 : 1), combo)
+  }
+  async api(command: 'undo' | 'redo') {
+    await this.page.evaluate((c) => window.__ref.current![c](), command)
+    await this.expectAt(this.index + (command === 'undo' ? -1 : 1), `API ${command}`)
+  }
+  async button(button: Locator, delta: -1 | 1) {
+    await button.click()
+    await this.expectAt(this.index + delta, 'botão da barra')
+  }
+  /** true se o navegador atendeu (andou um passo) */
+  async native(command: 'undo' | 'redo') {
+    const delta = command === 'undo' ? -1 : 1
+    const target = Math.max(0, Math.min(this.states.length - 1, this.index + delta))
+    await this.page.evaluate((c) => document.execCommand(c), command)
+    const now = await this.dom()
+    const at = this.states.indexOf(now)
+    expect([this.index, target], `nativo ${command}: estado fora do histórico (${now})`).toContain(
+      at,
+    )
+    const moved = at !== this.index && at === target
+    this.log.push(`${command}${moved ? '' : ' (sem efeito)'}`)
+    this.index = at
+    return moved || target === this.index
+  }
+}
+
+test.describe('desfazer/refazer nativo do navegador: um histórico só', () => {
+  const settle = (page: Page) => page.waitForTimeout(500)
+  const dom = (page: Page, host = '#host') =>
+    page.locator(`${host} .ve-content`).evaluate((el) => el.innerHTML)
+  const native = (page: Page, command: 'undo' | 'redo') =>
+    page.evaluate((command) => document.execCommand(command), command)
+  const selected = (page: Page) => page.evaluate(() => getSelection()!.toString())
+
+  test('real: comando de edição do navegador (execCommand) e Ctrl+Z/Ctrl+Y no mesmo histórico', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: '<p>um dois</p>' })
+    await selectText(page, 'dois')
+    await t.btn('Bold (Ctrl+B)').click()
+    await settle(page)
+    const steps = new HistoryModel(page, [await dom(page)], 1)
+    steps.states.unshift('<p>um dois</p>')
+    // Logo depois de uma edição, os três navegadores desfazem pela pilha deles
+    expect(await steps.native('undo')).toBe(true)
+    expect(await selected(page)).toBe('dois')
+    // Nada mais a desfazer: Ctrl+Z não reaplica o negrito (era o passo contraditório)
+    await steps.key('Control+z')
+    await steps.key('Control+y')
+    await steps.native('redo')
+    await steps.native('undo')
+    await steps.key('Control+z')
+    await steps.key('Control+y')
+    await steps.native('redo')
+    expect(await selected(page)).toBe('dois')
+    test.info().annotations.push({ type: 'nativo atendido', description: steps.log.join(' · ') })
+  })
+
+  test('sintético: beforeinput historyUndo/historyRedo cancelável vai para o histórico do editor', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: '<p>um dois</p>' })
+    await selectText(page, 'dois')
+    await t.btn('Bold (Ctrl+B)').click()
+    await settle(page)
+    const send = (type: string) =>
+      page.evaluate((type) => {
+        const event = new InputEvent('beforeinput', {
+          inputType: type,
+          bubbles: true,
+          cancelable: true,
+        })
+        document.querySelector('#host .ve-content')!.dispatchEvent(event)
+        return event.defaultPrevented
+      }, type)
+    expect(await send('historyUndo')).toBe(true)
+    expect(await dom(page)).toBe('<p>um dois</p>')
+    expect(await send('historyRedo')).toBe(true)
+    expect(await dom(page)).toBe('<p>um <b>dois</b></p>')
+  })
+
+  test('real: Ctrl+Z, barra, API e comando nativo misturados seguem uma única sequência', async ({
+    page,
+  }) => {
+    const t = await mount(page, { initialContent: '<p>um dois tres</p>' })
+    const states = [await dom(page)]
+    await selectText(page, 'um')
+    await t.btn('Bold (Ctrl+B)').click()
+    states.push(await dom(page))
+    await selectText(page, 'dois')
+    await t.btn('Italic (Ctrl+I)').click()
+    states.push(await dom(page))
+    await selectText(page, 'tres')
+    await t.btn('Underline (Ctrl+U)').click()
+    states.push(await dom(page))
+    await settle(page)
+    const steps = new HistoryModel(page, states, 3)
+    await steps.native('undo')
+    await steps.key('Control+z')
+    await steps.api('undo')
+    await steps.native('undo')
+    await steps.button(t.btn('Redo (Ctrl+Y)'), 1)
+    await steps.native('redo')
+    await steps.key('Control+y')
+    await steps.api('redo')
+    await steps.button(t.btn('Undo (Ctrl+Z)'), -1)
+    await steps.native('undo')
+    await steps.native('redo')
+    await steps.key('Control+z')
+    await steps.key('Control+y')
+    test.info().annotations.push({ type: 'nativo atendido', description: steps.log.join(' · ') })
+  })
+
+  test('real: desfazer num campo fora do editor não mexe no editor', async ({ page }) => {
+    const t = await mount(page, { initialContent: '<p>um dois</p>' })
+    await selectText(page, 'dois')
+    await t.btn('Bold (Ctrl+B)').click()
+    await settle(page)
+    await page.evaluate(() => document.body.insertAdjacentHTML('afterbegin', '<input id="campo">'))
+    await page.locator('#campo').click()
+    await page.keyboard.type('abc')
+    await page.keyboard.press('Control+z')
+    expect(await page.locator('#campo').inputValue()).toBe('')
+    await page.keyboard.type('xyz')
+    await native(page, 'undo')
+    expect(await page.locator('#campo').inputValue()).toBe('')
+    expect(await dom(page)).toBe('<p>um <b>dois</b></p>')
+  })
+
+  test('real: dois editores, o desfazer nativo no segundo não mexe no primeiro', async ({
+    page,
+  }) => {
+    const t = await mount(
+      page,
+      { initialContent: '<p>um dois</p>' },
+      { secondEditor: '<p>b c</p>' },
+    )
+    await selectText(page, 'dois')
+    await t.btn('Bold (Ctrl+B)').click()
+    await settle(page)
+    const second = page.locator('#host2')
+    await page.evaluate(() => {
+      const ed = document.querySelector<HTMLElement>('#host2 .ve-content')!
+      const text = ed.querySelector('p')!.firstChild!
+      ed.focus()
+      getSelection()!.setBaseAndExtent(text, 0, text, 1)
+    })
+    await second.getByRole('button', { name: 'Italic (Ctrl+I)', exact: true }).click()
+    await settle(page)
+    expect(await dom(page, '#host2')).toBe('<p><i>b</i> c</p>')
+    await native(page, 'undo')
+    expect(await dom(page, '#host2')).toBe('<p>b c</p>')
+    expect(await dom(page)).toBe('<p>um <b>dois</b></p>')
+  })
+
+  test('real: desfazer nativo logo depois de digitar (passo ainda aberto) desfaz a digitação', async ({
+    page,
+  }) => {
+    await mount(page, { initialContent: '<p>um</p>' })
+    await settle(page)
+    await caretIn(page, 'um', 2)
+    await page.keyboard.type(' dois')
+    await native(page, 'undo')
+    expect(await dom(page)).toBe('<p>um</p>')
+    await settle(page)
+    // O histórico continua coerente: digitar de novo e desfazer volta ao mesmo ponto
+    await caretIn(page, 'um', 2)
+    await page.keyboard.type('!')
+    await settle(page)
+    await page.keyboard.press('Control+z')
+    expect(await dom(page)).toBe('<p>um</p>')
   })
 })

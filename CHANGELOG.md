@@ -23,6 +23,18 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
   was before that click). Interacting with controls outside the editor (buttons, fields, another
   editor) ends the step in progress, like a command inside it. Each editor only uses its own
   selection. This applies to every public method of the core, without a list of methods.
+- Experimental undo/redo: the browser's own undo/redo (Edit menu, context menu, scripts calling
+  `document.execCommand('undo')`) goes through the editor's history, so there is a single history
+  and no contradictory steps (before, undoing from the menu was recorded as a new edit, and the
+  next Ctrl+Z redid it). When the browser announces it with a cancelable `beforeinput`
+  (`historyUndo`/`historyRedo`), the editor cancels it and undoes/redoes itself; when the browser
+  only reports it afterwards (`input`, as Chromium and Firefox do for `execCommand`), the editor
+  discards the browser's change and shows the previous or next step of its own history. Undo/redo
+  in other fields, forms or editors is not affected. Browser limitations: browsers only keep their
+  own edits in their native stack, so after an undo/redo done by the editor the menu's Redo is
+  usually unavailable, and in Firefox the menu's Undo may do nothing until the next edit; in both
+  cases nothing changes and no step is created. The Edit menu and context menu cannot be driven by
+  the automated tests; they were checked through the same editing command (`execCommand`).
 - `focus()` (ref and core): coming from outside the editor, it returns to the last selection in the
   editor instead of the browser's default position (usually the start).
 - Playground: the sample contents (formatted text, table, image, text box, long content) load in

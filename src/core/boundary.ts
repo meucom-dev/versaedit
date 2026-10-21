@@ -34,6 +34,11 @@ export function withCallBoundary<T extends object>(target: T, boundary: CallBoun
       if (!wrapper) {
         const method = value as (...args: unknown[]) => unknown
         wrapper = (...args: unknown[]) => run(method, args)
+        // Mesmo nome e aridade do método (depuração, mensagens de erro)
+        Object.defineProperties(wrapper, {
+          name: { value: method.name },
+          length: { value: method.length },
+        })
         wrapped.set(value, wrapper)
       }
       return wrapper
