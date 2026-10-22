@@ -428,3 +428,162 @@ describe('seleção guardada em cada passo (desfazer/refazer)', () => {
     vi.useRealTimers()
   })
 })
+
+// Lógica temporal determinística: relógio e temporizadores controlados pelo teste.
+// `tick` avança os dois juntos (página livre); `stall` avança só o relógio (página
+// travada: o temporizador vence mas não dispara); depois `vi.advanceTimersByTime(0)`
+// dispara o que venceu (atrasado).
+describe('agrupamento resistente a travamentos da página', () => {
+  let now = 0
+  let stalled = 0
+  // Página livre: relógio e temporizadores andam juntos, de 1 em 1 ms
+  const tick = (ms: number) => {
+    for (let i = 0; i < ms; i++) {
+      now += 1
+      vi.advanceTimersByTime(1)
+    }
+  }
+  // Página travada: o relógio anda, mas nenhum temporizador dispara
+  const stall = (ms: number) => {
+    now += ms
+    stalled += ms
+  }
+  // Fim do travamento: os temporizadores que venceram disparam agora (atrasados)
+  const fireOverdue = () => {
+    vi.advanceTimersByTime(stalled)
+    stalled = 0
+  }
+  // Uma tecla: o instante (timeStamp) e a mudança do DOM que ela causa
+  const key = (
+    h: ReturnType<typeof createEditorHistory<string>>,
+    html: string,
+    at: number | null,
+  ) => {
+    h.typing(at)
+    h.schedule(() => html)
+  }
+  beforeEach(() => {
+    vi.useFakeTimers()
+    now = 1000
+    stalled = 0
+  })
+  afterEach(() => vi.useRealTimers())
+  const make = () => {
+    const h = createEditorHistory<string>(100, () => now)
+    h.reset('um')
+    return h
+  }
+
+  it('temporizador atrasado e teclas que esperavam na fila: um passo só', () => {
+    const h = make()
+    key(h, 'um a', now)
+    tick(50)
+    key(h, 'um ab', now)
+    stall(900) // página travada; teclas chegam e esperam
+    fireOverdue() // o temporizador dispara atrasado e grava 'um ab'
+    // As teclas da fila são tratadas logo em seguida (timeStamp não confiável: null)
+    key(h, 'um abc', null)
+    tick(10)
+    key(h, 'um abcd', null)
+    tick(500)
+    expect(h.undo(() => 'um abcd')).toBe('um')
+  })
+
+  it('temporizador no horário, mas a tecla chegou antes (timeStamp a menos de 400 ms): um passo', () => {
+    const h = make()
+    const typed = now
+    key(h, 'um a', typed)
+    tick(400) // grava 'um a'
+    key(h, 'um ab', typed + 300) // chegou 300 ms depois da anterior
+    tick(500)
+    expect(h.undo(() => 'um ab')).toBe('um')
+  })
+
+  it('pausa real de mais de 400 ms: dois passos', () => {
+    const h = make()
+    key(h, 'um a', now)
+    tick(600)
+    key(h, 'um ab', now)
+    tick(500)
+    expect(h.undo(() => 'um ab')).toBe('um a')
+    expect(h.undo(() => 'um a')).toBe('um')
+  })
+
+  it('pausa real depois de um travamento (tecla fora da fila): dois passos', () => {
+    const h = make()
+    key(h, 'um a', now)
+    stall(900)
+    fireOverdue()
+    tick(300) // a tecla seguinte vem bem depois do fim do travamento
+    key(h, 'um ab', null)
+    tick(500)
+    expect(h.undo(() => 'um ab')).toBe('um a')
+  })
+
+  it('uma fronteira explícita (comando, clique, setas) impede reabrir o passo', () => {
+    const h = make()
+    key(h, 'um a', now)
+    stall(900)
+    fireOverdue()
+    h.close(() => 'um a')
+    key(h, 'um ab', null)
+    tick(500)
+    expect(h.undo(() => 'um ab')).toBe('um a')
+  })
+
+  it('a hora das teclas nunca divide um passo aberto', () => {
+    const h = make()
+    key(h, 'um a', now)
+    stall(900) // o temporizador ainda não disparou
+    key(h, 'um ab', now) // a mais de 400 ms da anterior, com o passo aberto
+    tick(500)
+    expect(h.undo(() => 'um ab')).toBe('um')
+  })
+
+  it('comando da API com um passo parado (temporizador atrasado): o passo é gravado antes', () => {
+    const h = make()
+    h.markBefore('antes')
+    key(h, 'um a', now)
+    stall(900)
+    h.markCurrent(
+      () => 'no comando',
+      () => 'um a',
+    )
+    h.schedule(
+      () => 'UM A',
+      () => 'depois',
+    )
+    tick(500)
+    expect(h.undo(() => 'UM A')).toBe('um a')
+    expect(h.restoredSelection()).toBe('no comando')
+    expect(h.undo(() => 'um a')).toBe('um')
+  })
+
+  it('composição: nada reabre nem divide durante ela', () => {
+    const h = make()
+    key(h, 'um a', now)
+    tick(500)
+    h.compose(true, () => 'um a')
+    key(h, 'um ak', now)
+    stall(900)
+    key(h, 'um aka', null)
+    h.compose(false, () => 'um aか')
+    h.schedule(() => 'um aか')
+    tick(500)
+    expect(h.undo(() => 'um aか')).toBe('um a')
+  })
+
+  it('estado igual ao anterior não marca nada para reabrir (um passo legítimo não se mistura)', () => {
+    const h = make()
+    key(h, 'um a', now)
+    tick(500) // passo 'um a'
+    h.close(() => 'um a')
+    h.schedule(() => 'um a') // mudança que volta ao mesmo estado
+    stall(900)
+    fireOverdue() // nada novo gravado
+    key(h, 'um ab', null)
+    tick(500)
+    expect(h.undo(() => 'um ab')).toBe('um a')
+    expect(h.undo(() => 'um a')).toBe('um')
+  })
+})

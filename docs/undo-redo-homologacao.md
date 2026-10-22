@@ -44,6 +44,8 @@ que prova o tratamento no editor, não o comportamento do navegador.
 | Desfazer nativo com um passo ainda aberto (logo depois de digitar) | real | `cursor-selection.spec.ts` |
 | Composição (IME) com pausas longas, digitação seguida de composição, composição cancelada e interrompida por clique: um passo, sem estados intermediários; outro editor e campo externo não afetados | real (CDP, só Chromium) | `composition.spec.ts` |
 | Composição na ordem da especificação: texto final antes do `compositionend` (Chromium, Firefox) e depois dele (Safari: `deleteCompositionText` + `insertFromComposition`) | **sintético** (Safari: Firefox e WebKit; o Chromium não constrói esses `inputType`) | `composition.spec.ts` |
+| Digitação com a página travada (teclas na fila): um passo; intervalos abaixo/acima de 400 ms; API e comando nativo depois de um travamento; dois editores | real (teclas sem espera: CDP no Chromium, paralelas no Firefox e WebKit) | `typing-timing.spec.ts` |
+| Lógica temporal do agrupamento (temporizador atrasado, reabertura, fronteiras, composição) | determinístico (relógio e temporizadores controlados) | `tests/unit/history.test.ts` |
 | Fronteira da API: `instanceof`, identidade, métodos extraídos, ouvintes, dois núcleos, métodos futuros | real (navegador) e jsdom | `features.spec.ts`, `tests/unit/core-api.test.ts` |
 | Desempenho por tecla em 300, 1.500 e 5.000 parágrafos igual ao de antes do histórico com seleção | medição lado a lado (não versionada) | relatórios dos lotes D1 a D7 |
 
@@ -247,8 +249,12 @@ Editar cobriu o caso no Firefox).
 Comportamentos do próprio editor que são escolhas de projeto (não defeitos):
 
 - a digitação é agrupada por tempo: uma pausa de mais de 400 ms entre teclas começa
-  um passo novo (inclusive quando a página trava por esse tempo); visto igual pelo
-  botão, Ctrl+Z e menus;
+  um passo novo; visto igual pelo botão, Ctrl+Z e menus. Um travamento da página não
+  parte a digitação: o passo gravado pelo temporizador é reaberto quando a tecla
+  seguinte prova que pertencia a ele (chegou a menos de 400 ms da anterior pelo
+  `timeStamp` do `keydown`, que no Chromium e no WebKit é a chegada da tecla; ou
+  esperava na fila atrás de um temporizador atrasado, caso do Firefox, cujo
+  `timeStamp` é o momento do tratamento). A hora das teclas nunca divide um passo;
 - um comando chamado pela API sem nenhuma interação, menos de 400 ms depois da
   digitação, entra no mesmo passo dela (para não partir a digitação de apps que leem
   `getHTML` a cada tecla);

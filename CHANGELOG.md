@@ -106,6 +106,13 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 #### Fixed
 
+- Undo/redo: typing is no longer split into several undo steps when the page freezes for a moment
+  while keys are being typed (keys pressed during the freeze wait in a queue, and the 400 ms timer
+  could record the step before them). A step recorded by the timer is reopened when the next key
+  shows it belonged to it: it arrived less than 400 ms after the previous one (the `timeStamp` of
+  real key events, which Chromium and WebKit take from the system), or it was waiting right behind
+  a timer that fired late (Firefox, whose `timeStamp` is the handling time). Key times never split a
+  step. A command called through the API right after a freeze starts its own step, after the typing.
 - Undo/redo with character composition (IME for Japanese, Chinese, Korean; accents typed with dead
   keys): the whole composition is one undo step, from the selection and content before it. Long
   pauses during the composition (choosing a candidate) no longer split it, so undo/redo never shows

@@ -212,6 +212,14 @@ const TYPING_INPUT =
   /^(insertText|insertCompositionText|insertFromComposition|insertParagraph|insertLineBreak|delete)/
 // Desfazer/refazer do próprio navegador (beforeinput/input)
 const NATIVE_HISTORY = /^history(Undo|Redo)$/
+
+// timeStamp de um evento real, no relógio da página; null quando não é confiável
+// (evento sintético, zero, fora do relógio): aí o histórico usa o momento atual
+function inputTime(e: Event): number | null {
+  const at = e.timeStamp
+  const now = performance.now()
+  return e.isTrusted && Number.isFinite(at) && at > 0 && at <= now + 1 ? at : null
+}
 // Interações fora do editor que encerram o passo aberto
 const OUTSIDE_EVENTS = ['pointerdown', 'keydown']
 const INTERACTION_EVENTS = [
@@ -338,7 +346,7 @@ export class VersaEditCore {
       enter: () => {
         // Mudanças ainda não registradas são da operação anterior
         this.recordMutations(this.observer?.takeRecords() ?? [])
-        this.history.markCurrent(() => this.selectionSnapshot())
+        this.history.markCurrent(() => this.selectionSnapshot(), this.currentSnapshot)
       },
       exit: () => {
         // O comando mudou o conteúdo: a digitação seguinte é outro passo
@@ -382,7 +390,25 @@ export class VersaEditCore {
       this.history.close(this.currentSnapshot)
     }
     this.lastInteraction = kind
+    if (kind === 'typing' && e) this.noteTyping(e)
+    else this.keyTyped = false
     this.history.markBefore(() => this.selectionSnapshot())
+  }
+
+  // Instante de cada tecla, para o histórico não partir a digitação quando a página
+  // trava. Vale o keydown (no Chromium e no WebKit, o timeStamp dele é a chegada
+  // da tecla, mesmo com a página travada); o beforeinput seguinte é tratado depois
+  // e só conta quando não houve keydown (composição, ditado, voz).
+  private keyTyped = false
+  private noteTyping(e: Event): void {
+    if (e.type === 'keydown') {
+      this.keyTyped = true
+      this.history.typing(inputTime(e))
+    } else if (this.keyTyped) {
+      this.keyTyped = false
+    } else {
+      this.history.typing(inputTime(e))
+    }
   }
 
   // Tipo da interação, para o histórico: digitação (letras, Backspace, Delete,

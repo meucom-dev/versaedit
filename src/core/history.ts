@@ -25,9 +25,18 @@ export interface EditorHistory<S = unknown> {
   /**
    * Seleção atual no começo de um comando que não veio de uma interação (a API
    * chamada pelo app): substitui o "antes" guardado, que pode ser de antes de um
-   * clique ter movido o cursor. Ignorada enquanto um grupo está em aberto.
+   * clique ter movido o cursor. Ignorada enquanto um grupo está em aberto; um
+   * grupo parado há mais de 400 ms (o temporizador atrasou) é gravado antes.
    */
-  markCurrent(selection: () => S | undefined): void
+  markCurrent(selection: () => S | undefined, getHtml?: () => string): void
+  /**
+   * Digitação no instante `at` (o timeStamp do evento, quando confiável). Se o
+   * passo anterior acabou de ser gravado pelo temporizador, mas esta tecla prova
+   * que pertencia a ele (chegou a menos de 400 ms da anterior, ou esperava na fila
+   * atrás de um temporizador atrasado), o passo é reaberto: um travamento da
+   * página não parte a digitação. Nunca divide um passo.
+   */
+  typing(at: number | null): void
   /**
    * Fecha o grupo de mudanças em aberto, gravando o estado atual: a próxima
    * mudança começa um passo novo (operações distintas não se juntam, mesmo em
@@ -93,7 +102,16 @@ interface Entry<S> {
   after?: S
 }
 
-export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> {
+// Temporizador que dispara mais atrasado que isto: a página estava travada
+const LATE_MS = 50
+// Tecla tratada até este tempo depois de um temporizador atrasado: estava na fila
+const QUEUED_MS = 50
+
+export function createEditorHistory<S = unknown>(
+  limit = 100,
+  // Relógio da página (o mesmo do timeStamp dos eventos); trocável nos testes
+  clock: () => number = () => performance.now(),
+): EditorHistory<S> {
   type Item = Entry<S>
   let stack: Item[] = []
   let index = -1
@@ -103,6 +121,12 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
   // Composição de caracteres em andamento, e um fechamento pedido durante ela
   let composing = false
   let closeAfterComposition = false
+  // Quando o temporizador deveria disparar, a última mudança e a última tecla
+  let dueAt = 0
+  let changedAt = 0
+  let typedAt: number | null = null
+  // Passo gravado pelo temporizador que ainda pode ser reaberto pela próxima tecla
+  let idle: { entry: Entry<S>; typedAt: number | null; at: number; late: boolean } | null = null
   // Enquanto o editor é restaurado pelo histórico, as mutações não são registradas
   let restoring = false
   // Seleção do começo da interação atual, e as do grupo de mudanças em aberto
@@ -182,16 +206,18 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
     }
   }
 
-  const commit = (html: string) => {
+  // Grava o grupo aberto; devolve o passo criado (null: estado igual ao anterior)
+  const commit = (html: string): Item | null => {
     open = false
     closeAfterComposition = false
+    idle = null
     const entry = encode(html)
     entry.before = groupBefore
     entry.after = groupAfter
     groupBefore = groupAfter = candidate = undefined
     if (index >= 0 && stack[index].text === entry.text) {
       discardUnused(entry)
-      return
+      return null
     }
     // Nova edição depois de desfazer: os passos de refazer saem
     for (const dropped of stack.slice(index + 1)) release(dropped)
@@ -199,6 +225,7 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
     retain(entry)
     if (stack.length > limit) release(stack.shift()!)
     index = stack.length - 1
+    return entry
   }
 
   const flush = (getHtml: () => string) => {
@@ -208,10 +235,34 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
 
   const closeLater = (getHtml: () => string, delay: number) => {
     cancelPending()
+    dueAt = clock() + delay
     timer = window.setTimeout(() => {
       timer = null
-      commit(getHtml())
+      const now = clock()
+      const late = now - dueAt > LATE_MS
+      const entry = commit(getHtml())
+      // Gravado pelo tempo: a próxima tecla ainda pode provar que era deste passo
+      if (entry) idle = { entry, typedAt, at: now, late }
     }, delay)
+  }
+
+  // A tecla pertence ao passo que o temporizador acabou de gravar?
+  const belongsToIdle = (at: number | null) => {
+    if (!idle || open || stack[index] !== idle.entry) return false
+    if (at !== null && idle.typedAt !== null && at - idle.typedAt <= GROUP_DELAY_MS) return true
+    return idle.late && clock() - idle.at <= QUEUED_MS
+  }
+
+  // Volta o último passo a ser o grupo aberto (a digitação continua nele)
+  const reopen = () => {
+    const entry = stack[index]
+    stack = stack.slice(0, index)
+    index -= 1
+    release(entry)
+    groupBefore = entry.before
+    groupAfter = entry.after
+    open = true
+    idle = null
   }
 
   // Mostra um estado do histórico: as mudanças que isso causa não são registradas
@@ -238,6 +289,8 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
       cancelPending()
       candidate = groupBefore = groupAfter = moved = undefined
       open = composing = closeAfterComposition = false
+      idle = null
+      typedAt = null
       for (const entry of stack) release(entry)
       const entry = encode(html)
       stack = [entry]
@@ -253,11 +306,24 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
       // uma interação): a primeira interação dentro dele a fornece
       else if (groupBefore === undefined) groupBefore = read()
     },
-    markCurrent(selection) {
-      if (restoring || open) return
+    markCurrent(selection, getHtml) {
+      if (restoring) return
+      // Grupo parado há mais de 400 ms cujo temporizador atrasou: ele já terminou
+      if (open && getHtml && !composing && clock() - changedAt > GROUP_DELAY_MS) {
+        cancelPending()
+        commit(getHtml())
+      }
+      if (open) return
       candidate = selection()
     },
+    typing(at) {
+      if (restoring || composing) return
+      if (belongsToIdle(at)) reopen()
+      typedAt = at ?? clock()
+    },
     close(getHtml) {
+      // Fronteira explícita: o passo anterior não pode mais ser reaberto
+      idle = null
       if (!open || restoring) return
       // No meio de uma composição, o passo só fecha quando ela termina
       if (composing) {
@@ -283,21 +349,26 @@ export function createEditorHistory<S = unknown>(limit = 100): EditorHistory<S> 
       if (!open) {
         groupBefore = candidate
         open = true
+        idle = null
       }
+      changedAt = clock()
       if (getSelection) groupAfter = getSelection()
       // Durante uma composição, nada fecha o grupo por tempo
       if (composing) cancelPending()
       else closeLater(getHtml, GROUP_DELAY_MS)
     },
     undo(getHtml) {
+      idle = null
       flush(getHtml)
       return move(-1)
     },
     redo(getHtml) {
+      idle = null
       flush(getHtml)
       return move(1)
     },
     external(delta, current) {
+      idle = null
       if (open) {
         if (delta > 0) return null
         cancelPending()
