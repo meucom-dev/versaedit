@@ -11,6 +11,17 @@ export const LANGUAGES = [
   { key: 'es', label: 'Español', htmlLang: 'es', path: '/es/', editorLocale: 'es' },
 ]
 
+// Página da filosofia: o texto aprovado (philosophy.md, em português) numa página
+// própria; a página inicial mostra só a síntese, com o link para ela
+export const PHILOSOPHY = {
+  path: '/filosofia/',
+  title: 'The VersaEdit Philosophy',
+  synthesis: [
+    'A versatilidade será nosso diferencial. A precisão será nossa reputação.',
+    'Preservar o passado. Aperfeiçoar o presente. Não limitar o futuro.',
+  ],
+}
+
 export const CONTENT = {
   en: {
     key: 'en',
@@ -22,6 +33,7 @@ export const CONTENT = {
     skip: 'Skip to content',
     nav: {
       label: 'Site',
+      philosophy: 'Philosophy',
       playground: 'Playground',
       docs: 'Documentation',
       github: 'GitHub',
@@ -188,6 +200,7 @@ export const CONTENT = {
     skip: 'Pular para o conteúdo',
     nav: {
       label: 'Site',
+      philosophy: 'Filosofia',
       playground: 'Playground',
       docs: 'Documentação',
       github: 'GitHub',
@@ -361,6 +374,7 @@ export const CONTENT = {
     skip: 'Saltar al contenido',
     nav: {
       label: 'Sitio',
+      philosophy: 'Filosofía',
       playground: 'Playground',
       docs: 'Documentación',
       github: 'GitHub',

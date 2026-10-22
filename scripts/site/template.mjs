@@ -1,7 +1,8 @@
 // Modelo da página inicial, no formato de artigo enciclopédico: cabeçalho,
 // sumário lateral, artigo, caixa de informações e rodapé. Um único modelo para
-// as três línguas (os textos vêm de content.mjs), sem recursos externos.
-import { LANGUAGES, REPO } from './content.mjs'
+// as três línguas (os textos vêm de content.mjs), sem recursos externos. A
+// página da filosofia usa o mesmo cabeçalho, rodapé e estilos.
+import { LANGUAGES, PHILOSOPHY, REPO } from './content.mjs'
 
 const SECTION_IDS = [
   'features',
@@ -144,6 +145,20 @@ ol.refs { padding-left: 24px; font-size: 13px; display: grid; gap: 6px; }
   .wikitable td::before { content: attr(data-label); font-weight: 700; color: var(--muted); }
 }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+
+/* Síntese da filosofia na página inicial */
+.synthesis { margin: 0; padding: 12px 18px; background: var(--panel); border-left: 4px solid var(--link); display: grid; gap: 2px; }
+.synthesis p { margin: 0; font: 400 18px/1.5 var(--serif); }
+.synthesis p.synthesis-link { margin-top: 6px; font: 14px var(--sans); }
+
+/* Página da filosofia: uma coluna de leitura */
+.manifesto { max-width: 820px; padding-top: 28px; padding-bottom: 56px; }
+.manifesto h1 { margin: 0; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.manifesto p { margin: 0 0 12px; font-size: 16px; line-height: 1.7; }
+.manifesto p.subtitle { margin: 8px 0 22px; font: 400 22px/1.3 var(--serif); color: var(--muted); }
+.manifesto h2 { margin: 30px 0 10px; padding-bottom: 4px; border-bottom: 1px solid var(--line); font: 400 24px/1.3 var(--serif); }
+.manifesto hr { border: 0; border-top: 1px solid var(--hair); margin: 28px 0; }
+@media (max-width: 767px) { .manifesto p.subtitle { font-size: 19px; } .manifesto h2 { font-size: 21px; } }
 `
 
 // Troca de idioma: leva junto a seção aberta (#security etc.); sem JavaScript,
@@ -157,6 +172,7 @@ const SCRIPT = `
     });
   });
   var btn = document.getElementById('menu-btn'), rail = document.getElementById('rail');
+  if (!btn || !rail) return;
   btn.addEventListener('click', function () {
     var open = rail.classList.toggle('open');
     btn.setAttribute('aria-expanded', String(open));
@@ -179,16 +195,63 @@ const logo = (alt) =>
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-export function renderPage(t, { editedDate }) {
-  const s = t.sections
-  const others = LANGUAGES.filter((l) => l.key !== t.key)
-  const langLink = (l) =>
-    `<a href="${l.path}" hreflang="${l.htmlLang}" lang="${l.htmlLang}" data-lang-switch>${l.label}</a>`
-  const date = new Intl.DateTimeFormat(t.footer.dateLocale, {
+const langLink = (l) =>
+  `<a href="${l.path}" hreflang="${l.htmlLang}" lang="${l.htmlLang}" data-lang-switch>${l.label}</a>`
+
+// Cabeçalho comum: logo, menu principal (com a Filosofia) e as outras línguas
+const header = (t, others, { contentsButton }) => `<header class="site-header">
+  <div class="wrap header-row">
+    <a class="logo" href="${t.path}">${logo('VersaEdit')}</a>
+    <nav class="site-nav" aria-label="${t.nav.label}">
+      <a href="${PHILOSOPHY.path}" hreflang="pt-BR">${t.nav.philosophy}</a>
+      <a href="/playground/">${t.nav.playground}</a>
+      <a href="${t.docsUrl}">${t.nav.docs}</a>
+      <a href="${REPO}">${t.nav.github}</a>
+      <span class="lang-links" role="group" aria-label="${t.nav.languages}">${ICON.languages}${others.map(langLink).join('')}</span>
+    </nav>
+  </div>${
+    contentsButton
+      ? `
+  <div class="wrap menu-row">
+    <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="rail">${ICON.menu}<span>${t.nav.contents}</span></button>
+  </div>`
+      : ''
+  }
+</header>`
+
+// Rodapé comum: data da edição, licença, privacidade e links
+const footer = (t, others, date) => `<footer class="site-footer">
+  <div class="wrap">
+    <div class="inner">
+      <p>${t.footer.edited(date)}</p>
+      <p>${t.footer.license}</p>
+      <h2>${t.footer.privacyTitle}</h2>
+      <ul class="privacy">
+${t.footer.privacy.map((p) => `        <li>${p}</li>`).join('\n')}
+      </ul>
+      <nav aria-label="${t.footer.about}">
+        <ul>
+          <li><a href="${t.docsUrl}">${t.footer.about}</a></li>
+          <li><a href="${REPO}/security/policy">${t.footer.security}</a></li>
+          <li><a href="mailto:support@versaedit.dev">support@versaedit.dev</a></li>
+${others.map((l) => `          <li>${langLink(l)}</li>`).join('\n')}
+        </ul>
+      </nav>
+    </div>
+  </div>
+</footer>`
+
+const editedOn = (t, editedDate) =>
+  new Intl.DateTimeFormat(t.footer.dateLocale, {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
   }).format(editedDate)
+
+export function renderPage(t, { editedDate }) {
+  const s = t.sections
+  const others = LANGUAGES.filter((l) => l.key !== t.key)
+  const date = editedOn(t, editedDate)
   const factRow = (label, value) => `<div class="row"><dt>${label}</dt><dd>${value}</dd></div>`
   const usage = `import { VersaEdit } from 'versaedit'
 
@@ -218,20 +281,7 @@ ${LANGUAGES.map((l) => `<link rel="alternate" hreflang="${l.htmlLang}" href="htt
 </head>
 <body>
 <a class="skip" href="#content">${t.skip}</a>
-<header class="site-header">
-  <div class="wrap header-row">
-    <a class="logo" href="${t.path}">${logo('VersaEdit')}</a>
-    <nav class="site-nav" aria-label="${t.nav.label}">
-      <a href="/playground/">${t.nav.playground}</a>
-      <a href="${t.docsUrl}">${t.nav.docs}</a>
-      <a href="${REPO}">${t.nav.github}</a>
-      <span class="lang-links" role="group" aria-label="${t.nav.languages}">${ICON.languages}${others.map(langLink).join('')}</span>
-    </nav>
-  </div>
-  <div class="wrap menu-row">
-    <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="rail">${ICON.menu}<span>${t.nav.contents}</span></button>
-  </div>
-</header>
+${header(t, others, { contentsButton: true })}
 
 <div class="wrap body">
   <nav class="rail" id="rail" aria-label="${t.rail.contents}">
@@ -268,6 +318,10 @@ ${SECTION_IDS.map((id) => {
     <div class="content">
       <article class="article">
         <p class="hatnote">${t.hatnote}</p>
+        <blockquote class="synthesis" lang="pt-BR">
+${PHILOSOPHY.synthesis.map((line) => `          <p>${line}</p>`).join('\n')}
+          <p class="synthesis-link"><a href="${PHILOSOPHY.path}">${PHILOSOPHY.title}</a></p>
+        </blockquote>
         <div class="notice" role="note">${ICON.beta}<p><strong>${t.notice.title}</strong><br>${t.notice.body}</p></div>
 ${t.lead.map((p) => `        <p>${p}</p>`).join('\n')}
 
@@ -341,29 +395,65 @@ ${t.references.map(([href, label, after], i) => `          <li id="ref-${i + 1}"
   </main>
 </div>
 
-<footer class="site-footer">
-  <div class="wrap">
-    <div class="inner">
-      <p>${t.footer.edited(date)}</p>
-      <p>${t.footer.license}</p>
-      <h2>${t.footer.privacyTitle}</h2>
-      <ul class="privacy">
-${t.footer.privacy.map((p) => `        <li>${p}</li>`).join('\n')}
-      </ul>
-      <nav aria-label="${t.footer.about}">
-        <ul>
-          <li><a href="${t.docsUrl}">${t.footer.about}</a></li>
-          <li><a href="${REPO}/security/policy">${t.footer.security}</a></li>
-          <li><a href="mailto:support@versaedit.dev">support@versaedit.dev</a></li>
-${others.map((l) => `          <li>${langLink(l)}</li>`).join('\n')}
-        </ul>
-      </nav>
-    </div>
-  </div>
-</footer>
+${footer(t, others, date)}
 <script>${SCRIPT}</script>
 </body>
 </html>
 `
   return page.replaceAll('<sup>', '&#8288;<sup>')
+}
+
+// Texto aprovado da filosofia (philosophy.md) em HTML: só a marcação é convertida
+// (título, subtítulo, seções, negrito, itálico, separadores); nenhuma palavra muda
+const inline = (s) =>
+  esc(s)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+export function manifestoHtml(md) {
+  return md
+    .split(/\r?\n/)
+    .map((raw) => raw.trim())
+    .filter(Boolean)
+    .map((line) => {
+      if (line === '---') return '<hr>'
+      if (line.startsWith('### ')) return `<h2>${inline(line.slice(4))}</h2>`
+      if (line.startsWith('## ')) return `<p class="subtitle">${inline(line.slice(3))}</p>`
+      if (line.startsWith('# ')) return `<h1>${inline(line.slice(2))}</h1>`
+      return `<p>${inline(line)}</p>`
+    })
+    .join('\n')
+}
+
+// Página institucional da filosofia (em português), com o cabeçalho e o rodapé do site
+export function renderPhilosophy(md, t, { editedDate }) {
+  const others = LANGUAGES.filter((l) => l.key !== t.key)
+  return `<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>${esc(PHILOSOPHY.title)} — VersaEdit</title>
+<meta name="description" content="${esc(PHILOSOPHY.title)} — A Filosofia do VersaEdit">
+<link rel="canonical" href="https://versaedit.dev${PHILOSOPHY.path}">
+<meta property="og:locale" content="pt_BR">
+<link rel="icon" href="data:,">
+<style>${CSS}</style>
+</head>
+<body>
+<a class="skip" href="#content">${t.skip}</a>
+${header(t, others, { contentsButton: false })}
+
+<div class="wrap">
+  <main id="content" class="manifesto">
+    <article>
+${manifestoHtml(md)}
+    </article>
+  </main>
+</div>
+
+${footer(t, others, editedOn(t, editedDate))}
+<script>${SCRIPT}</script>
+</body>
+</html>
+`
 }
