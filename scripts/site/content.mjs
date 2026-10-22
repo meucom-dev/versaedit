@@ -115,7 +115,7 @@ export const CONTENT = {
     },
     limitations: [
       'Built on <code>document.execCommand</code>: the HTML produced varies slightly between browsers.',
-      'Undo and redo place the cursor at the start of the editor.',
+      'Undo and redo: after undoing in the editor, the browser’s own Redo (Edit or context menu) may be unavailable; Ctrl+Y and the Redo button work. Typing with system IME keyboards (Japanese, Chinese, Korean) and Safari’s menus have not yet been checked by hand.',
       'After the highlighter or a custom color, bold is saved as <code>&lt;span style="font-weight: bold"&gt;</code> instead of <code>&lt;b&gt;</code> (it displays the same).',
       'Text flows around a floated image or text box on one side only (a CSS float limitation).',
       'Pasting from Microsoft Word has not yet been validated with real documents.',
@@ -281,7 +281,7 @@ export const CONTENT = {
     },
     limitations: [
       'Baseado em <code>document.execCommand</code>: o HTML gerado varia um pouco entre navegadores.',
-      'Desfazer e refazer põem o cursor no início do editor.',
+      'Desfazer e refazer: depois de desfazer no editor, o Refazer do próprio navegador (menu Editar ou de contexto) pode ficar indisponível; Ctrl+Y e o botão Refazer funcionam. A digitação com teclados IME do sistema (japonês, chinês, coreano) e os menus do Safari ainda não foram verificados à mão.',
       'Depois do marca-texto ou de uma cor personalizada, o negrito é gravado como <code>&lt;span style="font-weight: bold"&gt;</code> em vez de <code>&lt;b&gt;</code> (a aparência é a mesma).',
       'O texto contorna uma imagem ou caixa de texto flutuante de um lado só (limitação do float do CSS).',
       'A colagem do Microsoft Word ainda não foi validada com documentos reais.',
@@ -454,7 +454,7 @@ export const CONTENT = {
     },
     limitations: [
       'Basado en <code>document.execCommand</code>: el HTML generado varía ligeramente entre navegadores.',
-      'Deshacer y rehacer colocan el cursor al principio del editor.',
+      'Deshacer y rehacer: después de deshacer en el editor, el Rehacer del propio navegador (menú Edición o contextual) puede no estar disponible; Ctrl+Y y el botón Rehacer funcionan. La escritura con teclados IME del sistema (japonés, chino, coreano) y los menús de Safari aún no se han verificado manualmente.',
       'Después del resaltador o de un color personalizado, la negrita se guarda como <code>&lt;span style="font-weight: bold"&gt;</code> en lugar de <code>&lt;b&gt;</code> (el aspecto es el mismo).',
       'El texto rodea una imagen o un cuadro de texto flotante solo por un lado (limitación del float de CSS).',
       'El pegado desde Microsoft Word aún no se ha validado con documentos reales.',
