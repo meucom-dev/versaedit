@@ -58,7 +58,7 @@ That does not diminish its value as a reference.
 
 Perfection does not need to be a reachable destination to guide our choices. It can be the horizon that keeps us from accepting mediocrity as the standard.
 
-We do not confuse the pursuit of perfection with the pretension of possessing it.
+We do not confuse the pursuit of perfection with the claim to possess it.
 
 **Perfection is the horizon. Precision is the path.**
 
@@ -136,7 +136,7 @@ We do not need to anticipate every technology that will emerge. We need to avoid
 
 **Preserve the past, improve the present and do not limit the future.**
 
-### XI. The permanence of essence
+### XI. The Enduring Essence
 
 Technologies change. Languages evolve. Architectures are replaced. Methods considered excellent today may become inadequate tomorrow.
 
@@ -166,7 +166,7 @@ Our principles must offer direction, not confinement.
 
 A philosophy reaches its greatest meaning when it goes beyond discourse and guides concrete decisions.
 
-VersaEdit's principles are not limited to software engineering. They can inspire product development, the provision of services, professional collaboration and the way people and artificial intelligence systems take part in a piece of work.
+VersaEdit's principles are not limited to software engineering. They can inspire product development, the provision of services, professional collaboration and the way people and artificial intelligence systems contribute to a shared endeavor.
 
 This does not mean attributing to an artificial intelligence the same moral responsibility as a person. It means requiring that its participation in the project be guided by clear criteria of precision, transparency, respect for human intention and preservation of previous achievements.
 

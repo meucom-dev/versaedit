@@ -9,7 +9,7 @@
 
 ### Nuestra visión
 
-VersaEdit nació de una convicción: la excelencia de un producto no debe medirse solo por la cantidad de funcionalidades que ofrece, sino por la precisión, la fiabilidad y la coherencia con que realiza aquello que se propone.
+VersaEdit nació de una convicción: la excelencia de un producto no debe medirse solo por la cantidad de funcionalidades que ofrece, sino por la precisión, la fiabilidad y la consistencia con la que realiza aquello que se propone.
 
 Creemos que la tecnología debe ampliar posibilidades, simplificar experiencias y preservar la libertad de evolución.
 
@@ -45,7 +45,7 @@ La verdadera versatilidad no consiste en acumular funcionalidades. Consiste en o
 
 Toda evolución debe respetar los logros anteriores.
 
-Una nueva funcionalidad no puede justificar la pérdida de contenido, la alteración indebida del comportamiento ni el compromiso de una capacidad ya consolidada.
+Una nueva funcionalidad no puede justificar la pérdida de contenido ni la alteración indebida del comportamiento, ni poner en riesgo una capacidad ya consolidada.
 
 Compatibilidad, integridad y continuidad son responsabilidades permanentes.
 
@@ -113,7 +113,7 @@ No pretendemos ganar confianza mediante afirmaciones grandilocuentes.
 
 Queremos ganarla a través de la experiencia de quien utiliza VersaEdit.
 
-**Las funcionalidades atraen a los desarrolladores. La precisión se gana su confianza.**
+**Las funcionalidades atraen a los desarrolladores. La precisión conquista su confianza.**
 
 ### IX. El legado como responsabilidad
 
@@ -195,7 +195,7 @@ No prometemos un producto perfecto.
 
 Prometemos no abandonar la búsqueda de la excelencia.
 
-**No queremos que VersaEdit sea recordado por haber hecho más. Queremos que sea respetado por haber hecho mejor.**
+**No queremos que VersaEdit sea recordado por haber hecho más. Queremos que sea respetado por haber hecho las cosas mejor.**
 
 ---
 
