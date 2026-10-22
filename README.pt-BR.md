@@ -6,7 +6,7 @@ Editor de texto rico leve para aplicações React.
 > <!-- release:pending -->**Ainda não publicado no npm.**<!-- /release:pending -->
 
 [versaedit.dev](https://versaedit.dev) · [Playground](https://versaedit.dev/playground/) ·
-[Read in English](README.md)
+[Read in English](README.md) · [Leer en español](README.es.md)
 
 O VersaEdit edita HTML com o `contentEditable` do próprio navegador e acrescenta barra de
 ferramentas, sanitização (DOMPurify), desfazer/refazer próprio, limpeza do conteúdo colado (Word e páginas

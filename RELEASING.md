@@ -52,7 +52,7 @@ git clone https://github.com/meucom-dev/versaedit.git versaedit-release && cd ve
 git checkout <commit da versão>
 npm ci
 npm run test:package          # build + pacote + exemplos (precisa do Microsoft Edge ou Chromium)
-npm pack --dry-run            # conferir a lista de arquivos (47)
+npm pack --dry-run            # conferir a lista de arquivos (48)
 npm publish --tag beta        # pede o código do 2FA
 npm view versaedit dist-tags
 ```
@@ -104,5 +104,5 @@ segunda versão, proveniência). Conferir `https://unpkg.com/versaedit@beta/` (a
 ## O que vai no pacote
 
 `dist/` (JS ESM minificado, mapa de código com o fonte embutido, `.d.ts`, os dois CSS), `README.md`,
-`README.pt-BR.md`, `CHANGELOG.md`, `LICENSE` e `package.json` — 47 arquivos. O `test:package` falha
+`README.pt-BR.md`, `README.es.md`, `CHANGELOG.md`, `LICENSE` e `package.json` — 48 arquivos. O `test:package` falha
 se faltar algum, se entrar qualquer outro, ou se houver caminhos locais ou padrões de chaves.

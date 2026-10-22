@@ -37,7 +37,7 @@ const REQUIRED = [
   'dist/versaedit-content.css',
   'CHANGELOG.md',
 ]
-const ALLOWED = /^(package\.json|LICENSE|README(\.pt-BR)?\.md|CHANGELOG\.md|dist\/.+)$/
+const ALLOWED = /^(package\.json|LICENSE|README(\.pt-BR|\.es)?\.md|CHANGELOG\.md|dist\/.+)$/
 const SECRETS = [
   [/[A-Za-z]:[\\/]{1,2}(Users|AI_DEV)\b/i, 'caminho local do Windows'],
   [/\/(home|Users)\/[a-z]/, 'caminho local Unix/macOS'],

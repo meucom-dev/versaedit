@@ -56,7 +56,7 @@ jobs:
             console.log('✔ versaedit@' + p.version + ' pronto para publicar com a tag beta')
           "
           grep -q "## \[$VERSION\]" CHANGELOG.md || { echo "✖ CHANGELOG sem a seção [$VERSION]"; exit 1; }
-          if grep -q "release:pending" README.md README.pt-BR.md; then
+          if grep -q "release:pending" README.md README.pt-BR.md README.es.md; then
             echo "✖ README ainda com o aviso 'não publicado' (release:pending)"; exit 1
           fi
       - run: npm ci
