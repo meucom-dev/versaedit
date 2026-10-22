@@ -191,7 +191,9 @@ diagnostic (`VE_ALL_BROWSERS=1 npx playwright test --project=firefox --project=w
 
 - Built on `document.execCommand` (legacy but supported by all browsers); output HTML varies slightly
   between browsers.
-- Undo/redo puts the cursor at the start of the editor.
+- Undo/redo: after undoing in the editor, the browser's own Redo (Edit or context menu) may be
+  unavailable; Ctrl+Y and the Redo button work. Typing with system IME keyboards (Japanese, Chinese,
+  Korean) and Safari's menus have not been checked by hand yet.
 - After the highlighter or a custom color, bold is written as `<span style="font-weight: bold">`
   instead of `<b>` (works the same).
 - Pasting from Microsoft Word has not been validated with real documents yet.

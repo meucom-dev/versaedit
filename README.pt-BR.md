@@ -192,7 +192,9 @@ como diagnóstico (`VE_ALL_BROWSERS=1 npx playwright test --project=firefox --pr
 
 - Usa `document.execCommand` (antigo, mas suportado por todos os navegadores); o HTML gerado varia um
   pouco entre navegadores.
-- Desfazer/refazer põe o cursor no início do editor.
+- Desfazer/refazer: depois de desfazer no editor, o Refazer do próprio navegador (menu Editar ou de
+  contexto) pode ficar indisponível; Ctrl+Y e o botão Refazer funcionam. A digitação com teclados IME
+  do sistema e os menus do Safari ainda não foram verificados à mão.
 - Depois do marca-texto ou de uma cor personalizada, o negrito é gravado como
   `<span style="font-weight: bold">` em vez de `<b>` (funciona igual).
 - A colagem do Microsoft Word ainda não foi validada com documentos reais.
