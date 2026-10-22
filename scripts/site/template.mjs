@@ -155,6 +155,7 @@ ol.refs { padding-left: 24px; font-size: 13px; display: grid; gap: 6px; }
 .manifesto { max-width: 820px; padding-top: 28px; padding-bottom: 56px; }
 .manifesto h1 { margin: 0; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
 .manifesto p { margin: 0 0 12px; font-size: 16px; line-height: 1.7; }
+.manifesto h1 + p { margin-top: 14px; }
 .manifesto p.subtitle { margin: 8px 0 22px; font: 400 22px/1.3 var(--serif); color: var(--muted); }
 .manifesto h2 { margin: 30px 0 10px; padding-bottom: 4px; border-bottom: 1px solid var(--line); font: 400 24px/1.3 var(--serif); }
 .manifesto hr { border: 0; border-top: 1px solid var(--hair); margin: 28px 0; }
@@ -195,19 +196,21 @@ const logo = (alt) =>
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
-const langLink = (l) =>
-  `<a href="${l.path}" hreflang="${l.htmlLang}" lang="${l.htmlLang}" data-lang-switch>${l.label}</a>`
+// Link para a mesma página em outra língua (página inicial ou filosofia)
+const langLink = (l, href = l.path) =>
+  `<a href="${href}" hreflang="${l.htmlLang}" lang="${l.htmlLang}" data-lang-switch>${l.label}</a>`
 
-// Cabeçalho comum: logo, menu principal (com a Filosofia) e as outras línguas
-const header = (t, others, { contentsButton }) => `<header class="site-header">
+// Cabeçalho comum: logo, menu principal (com a Filosofia) e as outras línguas;
+// `target(l)` é o endereço da página atual na língua l
+const header = (t, others, { contentsButton, target }) => `<header class="site-header">
   <div class="wrap header-row">
     <a class="logo" href="${t.path}">${logo('VersaEdit')}</a>
     <nav class="site-nav" aria-label="${t.nav.label}">
-      <a href="${PHILOSOPHY.path}" hreflang="pt-BR">${t.nav.philosophy}</a>
+      <a href="${PHILOSOPHY[t.key].path}">${t.nav.philosophy}</a>
       <a href="/playground/">${t.nav.playground}</a>
       <a href="${t.docsUrl}">${t.nav.docs}</a>
       <a href="${REPO}">${t.nav.github}</a>
-      <span class="lang-links" role="group" aria-label="${t.nav.languages}">${ICON.languages}${others.map(langLink).join('')}</span>
+      <span class="lang-links" role="group" aria-label="${t.nav.languages}">${ICON.languages}${others.map((l) => langLink(l, target(l))).join('')}</span>
     </nav>
   </div>${
     contentsButton
@@ -220,7 +223,7 @@ const header = (t, others, { contentsButton }) => `<header class="site-header">
 </header>`
 
 // Rodapé comum: data da edição, licença, privacidade e links
-const footer = (t, others, date) => `<footer class="site-footer">
+const footer = (t, others, date, target) => `<footer class="site-footer">
   <div class="wrap">
     <div class="inner">
       <p>${t.footer.edited(date)}</p>
@@ -234,7 +237,7 @@ ${t.footer.privacy.map((p) => `        <li>${p}</li>`).join('\n')}
           <li><a href="${t.docsUrl}">${t.footer.about}</a></li>
           <li><a href="${REPO}/security/policy">${t.footer.security}</a></li>
           <li><a href="mailto:support@versaedit.dev">support@versaedit.dev</a></li>
-${others.map((l) => `          <li>${langLink(l)}</li>`).join('\n')}
+${others.map((l) => `          <li>${langLink(l, target(l))}</li>`).join('\n')}
         </ul>
       </nav>
     </div>
@@ -281,7 +284,7 @@ ${LANGUAGES.map((l) => `<link rel="alternate" hreflang="${l.htmlLang}" href="htt
 </head>
 <body>
 <a class="skip" href="#content">${t.skip}</a>
-${header(t, others, { contentsButton: true })}
+${header(t, others, { contentsButton: true, target: (l) => l.path })}
 
 <div class="wrap body">
   <nav class="rail" id="rail" aria-label="${t.rail.contents}">
@@ -318,9 +321,9 @@ ${SECTION_IDS.map((id) => {
     <div class="content">
       <article class="article">
         <p class="hatnote">${t.hatnote}</p>
-        <blockquote class="synthesis" lang="pt-BR">
-${PHILOSOPHY.synthesis.map((line) => `          <p>${line}</p>`).join('\n')}
-          <p class="synthesis-link"><a href="${PHILOSOPHY.path}">${PHILOSOPHY.title}</a></p>
+        <blockquote class="synthesis">
+${PHILOSOPHY[t.key].synthesis.map((line) => `          <p>${line}</p>`).join('\n')}
+          <p class="synthesis-link"><a href="${PHILOSOPHY[t.key].path}">${PHILOSOPHY.title}</a></p>
         </blockquote>
         <div class="notice" role="note">${ICON.beta}<p><strong>${t.notice.title}</strong><br>${t.notice.body}</p></div>
 ${t.lead.map((p) => `        <p>${p}</p>`).join('\n')}
@@ -395,7 +398,7 @@ ${t.references.map(([href, label, after], i) => `          <li id="ref-${i + 1}"
   </main>
 </div>
 
-${footer(t, others, date)}
+${footer(t, others, date, (l) => l.path)}
 <script>${SCRIPT}</script>
 </body>
 </html>
@@ -424,24 +427,28 @@ export function manifestoHtml(md) {
     .join('\n')
 }
 
-// Página institucional da filosofia (em português), com o cabeçalho e o rodapé do site
+// Página institucional da filosofia, na língua de `t`, com o cabeçalho e o rodapé
+// do site; a troca de língua leva à filosofia na outra língua
 export function renderPhilosophy(md, t, { editedDate }) {
   const others = LANGUAGES.filter((l) => l.key !== t.key)
+  const target = (l) => PHILOSOPHY[l.key].path
   return `<!doctype html>
-<html lang="pt-BR">
+<html lang="${t.htmlLang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(PHILOSOPHY.title)} — VersaEdit</title>
-<meta name="description" content="${esc(PHILOSOPHY.title)} — A Filosofia do VersaEdit">
-<link rel="canonical" href="https://versaedit.dev${PHILOSOPHY.path}">
-<meta property="og:locale" content="pt_BR">
+<meta name="description" content="${esc(PHILOSOPHY.title)}">
+<link rel="canonical" href="https://versaedit.dev${PHILOSOPHY[t.key].path}">
+${LANGUAGES.map((l) => `<link rel="alternate" hreflang="${l.htmlLang}" href="https://versaedit.dev${PHILOSOPHY[l.key].path}">`).join('\n')}
+<link rel="alternate" hreflang="x-default" href="https://versaedit.dev${PHILOSOPHY.en.path}">
+<meta property="og:locale" content="${t.htmlLang.replace('-', '_')}">
 <link rel="icon" href="data:,">
 <style>${CSS}</style>
 </head>
 <body>
 <a class="skip" href="#content">${t.skip}</a>
-${header(t, others, { contentsButton: false })}
+${header(t, others, { contentsButton: false, target })}
 
 <div class="wrap">
   <main id="content" class="manifesto">
@@ -451,7 +458,7 @@ ${manifestoHtml(md)}
   </main>
 </div>
 
-${footer(t, others, editedOn(t, editedDate))}
+${footer(t, others, editedOn(t, editedDate), target)}
 <script>${SCRIPT}</script>
 </body>
 </html>

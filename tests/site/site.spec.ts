@@ -414,96 +414,141 @@ test('interface do editor nos três idiomas: introdução e exemplo de uso com o
   }
 })
 
-// The VersaEdit Philosophy: página própria em /filosofia/ (texto aprovado, em
-// português, de scripts/site/philosophy.md), link Filosofia no menu e a síntese
-// na página inicial
+// The VersaEdit Philosophy: uma página por língua (o original em português,
+// scripts/site/philosophy.pt.md, e as traduções em inglês e espanhol), link no
+// menu principal e a síntese na página inicial
 test.describe('filosofia', () => {
-  const MANIFESTO = fs.readFileSync(path.resolve('scripts/site/philosophy.md'), 'utf8')
-  // Cada linha do texto aprovado, sem a marcação (#, **, *, ---)
-  const lines = MANIFESTO.split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter((l) => l && l !== '---')
-    .map((l) =>
-      l
-        .replace(/^#+\s+/, '')
-        .replace(/\*\*(.+?)\*\*/g, '$1')
-        .replace(/\*(.+?)\*/g, '$1'),
-    )
-  const LINK = { '/': 'Philosophy', '/pt/': 'Filosofia', '/es/': 'Filosofía' } as const
-
-  test('o menu principal das três páginas leva à filosofia; a página inicial mostra só a síntese', async ({
-    page,
-  }) => {
-    for (const l of LANGS) {
-      await goto(page, l.path)
-      const link = page.locator('.site-nav a', { hasText: LINK[l.path] })
-      await expect(link).toHaveAttribute('href', '/filosofia/')
-      const synthesis = page.locator('blockquote.synthesis')
-      await expect(synthesis).toHaveAttribute('lang', 'pt-BR')
-      await expect(synthesis.locator('p')).toHaveText([
+  const PAGES = [
+    {
+      home: '/',
+      path: '/philosophy/',
+      lang: 'en',
+      file: 'philosophy.en.md',
+      link: 'Philosophy',
+      languages: ['Português', 'Español'],
+      synthesis: [
+        'Versatility will be our differentiator. Precision will be our reputation.',
+        'Preserve the past. Improve the present. Do not limit the future.',
+      ],
+    },
+    {
+      home: '/pt/',
+      path: '/pt/filosofia/',
+      lang: 'pt-BR',
+      file: 'philosophy.pt.md',
+      link: 'Filosofia',
+      languages: ['English', 'Español'],
+      synthesis: [
         'A versatilidade será nosso diferencial. A precisão será nossa reputação.',
         'Preservar o passado. Aperfeiçoar o presente. Não limitar o futuro.',
-        'The VersaEdit Philosophy',
-      ])
-      await expect(synthesis.locator('a')).toHaveAttribute('href', '/filosofia/')
+      ],
+    },
+    {
+      home: '/es/',
+      path: '/es/filosofia/',
+      lang: 'es',
+      file: 'philosophy.es.md',
+      link: 'Filosofía',
+      languages: ['English', 'Português'],
+      synthesis: [
+        'La versatilidad será nuestro diferencial. La precisión será nuestra reputación.',
+        'Preservar el pasado. Perfeccionar el presente. No limitar el futuro.',
+      ],
+    },
+  ] as const
+  // Cada linha do texto, sem a marcação (#, **, *, ---)
+  const linesOf = (file: string) =>
+    fs
+      .readFileSync(path.resolve('scripts/site', file), 'utf8')
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter((l) => l && l !== '---')
+      .map((l) =>
+        l
+          .replace(/^#+\s+/, '')
+          .replace(/\*\*(.+?)\*\*/g, '$1')
+          .replace(/\*(.+?)\*/g, '$1'),
+      )
+
+  test('menu principal e síntese da página inicial levam à filosofia da mesma língua', async ({
+    page,
+  }) => {
+    for (const p of PAGES) {
+      await goto(page, p.home)
+      await expect(page.locator('.site-nav a', { hasText: p.link })).toHaveAttribute('href', p.path)
+      const synthesis = page.locator('blockquote.synthesis')
+      await expect(synthesis.locator('p')).toHaveText([...p.synthesis, 'The VersaEdit Philosophy'])
+      await expect(synthesis.locator('a')).toHaveAttribute('href', p.path)
     }
     await goto(page, '/pt/')
     await page.locator('.site-nav a', { hasText: 'Filosofia' }).click()
-    await expect(page).toHaveURL(/\/filosofia\/$/)
+    await expect(page).toHaveURL(/\/pt\/filosofia\/$/)
   })
 
-  test('a página traz o texto aprovado inteiro, na ordem, com os 13 princípios', async ({
+  for (const p of PAGES) {
+    test(`${p.path}: o texto inteiro de ${p.file}, na ordem, com os 13 princípios`, async ({
+      page,
+    }) => {
+      await goto(page, p.path)
+      expect(await page.evaluate(() => document.documentElement.lang)).toBe(p.lang)
+      await expect(page.locator('h1')).toHaveText('The VersaEdit Philosophy')
+      const article = await page.locator('main article').innerText()
+      let from = 0
+      for (const line of linesOf(p.file)) {
+        const at = article.indexOf(line, from)
+        expect(at, `linha de ${p.file}: "${line}"`).toBeGreaterThanOrEqual(from)
+        from = at + line.length
+      }
+      const sections = await page.locator('main h2').allTextContents()
+      expect(sections.filter((h) => /^[IVX]+\. /.test(h))).toHaveLength(13)
+      expect(sections).toHaveLength(16)
+      await expect(page.locator('main hr')).toHaveCount(3)
+    })
+  }
+
+  test('mesma identidade do site; a troca de língua leva à filosofia na outra língua; links reais', async ({
     page,
   }) => {
-    await goto(page, '/filosofia/')
-    expect(await page.evaluate(() => document.documentElement.lang)).toBe('pt-BR')
-    await expect(page.locator('h1')).toHaveText('The VersaEdit Philosophy')
-    const article = await page.locator('main article').innerText()
-    let from = 0
-    for (const line of lines) {
-      const at = article.indexOf(line, from)
-      expect(at, `linha do texto aprovado: "${line}"`).toBeGreaterThanOrEqual(from)
-      from = at + line.length
-    }
-    const sections = await page.locator('main h2').allTextContents()
-    const roman = sections.filter((h) => /^[IVX]+\. /.test(h))
-    expect(roman).toHaveLength(13)
-    expect(sections[0]).toBe('Nossa visão')
-    expect(sections.slice(-2)).toEqual(['Nosso compromisso', 'Nossa síntese'])
-    await expect(page.locator('main hr')).toHaveCount(3)
-  })
-
-  test('mesma identidade do site: logo, menu, rodapé; links reais', async ({ page }) => {
-    await goto(page, '/filosofia/')
-    await expect(page.locator('.site-header .logo img')).toBeVisible()
-    await expect(page.locator('.site-nav a', { hasText: 'Filosofia' })).toHaveAttribute(
-      'href',
-      '/filosofia/',
-    )
-    await expect(page.locator('.site-nav a[data-lang-switch]')).toHaveText(['English', 'Español'])
-    await expect(page.locator('footer')).toContainText('support@versaedit.dev')
-    const links = await page.evaluate(() =>
-      [...document.querySelectorAll('a')].map((a) => a.getAttribute('href') ?? ''),
-    )
-    for (const href of links) {
-      expect(href, 'link sem destino').not.toBe('')
-      if (href.startsWith('#')) expect(await page.locator(href).count(), href).toBe(1)
-      else if (href.startsWith('/'))
-        expect((await page.request.get(href.split('#')[0])).status(), href).toBe(200)
-      else expect(href).toMatch(/^(https:\/\/|mailto:support@versaedit\.dev$)/)
+    for (const p of PAGES) {
+      await goto(page, p.path)
+      await expect(page.locator('.site-header .logo img')).toBeVisible()
+      await expect(page.locator('.site-nav a', { hasText: p.link })).toHaveAttribute('href', p.path)
+      await expect(page.locator('.site-nav a[data-lang-switch]')).toHaveText([...p.languages])
+      await expect(page.locator('footer a[data-lang-switch]')).toHaveText([...p.languages])
+      for (const other of PAGES.filter((o) => o !== p)) {
+        await expect(
+          page.locator(`.site-nav a[data-lang-switch][hreflang="${other.lang}"]`),
+        ).toHaveAttribute('href', other.path)
+      }
+      await expect(page.locator('footer')).toContainText('support@versaedit.dev')
+      expect(await page.locator('link[rel="canonical"]').getAttribute('href')).toBe(
+        `https://versaedit.dev${p.path}`,
+      )
+      const links = await page.evaluate(() =>
+        [...document.querySelectorAll('a')].map((a) => a.getAttribute('href') ?? ''),
+      )
+      for (const href of links) {
+        expect(href, 'link sem destino').not.toBe('')
+        if (href.startsWith('#')) expect(await page.locator(href).count(), href).toBe(1)
+        else if (href.startsWith('/'))
+          expect((await page.request.get(href.split('#')[0])).status(), href).toBe(200)
+        else expect(href).toMatch(/^(https:\/\/|mailto:support@versaedit\.dev$)/)
+      }
     }
   })
 
-  for (const width of WIDTHS) {
-    for (const scheme of ['light', 'dark'] as const) {
-      test(`/filosofia/ em ${width}px, tema ${scheme}: sem rolagem horizontal, sem erros, nada externo`, async ({
-        page,
-      }) => {
-        await page.emulateMedia({ colorScheme: scheme })
-        await page.setViewportSize({ width, height: 900 })
-        await goto(page, '/filosofia/')
-        await noHorizontalScroll(page)
-      })
+  for (const p of PAGES) {
+    for (const width of WIDTHS) {
+      for (const scheme of ['light', 'dark'] as const) {
+        test(`${p.path} em ${width}px, tema ${scheme}: sem rolagem horizontal, sem erros, nada externo`, async ({
+          page,
+        }) => {
+          await page.emulateMedia({ colorScheme: scheme })
+          await page.setViewportSize({ width, height: 900 })
+          await goto(page, p.path)
+          await noHorizontalScroll(page)
+        })
+      }
     }
   }
 })

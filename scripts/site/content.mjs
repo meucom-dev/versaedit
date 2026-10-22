@@ -11,15 +11,35 @@ export const LANGUAGES = [
   { key: 'es', label: 'Español', htmlLang: 'es', path: '/es/', editorLocale: 'es' },
 ]
 
-// Página da filosofia: o texto aprovado (philosophy.md, em português) numa página
-// própria; a página inicial mostra só a síntese, com o link para ela
+// Página da filosofia, uma por idioma: o texto aprovado (philosophy.pt.md, o
+// original) e as traduções (philosophy.en.md, philosophy.es.md). A página inicial
+// mostra só a síntese, com o link para a página do mesmo idioma
 export const PHILOSOPHY = {
-  path: '/filosofia/',
   title: 'The VersaEdit Philosophy',
-  synthesis: [
-    'A versatilidade será nosso diferencial. A precisão será nossa reputação.',
-    'Preservar o passado. Aperfeiçoar o presente. Não limitar o futuro.',
-  ],
+  en: {
+    path: '/philosophy/',
+    file: 'philosophy.en.md',
+    synthesis: [
+      'Versatility will be our differentiator. Precision will be our reputation.',
+      'Preserve the past. Improve the present. Do not limit the future.',
+    ],
+  },
+  pt: {
+    path: '/pt/filosofia/',
+    file: 'philosophy.pt.md',
+    synthesis: [
+      'A versatilidade será nosso diferencial. A precisão será nossa reputação.',
+      'Preservar o passado. Aperfeiçoar o presente. Não limitar o futuro.',
+    ],
+  },
+  es: {
+    path: '/es/filosofia/',
+    file: 'philosophy.es.md',
+    synthesis: [
+      'La versatilidad será nuestro diferencial. La precisión será nuestra reputación.',
+      'Preservar el pasado. Perfeccionar el presente. No limitar el futuro.',
+    ],
+  },
 }
 
 export const CONTENT = {
