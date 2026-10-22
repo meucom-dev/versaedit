@@ -127,16 +127,28 @@ async function selectIn(page: Page, prefix: string, text: string, collapseToEnd 
     },
     [prefix, text, collapseToEnd] as const,
   )
+  await selectionProcessed(page)
 }
 
+// Espera o aviso de mudança de seleção (selectionchange, assíncrono) ser tratado.
+// Uma pessoa não seleciona por código no mesmo instante de um clique; sem esta
+// espera, no WebKit, o atalho seguinte (Ctrl+K) podia chegar antes do aviso, e o
+// editor ficava com a seleção do clique.
+const selectionProcessed = (page: Page) =>
+  page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  )
+
 // Clique real no bloco (o usuário clica antes de selecionar)
-const clickBlock = (page: Page, prefix: string) =>
-  page
+async function clickBlock(page: Page, prefix: string) {
+  await page
     .locator('#host .ve-content')
     .locator('p, h2, blockquote')
     .filter({ hasText: new RegExp('^' + prefix) })
     .first()
     .click({ position: { x: 4, y: 4 } })
+  await selectionProcessed(page)
+}
 
 // Seleção descrita por texto: o selecionado, o bloco e a posição no bloco
 const selDesc = (page: Page) =>
