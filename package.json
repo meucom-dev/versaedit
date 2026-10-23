@@ -1,6 +1,6 @@
 {
   "name": "versaedit",
-  "version": "0.0.0",
+  "version": "0.5.0-beta.1",
   "description": "VersaEdit — Rich Text Editor for Web Applications",
   "license": "MIT",
   "author": {
@@ -27,7 +27,6 @@
     "email": "support@versaedit.dev"
   },
   "type": "module",
-  "private": true,
   "sideEffects": [
     "*.css"
   ],

@@ -1,13 +1,14 @@
 # Changelog
 
 All notable changes to VersaEdit. Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/);
-versions will follow [Semantic Versioning](https://semver.org/). The package has not been published
-yet (version `0.0.0`); work is grouped by the internal stabilization batches.
+versions follow [Semantic Versioning](https://semver.org/). Work before the first release is grouped
+by the internal stabilization batches.
 
 ## [Unreleased]
 
-To be released as **`0.5.0-beta.1`** (first public beta). At release time this heading becomes
-`## [0.5.0-beta.1] - YYYY-MM-DD` (see `RELEASING.md`).
+## [0.5.0-beta.1] - 2026-10-23
+
+First public beta.
 
 ### Release preparation (0.5.0-beta.1)
 

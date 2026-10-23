@@ -3,7 +3,6 @@
 Editor de texto enriquecido ligero para aplicaciones React.
 
 > **Beta** (`0.5.0-beta.1`) — la API puede cambiar antes de la 1.0; consulte las [Limitaciones conocidas](#limitaciones-conocidas).
-> <!-- release:pending -->**Aún no publicado en npm.**<!-- /release:pending -->
 
 [versaedit.dev](https://versaedit.dev/es/) · [Playground](https://versaedit.dev/playground/) ·
 [Read in English](README.md) · [Leia em português](README.pt-BR.md)
