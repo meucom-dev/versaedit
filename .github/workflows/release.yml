@@ -59,6 +59,11 @@ jobs:
           if grep -q "release:pending" README.md README.pt-BR.md README.es.md; then
             echo "✖ README ainda com o aviso 'não publicado' (release:pending)"; exit 1
           fi
+          # Versão já publicada não pode ser publicada de novo: falha aqui, antes dos testes
+          publicada=$(npm view "versaedit@$VERSION" version --registry=https://registry.npmjs.org 2>/dev/null || true)
+          if [ -n "$publicada" ]; then
+            echo "✖ versaedit@$VERSION já está publicada no npm"; exit 1
+          fi
       - run: npm ci
       - run: npm run format:check
       - run: npm run lint
@@ -77,7 +82,14 @@ jobs:
       - name: Confere no registro
         env:
           VERSION: ${{ inputs.version }}
+        # O registro pode levar alguns minutos para disponibilizar a versão ("being processed")
         run: |
-          sleep 20
-          npm view "versaedit@$VERSION" version
-          npm view versaedit dist-tags
+          for i in $(seq 1 20); do
+            publicada=$(npm view "versaedit@$VERSION" version 2>/dev/null || true)
+            if [ "$publicada" = "$VERSION" ]; then
+              npm view versaedit dist-tags
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "✖ versaedit@$VERSION não apareceu no registro em 5 minutos"; exit 1
