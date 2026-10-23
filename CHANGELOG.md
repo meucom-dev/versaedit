@@ -11,6 +11,13 @@ To be released as **`0.5.0-beta.1`** (first public beta). At release time this h
 
 ### Release preparation (0.5.0-beta.1)
 
+#### Security
+
+- DOMPurify, the sanitizer, now requires `^3.4.17` (it was `^3.2.0`). Versions up to 3.4.16 have
+  advisories GHSA-cg2g-xh64-v4q7, GHSA-mrv2-3pqr-j5jr and GHSA-c6gr-qvv4-5v3f. VersaEdit does not
+  use the affected modes (`SAFE_FOR_TEMPLATES`, `IN_PLACE`, `PARSER_MEDIA_TYPE` XHTML), but the
+  minimum version makes every installation get the fixed sanitizer.
+
 #### Changed
 
 - Undo/redo is stable (no longer experimental): covered by the automated tests in Chromium, Firefox
