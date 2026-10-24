@@ -62,7 +62,6 @@ export const CONTENT = {
     },
     rail: {
       contents: 'Contents',
-      top: '(Top)',
       project: 'Project',
       sourceCode: 'Source code',
       changelog: 'Changelog',
@@ -79,10 +78,10 @@ export const CONTENT = {
     },
     tagline: 'From versaedit.dev, the open-source rich text editor for React',
     hatnote:
-      'For the interactive demo, see the <a href="/playground/">Playground</a>. The npm package (0.5.0-beta.1) is planned and not yet published.',
+      'For the interactive demo, see the <a href="/playground/">Playground</a>. The beta (0.5.0-beta.1) is published on <a href="https://www.npmjs.com/package/versaedit">npm</a>.',
     notice: {
       title: 'This software is in beta.',
-      body: `The public API may change before version 1.0, and the npm package is not yet published. Known limitations are listed below; please <a href="${REPO}/issues/new/choose">report problems on GitHub</a>.`,
+      body: `The public API may change before version 1.0. Known limitations are listed below; please <a href="${REPO}/issues/new/choose">report problems on GitHub</a>.`,
     },
     lead: [
       '<strong>VersaEdit</strong> is a lightweight, open-source rich text editor for React web applications. It edits HTML with the browser’s own <code>contentEditable</code> and adds a toolbar, sanitization with DOMPurify, its own undo and redo history, cleanup of content pasted from web pages and Microsoft Word, images, text boxes, dictation and saving or opening <code>.html</code> files.<sup><a href="#ref-1">[1]</a></sup>',
@@ -108,8 +107,8 @@ export const CONTENT = {
       'Configurable toolbar groups, fluid width, a scrolling or fixed-height editing area, and replaceable interface texts.',
     ],
     installation:
-      'VersaEdit is an ES module with TypeScript types. The beta (0.5.0-beta.1) is planned for npm and has not been published yet.',
-    installLabel: 'For use after publication',
+      'VersaEdit is an ES module with TypeScript types, published on npm as a beta (0.5.0-beta.1).',
+    installLabel: 'Install the beta',
     styling:
       'The editor injects its own stylesheet by default. Sites with a strict Content Security Policy can turn injection off with <code>injectStyles={false}</code> and import <code>versaedit/versaedit.css</code>. Saved content is displayed with <code>versaedit-content.css</code> inside a <code>.versaedit-content</code> wrapper.<sup><a href="#ref-2">[2]</a></sup>',
     security:
@@ -129,13 +128,13 @@ export const CONTENT = {
           'Firefox (desktop)',
           'warn',
           'Works, with differences',
-          'Diagnostic test runs only. Small HTML differences (for example, a dropped image is placed inside the paragraph). Paste and Ctrl+B/I/U are not covered by automated tests. Dictation is not available.',
+          'Diagnostic test runs only. Small HTML differences (for example, an inserted image is placed inside the paragraph). Paste and Ctrl+B/I/U are not covered by automated tests. Dictation is not available.',
         ],
         [
           'Safari',
           'warn',
           'Works, with differences',
-          'Tested only with the WebKit engine, not in Safari itself. Lists receive extra font-size spans; loading of external audio and video was not verified.',
+          'Tested only with the WebKit engine, not in Safari itself. Lists receive extra font-size spans; other HTML differences are cosmetic (how styles are written). Loading external audio and video, when enabled (<code>allowExternalMedia</code>), was not verified.',
         ],
         [
           'Mobile browsers',
@@ -151,7 +150,6 @@ export const CONTENT = {
       'After the highlighter or a custom color, bold is saved as <code>&lt;span style="font-weight: bold"&gt;</code> instead of <code>&lt;b&gt;</code> (it displays the same).',
       'Text flows around a floated image or text box on one side only (a CSS float limitation).',
       'Pasting from Microsoft Word has not yet been validated with real documents.',
-      'The font menu shows a font’s name only when <code>fontFamily</code> matches one of the menu options exactly.',
       'Output is HTML only, with no JSON or Markdown export.',
     ],
     seeAlso: [
@@ -174,7 +172,7 @@ export const CONTENT = {
         'Integration guide: sanitization in the browser and on the server',
         '.',
       ],
-      [`${REPO}/blob/main/CHANGELOG.md`, 'CHANGELOG: 0.5.0-beta.1 release preparation', '.'],
+      [`${REPO}/blob/main/CHANGELOG.md`, 'CHANGELOG: version 0.5.0-beta.1', '.'],
     ],
     docsUrl: `${REPO}#readme`,
     facts: {
@@ -182,7 +180,8 @@ export const CONTENT = {
       developer: 'Developer',
       started: 'Development started',
       preview: 'Preview release',
-      previewValue: '0.5.0-beta.1 (planned, not yet published)',
+      previewValue:
+        '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.1</a> (23 October 2026)',
       playground: 'Playground',
       repository: 'Repository',
       writtenIn: 'Written in',
@@ -229,7 +228,6 @@ export const CONTENT = {
     },
     rail: {
       contents: 'Conteúdo',
-      top: '(Início)',
       project: 'Projeto',
       sourceCode: 'Código-fonte',
       changelog: 'Registro de alterações',
@@ -246,10 +244,10 @@ export const CONTENT = {
     },
     tagline: 'De versaedit.dev, o editor de texto rico de código aberto para React',
     hatnote:
-      'Para a demonstração interativa, veja o <a href="/playground/">Playground</a>. O pacote no npm (0.5.0-beta.1) está previsto e ainda não foi publicado.',
+      'Para a demonstração interativa, veja o <a href="/playground/">Playground</a>. A versão beta (0.5.0-beta.1) está publicada no <a href="https://www.npmjs.com/package/versaedit">npm</a>.',
     notice: {
       title: 'Este software está em versão beta.',
-      body: `A API pública pode mudar antes da versão 1.0, e o pacote ainda não foi publicado no npm. As limitações conhecidas estão listadas abaixo; <a href="${REPO}/issues/new/choose">relate problemas no GitHub</a>.`,
+      body: `A API pública pode mudar antes da versão 1.0. As limitações conhecidas estão listadas abaixo; <a href="${REPO}/issues/new/choose">relate problemas no GitHub</a>.`,
     },
     lead: [
       'O <strong>VersaEdit</strong> é um editor de texto rico leve e de código aberto para aplicações web em React. Ele edita HTML com o próprio <code>contentEditable</code> do navegador e acrescenta barra de ferramentas, sanitização com DOMPurify, histórico próprio de desfazer e refazer, limpeza do conteúdo colado de páginas da web e do Microsoft Word, imagens, caixas de texto, ditado e abertura e gravação de arquivos <code>.html</code>.<sup><a href="#ref-1">[1]</a></sup>',
@@ -275,8 +273,8 @@ export const CONTENT = {
       'Grupos da barra configuráveis, largura fluida, área de edição com rolagem ou altura fixa e textos da interface substituíveis.',
     ],
     installation:
-      'O VersaEdit é um módulo ES com tipos TypeScript. A versão beta (0.5.0-beta.1) está prevista para o npm e ainda não foi publicada.',
-    installLabel: 'Para uso após a publicação',
+      'O VersaEdit é um módulo ES com tipos TypeScript, publicado no npm em versão beta (0.5.0-beta.1).',
+    installLabel: 'Instalação da versão beta',
     styling:
       'O editor injeta a própria folha de estilos por padrão. Sites com política de segurança de conteúdo (CSP) restrita podem desligar a injeção com <code>injectStyles={false}</code> e importar <code>versaedit/versaedit.css</code>. O conteúdo salvo é exibido com <code>versaedit-content.css</code> dentro de um elemento <code>.versaedit-content</code>.<sup><a href="#ref-2">[2]</a></sup>',
     security:
@@ -296,13 +294,13 @@ export const CONTENT = {
           'Firefox (computador)',
           'warn',
           'Funciona, com diferenças',
-          'Só execuções de diagnóstico. Pequenas diferenças no HTML (por exemplo, uma imagem solta fica dentro do parágrafo). A colagem e Ctrl+B/I/U não são cobertos por testes automáticos. O ditado não está disponível.',
+          'Só execuções de diagnóstico. Pequenas diferenças no HTML (por exemplo, uma imagem inserida fica dentro do parágrafo). A colagem e Ctrl+B/I/U não são cobertos por testes automáticos. O ditado não está disponível.',
         ],
         [
           'Safari',
           'warn',
           'Funciona, com diferenças',
-          'Testado só com o motor WebKit, não no próprio Safari. Listas recebem spans de font-size a mais; o carregamento de áudio e vídeo externos não foi verificado.',
+          'Testado só com o motor WebKit, não no próprio Safari. Listas recebem spans de font-size a mais; as outras diferenças no HTML são cosméticas (a forma de escrever os estilos). O carregamento de áudio e vídeo externos, quando ativado (<code>allowExternalMedia</code>), não foi verificado.',
         ],
         [
           'Navegadores de celular',
@@ -318,7 +316,6 @@ export const CONTENT = {
       'Depois do marca-texto ou de uma cor personalizada, o negrito é gravado como <code>&lt;span style="font-weight: bold"&gt;</code> em vez de <code>&lt;b&gt;</code> (a aparência é a mesma).',
       'O texto contorna uma imagem ou caixa de texto flutuante de um lado só (limitação do float do CSS).',
       'A colagem do Microsoft Word ainda não foi validada com documentos reais.',
-      'O menu de fontes só mostra o nome da fonte quando o <code>fontFamily</code> é idêntico a uma das opções do menu.',
       'Exporta apenas HTML, sem JSON nem Markdown.',
     ],
     seeAlso: [
@@ -345,11 +342,7 @@ export const CONTENT = {
         'Guia de integração: sanitização no navegador e no servidor',
         '.',
       ],
-      [
-        `${REPO}/blob/main/CHANGELOG.md`,
-        'CHANGELOG: preparação da versão 0.5.0-beta.1',
-        ' (em inglês).',
-      ],
+      [`${REPO}/blob/main/CHANGELOG.md`, 'CHANGELOG: versão 0.5.0-beta.1', ' (em inglês).'],
     ],
     docsUrl: `${REPO}/blob/main/README.pt-BR.md`,
     facts: {
@@ -357,7 +350,8 @@ export const CONTENT = {
       developer: 'Desenvolvedor',
       started: 'Criado em',
       preview: 'Versão de prévia',
-      previewValue: '0.5.0-beta.1 (prevista, ainda não publicada)',
+      previewValue:
+        '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.1</a> (23 de outubro de 2026)',
       playground: 'Playground',
       repository: 'Repositório',
       writtenIn: 'Escrito em',
@@ -403,7 +397,6 @@ export const CONTENT = {
     },
     rail: {
       contents: 'Contenido',
-      top: '(Inicio)',
       project: 'Proyecto',
       sourceCode: 'Código fuente',
       changelog: 'Registro de cambios',
@@ -420,10 +413,10 @@ export const CONTENT = {
     },
     tagline: 'De versaedit.dev, el editor de texto enriquecido de código abierto para React',
     hatnote:
-      'Para la demostración interactiva, véase el <a href="/playground/">Playground</a>. El paquete de npm (0.5.0-beta.1) está previsto y aún no se ha publicado.',
+      'Para la demostración interactiva, véase el <a href="/playground/">Playground</a>. La versión beta (0.5.0-beta.1) está publicada en <a href="https://www.npmjs.com/package/versaedit">npm</a>.',
     notice: {
       title: 'Este software está en fase beta.',
-      body: `La API pública puede cambiar antes de la versión 1.0 y el paquete aún no se ha publicado en npm. Las limitaciones conocidas se indican más abajo; si encuentra algún problema, <a href="${REPO}/issues/new/choose">infórmelo en GitHub</a>.`,
+      body: `La API pública puede cambiar antes de la versión 1.0. Las limitaciones conocidas se indican más abajo; si encuentra algún problema, <a href="${REPO}/issues/new/choose">infórmelo en GitHub</a>.`,
     },
     lead: [
       '<strong>VersaEdit</strong> es un editor de texto enriquecido ligero y de código abierto para aplicaciones web con React. Edita HTML con el propio <code>contentEditable</code> del navegador y añade una barra de herramientas, saneamiento con DOMPurify, un historial propio de deshacer y rehacer, limpieza del contenido pegado desde páginas web y Microsoft Word, imágenes, cuadros de texto, dictado y apertura y guardado de archivos <code>.html</code>.<sup><a href="#ref-1">[1]</a></sup>',
@@ -449,8 +442,8 @@ export const CONTENT = {
       'Grupos de la barra configurables, ancho fluido, área de edición con desplazamiento o de altura fija, y textos de la interfaz reemplazables.',
     ],
     installation:
-      'VersaEdit es un módulo ES con tipos de TypeScript. La versión beta (0.5.0-beta.1) está prevista para npm y aún no se ha publicado.',
-    installLabel: 'Para usar después de la publicación',
+      'VersaEdit es un módulo ES con tipos de TypeScript, publicado en npm como versión beta (0.5.0-beta.1).',
+    installLabel: 'Instalación de la versión beta',
     styling:
       'El editor inyecta su propia hoja de estilos de forma predeterminada. Los sitios con una política de seguridad de contenido (CSP) estricta pueden desactivar la inyección con <code>injectStyles={false}</code> e importar <code>versaedit/versaedit.css</code>. El contenido guardado se muestra con <code>versaedit-content.css</code> dentro de un elemento <code>.versaedit-content</code>.<sup><a href="#ref-2">[2]</a></sup>',
     security:
@@ -470,13 +463,13 @@ export const CONTENT = {
           'Firefox (escritorio)',
           'warn',
           'Funciona, con diferencias',
-          'Solo ejecuciones de diagnóstico. Pequeñas diferencias en el HTML (por ejemplo, una imagen soltada queda dentro del párrafo). El pegado y Ctrl+B/I/U no están cubiertos por pruebas automáticas. El dictado no está disponible.',
+          'Solo ejecuciones de diagnóstico. Pequeñas diferencias en el HTML (por ejemplo, una imagen insertada queda dentro del párrafo). El pegado y Ctrl+B/I/U no están cubiertos por pruebas automáticas. El dictado no está disponible.',
         ],
         [
           'Safari',
           'warn',
           'Funciona, con diferencias',
-          'Probado solo con el motor WebKit, no en el propio Safari. Las listas reciben elementos span de font-size adicionales; no se verificó la carga de audio y vídeo externos.',
+          'Probado solo con el motor WebKit, no en el propio Safari. Las listas reciben elementos span de font-size adicionales; las demás diferencias en el HTML son estéticas (la forma de escribir los estilos). No se verificó la carga de audio y vídeo externos cuando está activada (<code>allowExternalMedia</code>).',
         ],
         [
           'Navegadores móviles',
@@ -492,7 +485,6 @@ export const CONTENT = {
       'Después del resaltador o de un color personalizado, la negrita se guarda como <code>&lt;span style="font-weight: bold"&gt;</code> en lugar de <code>&lt;b&gt;</code> (el aspecto es el mismo).',
       'El texto rodea una imagen o un cuadro de texto flotante solo por un lado (limitación del float de CSS).',
       'El pegado desde Microsoft Word aún no se ha validado con documentos reales.',
-      'El menú de fuentes solo muestra el nombre de la fuente cuando <code>fontFamily</code> coincide exactamente con una de las opciones del menú.',
       'Solo exporta HTML, sin JSON ni Markdown.',
     ],
     seeAlso: [
@@ -515,11 +507,7 @@ export const CONTENT = {
         'Guía de integración: saneamiento en el navegador y en el servidor',
         ' (en inglés).',
       ],
-      [
-        `${REPO}/blob/main/CHANGELOG.md`,
-        'CHANGELOG: preparación de la versión 0.5.0-beta.1',
-        ' (en inglés).',
-      ],
+      [`${REPO}/blob/main/CHANGELOG.md`, 'CHANGELOG: versión 0.5.0-beta.1', ' (en inglés).'],
     ],
     docsUrl: `${REPO}#readme`,
     facts: {
@@ -527,7 +515,8 @@ export const CONTENT = {
       developer: 'Desarrollador',
       started: 'Creado en',
       preview: 'Versión preliminar',
-      previewValue: '0.5.0-beta.1 (prevista, aún no publicada)',
+      previewValue:
+        '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.1</a> (23 de octubre de 2026)',
       playground: 'Playground',
       repository: 'Repositorio',
       writtenIn: 'Escrito en',

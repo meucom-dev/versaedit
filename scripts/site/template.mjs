@@ -69,7 +69,6 @@ img { max-width: 100%; }
 .rail h2 { margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid var(--hair); font: 700 14px var(--sans); }
 .rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .rail .sub { padding-left: 14px; font-size: 13px; }
-.rail .top { color: var(--fg); }
 .rail .project { margin-top: 22px; }
 
 .title-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
@@ -290,7 +289,6 @@ ${header(t, others, { contentsButton: true, target: (l) => l.path })}
   <nav class="rail" id="rail" aria-label="${t.rail.contents}">
     <h2>${t.rail.contents}</h2>
     <ol>
-      <li><a class="top" href="#top">${t.rail.top}</a></li>
 ${SECTION_IDS.map((id) => {
   const key = { 'see-also': 'seeAlso' }[id] ?? id
   return `      <li${id === 'styling' ? ' class="sub"' : ''}><a href="#${id}">${s[key]}</a></li>`

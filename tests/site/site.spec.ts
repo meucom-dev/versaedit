@@ -5,9 +5,9 @@ import path from 'node:path'
 import { expect, test, type Page } from '@playwright/test'
 
 const LANGS = [
-  { path: '/', lang: 'en', label: 'English', install: 'For use after publication' },
-  { path: '/pt/', lang: 'pt-BR', label: 'Português', install: 'Para uso após a publicação' },
-  { path: '/es/', lang: 'es', label: 'Español', install: 'Para usar después de la publicación' },
+  { path: '/', lang: 'en', label: 'English', install: 'Install the beta' },
+  { path: '/pt/', lang: 'pt-BR', label: 'Português', install: 'Instalação da versão beta' },
+  { path: '/es/', lang: 'es', label: 'Español', install: 'Instalación de la versión beta' },
 ] as const
 const WIDTHS = [320, 375, 768, 1024, 1440]
 
@@ -110,7 +110,10 @@ test('todos os links levam a um destino real; a troca de idioma mantém a seçã
       } else {
         expect(href, 'só https e mailto').toMatch(/^(https:\/\/|mailto:support@versaedit\.dev$)/)
       }
-      expect(href, 'nada aponta para o npm antes da publicação').not.toMatch(/npmjs/)
+      // Publicado (0.5.0-beta.1): o npm só aparece pela página oficial do pacote
+      if (/npmjs/.test(href)) {
+        expect(href, 'link para o npm').toBe('https://www.npmjs.com/package/versaedit')
+      }
     }
   }
   // Seletor: cada página oferece as outras duas línguas, no cabeçalho e no rodapé
@@ -158,11 +161,15 @@ test('metadados de idioma: lang, canonical, hreflang dos três e x-default', asy
   }
 })
 
-test('sem busca, sem link para o npm, instalação marcada como uso futuro', async ({ page }) => {
+test('sem busca, versão publicada com link para o npm, instalação da beta', async ({ page }) => {
   for (const l of LANGS) {
     await goto(page, l.path)
     await expect(page.locator('input, [role="search"]')).toHaveCount(0)
-    await expect(page.locator('a[href*="npmjs"]')).toHaveCount(0)
+    // Nota de topo e quadro de informações apontam para o pacote publicado
+    await expect(page.locator('a[href="https://www.npmjs.com/package/versaedit"]')).toHaveCount(2)
+    await expect(page.locator('#content')).not.toContainText(
+      /not yet published|não foi publicad|não publicad|no se ha publicado|no publicad|planned for npm|prevista para o npm/i,
+    )
     const install = page.locator('#installation ~ .code-block').first()
     await expect(install.locator('code')).toHaveText('npm install versaedit@beta')
     await expect(install.locator('.code-label')).toHaveText(l.install)
