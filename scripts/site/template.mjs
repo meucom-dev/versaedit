@@ -1,8 +1,9 @@
 // Modelo da página inicial, no formato de artigo enciclopédico: cabeçalho,
 // sumário lateral, artigo, caixa de informações e rodapé. Um único modelo para
 // as três línguas (os textos vêm de content.mjs), sem recursos externos. A
-// página da filosofia usa o mesmo cabeçalho, rodapé e estilos.
+// página da filosofia e o guia rápido usam o mesmo cabeçalho, rodapé e estilos.
 import { LANGUAGES, PHILOSOPHY, REPO } from './content.mjs'
+import { COMMANDS, QUICKSTART } from './quickstart.mjs'
 
 const SECTION_IDS = [
   'features',
@@ -150,6 +151,17 @@ ol.refs { padding-left: 24px; font-size: 13px; display: grid; gap: 6px; }
 .synthesis p { margin: 0; font: 400 18px/1.5 var(--serif); }
 .synthesis p.synthesis-link { margin-top: 6px; font: 14px var(--sans); }
 
+/* Guia rápido: uma coluna (sem caixa de informações), fluxo e tabela de propriedades */
+.content.single { grid-template-columns: minmax(0, 1fr); }
+.content.single .article { max-width: 980px; }
+ol.flow { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; font-size: 14px; }
+ol.flow li { padding: 6px 12px; background: var(--panel); border: 1px solid var(--line); }
+ol.flow li + li::before { content: "→"; margin-right: 8px; color: var(--muted); }
+table.props td:nth-child(1), table.props td:nth-child(2) { width: auto; }
+table.props code { overflow-wrap: anywhere; }
+table.props td:nth-child(1) code { white-space: nowrap; }
+@media (max-width: 767px) { ol.flow { display: grid; } table.props td:nth-child(1) code { white-space: normal; } }
+
 /* Página da filosofia: uma coluna de leitura */
 .manifesto { max-width: 820px; padding-top: 28px; padding-bottom: 56px; }
 .manifesto h1 { margin: 0; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
@@ -205,6 +217,7 @@ const header = (t, others, { contentsButton, target }) => `<header class="site-h
   <div class="wrap header-row">
     <a class="logo" href="${t.path}">${logo('VersaEdit')}</a>
     <nav class="site-nav" aria-label="${t.nav.label}">
+      <a href="${QUICKSTART[t.key].path}">${QUICKSTART[t.key].navLabel}</a>
       <a href="${PHILOSOPHY[t.key].path}">${t.nav.philosophy}</a>
       <a href="/playground/">${t.nav.playground}</a>
       <a href="${t.docsUrl}">${t.nav.docs}</a>
@@ -297,6 +310,7 @@ ${SECTION_IDS.map((id) => {
     <div class="project">
       <h2>${t.rail.project}</h2>
       <ol>
+        <li><a href="${QUICKSTART[t.key].path}">${QUICKSTART[t.key].navLabel}</a></li>
         <li><a href="/playground/">Playground</a></li>
         <li><a href="${REPO}">${t.rail.sourceCode}</a></li>
         <li><a href="${REPO}/blob/main/CHANGELOG.md">${t.rail.changelog}</a></li>
@@ -334,6 +348,7 @@ ${t.features.map((f) => `          <li>${f}</li>`).join('\n')}
         <h2 class="sec" id="installation">${s.installation}</h2>
         <p>${t.installation}</p>
         <div class="code-block"><span class="code-label" id="install-label">${t.installLabel}</span><pre aria-labelledby="install-label"><code>npm install versaedit@beta</code></pre></div>
+        <p>${t.quickStartLink}</p>
 
         <h2 class="sec" id="usage">${s.usage}</h2>
         <pre><code>${usage}</code></pre>
@@ -453,6 +468,138 @@ ${header(t, others, { contentsButton: false, target })}
     <article>
 ${manifestoHtml(md)}
     </article>
+  </main>
+</div>
+
+${footer(t, others, editedOn(t, editedDate), target)}
+<script>${SCRIPT}</script>
+</body>
+</html>
+`
+}
+
+const QS_SECTIONS = ['install', 'example', 'styles', 'props', 'ref', 'flow', 'security', 'next']
+
+// Guia rápido na língua de `t` (texto de quickstart.mjs; `code` = arquivos do
+// exemplo examples/quick-start já traduzidos). Mesmo cabeçalho, sumário e rodapé
+// da página inicial; a troca de língua leva ao guia na outra língua
+export function renderQuickStart(t, code, { editedDate }) {
+  const q = QUICKSTART[t.key]
+  const s = q.sections
+  const others = LANGUAGES.filter((l) => l.key !== t.key)
+  const target = (l) => QUICKSTART[l.key].path
+  const block = (label, id, text) =>
+    `<div class="code-block"><span class="code-label" id="${id}">${label}</span><pre aria-labelledby="${id}"><code>${esc(text)}</code></pre></div>`
+  const td = (label, html) => `<td data-label="${label}">${html}</td>`
+  const [hName, hType, hReq, hDef, hDesc, hEx] = q.props.head
+  // Padrões literais (números, textos entre aspas, true/false, alert()) em código
+  const defCell = (def) =>
+    def === '—' ? '—' : /^([\d'#]|true$|false$|alert)/.test(def) ? `<code>${def}</code>` : def
+  return `<!doctype html>
+<html lang="${t.htmlLang}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>${esc(q.title)} — VersaEdit</title>
+<meta name="description" content="${esc(q.description)}">
+<link rel="canonical" href="https://versaedit.dev${q.path}">
+${LANGUAGES.map((l) => `<link rel="alternate" hreflang="${l.htmlLang}" href="https://versaedit.dev${QUICKSTART[l.key].path}">`).join('\n')}
+<link rel="alternate" hreflang="x-default" href="https://versaedit.dev${QUICKSTART.en.path}">
+<meta property="og:locale" content="${t.htmlLang.replace('-', '_')}">
+<link rel="icon" href="data:,">
+<style>${CSS}</style>
+</head>
+<body>
+<a class="skip" href="#content">${t.skip}</a>
+${header(t, others, { contentsButton: true, target })}
+
+<div class="wrap body">
+  <nav class="rail" id="rail" aria-label="${t.rail.contents}">
+    <h2>${t.rail.contents}</h2>
+    <ol>
+${QS_SECTIONS.map((id) => `      <li><a href="#${id}">${s[id]}</a></li>`).join('\n')}
+    </ol>
+    <div class="project">
+      <h2>${t.rail.project}</h2>
+      <ol>
+        <li><a href="${t.path}">VersaEdit</a></li>
+        <li><a href="/playground/">Playground</a></li>
+        <li><a href="${REPO}/tree/main/examples/quick-start">${t.rail.sourceCode}</a></li>
+        <li><a href="${REPO}/issues/new/choose">${t.rail.issue}</a></li>
+      </ol>
+    </div>
+  </nav>
+
+  <main id="content">
+    <div class="title-row" id="top">
+      <h1>${q.title}</h1>
+    </div>
+    <p class="tagline">${q.tagline}</p>
+
+    <div class="content single">
+      <article class="article">
+${q.intro.map((p) => `        <p>${p}</p>`).join('\n')}
+
+        <h2 class="sec" id="install">${s.install}</h2>
+        ${block(q.install.latest, 'cmd-latest', COMMANDS.latest)}
+        ${block(q.install.pinned, 'cmd-pinned', COMMANDS.pinned)}
+        <p>${q.install.text}</p>
+        <p>${q.install.newProject}</p>
+        <pre><code>${esc(COMMANDS.newProject)}</code></pre>
+
+        <h2 class="sec" id="example">${s.example}</h2>
+        <p>${q.example.text}</p>
+        ${block(q.example.fileApp, 'file-app', code.app)}
+        <p>${q.example.template}</p>
+        <p>${q.example.run}</p>
+        <p>${q.example.tested}</p>
+
+        <h2 class="sec" id="styles">${s.styles}</h2>
+        <p>${q.styles}</p>
+
+        <h2 class="sec" id="props">${s.props}</h2>
+        <p>${q.props.intro}</p>
+        <table class="wikitable props">
+          <thead><tr>${q.props.head.map((h) => `<th scope="col">${h}</th>`).join('')}</tr></thead>
+          <tbody>
+${q.props.rows
+  .map(
+    ([name, type, def, desc, ex]) =>
+      `            <tr>${td(hName, `<code>${name}</code>`)}${td(hType, `<code>${type}</code>`)}${td(hReq, q.props.no)}${td(hDef, defCell(def))}${td(hDesc, desc)}${td(hEx, `<code>${esc(ex)}</code>`)}</tr>`,
+  )
+  .join('\n')}
+          </tbody>
+        </table>
+        <p>${q.props.more}</p>
+
+        <h2 class="sec" id="ref">${s.ref}</h2>
+        <p>${q.ref.intro}</p>
+        <table class="wikitable props">
+          <thead><tr>${q.ref.head.map((h) => `<th scope="col">${h}</th>`).join('')}</tr></thead>
+          <tbody>
+${q.ref.rows.map(([m, d]) => `            <tr>${td(q.ref.head[0], `<code>${m}</code>`)}${td(q.ref.head[1], d)}</tr>`).join('\n')}
+          </tbody>
+        </table>
+
+        <h2 class="sec" id="flow">${s.flow}</h2>
+        <ol class="flow">
+${q.flow.steps.map((step) => `          <li>${step}</li>`).join('\n')}
+        </ol>
+        <p>${q.flow.text}</p>
+        <p>${q.flow.fetchText}</p>
+        ${block(q.flow.fileSave, 'file-save', code.save)}
+        <p>${q.flow.usage}</p>
+        <pre><code>${esc(COMMANDS.usage)}</code></pre>
+
+        <h2 class="sec" id="security">${s.security}</h2>
+        <p>${q.security}</p>
+
+        <h2 class="sec" id="next">${s.next}</h2>
+        <ul class="list">
+${q.next.map((n) => `          <li>${n}</li>`).join('\n')}
+        </ul>
+      </article>
+    </div>
   </main>
 </div>
 

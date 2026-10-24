@@ -12,6 +12,7 @@ const chromium = { ...devices['Desktop Chrome'], channel: process.env.CI ? undef
 const EXAMPLES = [
   { name: 'vite-react', port: 5191, command: 'npx vite preview --port 5191 --strictPort' },
   { name: 'nextjs', port: 5192, command: 'npx next start --port 5192' },
+  { name: 'quick-start', port: 5193, command: 'npx vite preview --port 5193 --strictPort' },
 ].filter((e) => fs.existsSync(path.join(WORK, e.name)))
 
 export default defineConfig({

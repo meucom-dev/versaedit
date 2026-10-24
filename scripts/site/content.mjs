@@ -109,6 +109,8 @@ export const CONTENT = {
     installation:
       'VersaEdit is an ES module with TypeScript types, published on npm as a beta (0.5.0-beta.1).',
     installLabel: 'Install the beta',
+    quickStartLink:
+      'Step-by-step setup with a complete React example: <a href="/quick-start/">Quick Start</a>.',
     styling:
       'The editor injects its own stylesheet by default. Sites with a strict Content Security Policy can turn injection off with <code>injectStyles={false}</code> and import <code>versaedit/versaedit.css</code>. Saved content is displayed with <code>versaedit-content.css</code> inside a <code>.versaedit-content</code> wrapper.<sup><a href="#ref-2">[2]</a></sup>',
     security:
@@ -275,6 +277,8 @@ export const CONTENT = {
     installation:
       'O VersaEdit é um módulo ES com tipos TypeScript, publicado no npm em versão beta (0.5.0-beta.1).',
     installLabel: 'Instalação da versão beta',
+    quickStartLink:
+      'Configuração passo a passo, com um exemplo completo em React: <a href="/pt/guia-rapido/">Guia rápido</a>.',
     styling:
       'O editor injeta a própria folha de estilos por padrão. Sites com política de segurança de conteúdo (CSP) restrita podem desligar a injeção com <code>injectStyles={false}</code> e importar <code>versaedit/versaedit.css</code>. O conteúdo salvo é exibido com <code>versaedit-content.css</code> dentro de um elemento <code>.versaedit-content</code>.<sup><a href="#ref-2">[2]</a></sup>',
     security:
@@ -444,6 +448,8 @@ export const CONTENT = {
     installation:
       'VersaEdit es un módulo ES con tipos de TypeScript, publicado en npm como versión beta (0.5.0-beta.1).',
     installLabel: 'Instalación de la versión beta',
+    quickStartLink:
+      'Configuración paso a paso, con un ejemplo completo en React: <a href="/es/guia-rapida/">Guía rápida</a>.',
     styling:
       'El editor inyecta su propia hoja de estilos de forma predeterminada. Los sitios con una política de seguridad de contenido (CSP) estricta pueden desactivar la inyección con <code>injectStyles={false}</code> e importar <code>versaedit/versaedit.css</code>. El contenido guardado se muestra con <code>versaedit-content.css</code> dentro de un elemento <code>.versaedit-content</code>.<sup><a href="#ref-2">[2]</a></sup>',
     security:

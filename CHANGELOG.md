@@ -6,6 +6,15 @@ by the internal stabilization batches.
 
 ## [Unreleased]
 
+### Added
+
+- Quick Start guide on the site in English, Portuguese and Spanish (`/quick-start/`,
+  `/pt/guia-rapido/`, `/es/guia-rapida/`): installation (`@beta` or a pinned version), a complete
+  React + TypeScript example that captures the HTML, essential properties, ref methods, sending the
+  HTML to an API and server-side sanitization. Linked from the site menu and the home page.
+- `examples/quick-start`: the guide's code as an example covered by `npm run test:package` (also
+  with `--from-registry`); the site shows these files, so the guide cannot drift from tested code.
+
 ## [0.5.0-beta.1] - 2026-10-23
 
 First public beta.

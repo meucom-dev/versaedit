@@ -559,3 +559,166 @@ test.describe('filosofia', () => {
     }
   }
 })
+
+test.describe('guia rápido', () => {
+  const PAGES = [
+    {
+      home: '/',
+      path: '/quick-start/',
+      lang: 'en',
+      key: 'en',
+      title: 'Quick Start',
+      locale: 'en',
+      save: 'Save content',
+      no: 'No',
+      languages: ['Português', 'Español'],
+    },
+    {
+      home: '/pt/',
+      path: '/pt/guia-rapido/',
+      lang: 'pt-BR',
+      key: 'pt',
+      title: 'Guia rápido',
+      locale: 'pt-BR',
+      save: 'Salvar conteúdo',
+      no: 'Não',
+      languages: ['English', 'Español'],
+    },
+    {
+      home: '/es/',
+      path: '/es/guia-rapida/',
+      lang: 'es',
+      key: 'es',
+      title: 'Guía rápida',
+      locale: 'es',
+      save: 'Guardar contenido',
+      no: 'No',
+      languages: ['English', 'Português'],
+    },
+  ] as const
+  const example = (file: string) =>
+    fs.readFileSync(path.resolve('examples/quick-start/src', file), 'utf8')
+
+  test('menu principal, sumário e seção Instalação levam ao guia da mesma língua', async ({
+    page,
+  }) => {
+    for (const p of PAGES) {
+      await goto(page, p.home)
+      await expect(page.locator('.site-nav a', { hasText: p.title })).toHaveAttribute(
+        'href',
+        p.path,
+      )
+      await expect(page.locator('#rail .project a', { hasText: p.title })).toHaveAttribute(
+        'href',
+        p.path,
+      )
+      await expect(page.locator('#installation ~ p a', { hasText: p.title })).toHaveAttribute(
+        'href',
+        p.path,
+      )
+    }
+    // Também no cabeçalho da filosofia
+    await goto(page, '/pt/filosofia/')
+    await page.locator('.site-nav a', { hasText: 'Guia rápido' }).click()
+    await expect(page).toHaveURL(/\/pt\/guia-rapido\/$/)
+  })
+
+  for (const p of PAGES) {
+    test(`${p.path}: comandos, exemplo idêntico ao testado, propriedades e seções`, async ({
+      page,
+    }) => {
+      const { localizeCode } = await import('../../scripts/site/quickstart.mjs')
+      await goto(page, p.path)
+      expect(await page.evaluate(() => document.documentElement.lang)).toBe(p.lang)
+      await expect(page.locator('h1')).toHaveText(p.title)
+      await expect(page.locator('#cmd-latest + pre code')).toHaveText('npm install versaedit@beta')
+      await expect(page.locator('#cmd-pinned + pre code')).toHaveText(
+        'npm install versaedit@0.5.0-beta.1',
+      )
+      // Código do site = arquivos do exemplo (só comentários, textos e locale traduzidos)
+      const app = await page.locator('#file-app + pre code').textContent()
+      expect(app).toBe(localizeCode(p.key, 'App.tsx', example('App.tsx')))
+      expect(app).toContain("import { VersaEdit, type VersaEditHandle } from 'versaedit'")
+      expect(app).toContain("import 'versaedit/versaedit.css'")
+      expect(app).toContain(`locale="${p.locale}"`)
+      expect(app).toContain(p.save)
+      const save = await page.locator('#file-save + pre code').textContent()
+      expect(save).toBe(localizeCode(p.key, 'saveContent.ts', example('saveContent.ts')))
+      expect(save).toContain('await fetch(')
+      // Tabela de propriedades: 6 colunas, nenhuma propriedade obrigatória
+      const props = page.locator('#props ~ table.props').first()
+      await expect(props.locator('thead th')).toHaveCount(6)
+      await expect(props.locator('tbody tr')).toHaveCount(15)
+      await expect(props.locator('tbody td:nth-child(3)')).toHaveText(Array(15).fill(p.no))
+      await expect(props.locator('tbody tr').first().locator('td').first()).toHaveText(
+        'initialContent',
+      )
+      // Métodos da ref, fluxo em 4 passos, 8 seções no sumário e no artigo
+      await expect(page.locator('#ref ~ table.props').first().locator('tbody tr')).toHaveCount(5)
+      await expect(page.locator('ol.flow li')).toHaveCount(4)
+      await expect(page.locator('#rail > ol li')).toHaveCount(8)
+      await expect(page.locator('main h2.sec')).toHaveCount(8)
+    })
+  }
+
+  test('mesma identidade do site; a troca de língua leva ao guia na outra língua; links reais', async ({
+    page,
+  }) => {
+    for (const p of PAGES) {
+      await goto(page, p.path)
+      await expect(page.locator('.site-header .logo img')).toBeVisible()
+      await expect(page.locator('.site-nav a[data-lang-switch]')).toHaveText([...p.languages])
+      await expect(page.locator('footer a[data-lang-switch]')).toHaveText([...p.languages])
+      for (const other of PAGES.filter((o) => o !== p)) {
+        await expect(
+          page.locator(`.site-nav a[data-lang-switch][hreflang="${other.lang}"]`),
+        ).toHaveAttribute('href', other.path)
+      }
+      expect(await page.locator('link[rel="canonical"]').getAttribute('href')).toBe(
+        `https://versaedit.dev${p.path}`,
+      )
+      const links = await page.evaluate(() =>
+        [...document.querySelectorAll('a')].map((a) => a.getAttribute('href') ?? ''),
+      )
+      for (const href of links) {
+        expect(href, 'link sem destino').not.toBe('')
+        if (href.startsWith('#')) expect(await page.locator(href).count(), href).toBe(1)
+        else if (href.startsWith('/'))
+          expect((await page.request.get(href.split('#')[0])).status(), href).toBe(200)
+        else expect(href).toMatch(/^(https:\/\/|mailto:support@versaedit\.dev$)/)
+      }
+    }
+    // A troca de língua leva junto a seção aberta
+    await goto(page, '/quick-start/#props')
+    await page.locator('.site-nav a[data-lang-switch]', { hasText: 'Português' }).click()
+    await expect(page).toHaveURL(/\/pt\/guia-rapido\/#props$/)
+    await expect(page.locator('#props')).toHaveText('Propriedades essenciais')
+  })
+
+  test('celular: sumário pelo botão Conteúdo e tabela em blocos', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 })
+    await goto(page, '/es/guia-rapida/')
+    await expect(page.locator('#rail')).toBeHidden()
+    await page.locator('#menu-btn').click()
+    await expect(page.locator('#rail')).toBeVisible()
+    await page.locator('#rail a[href="#props"]').click()
+    await expect(page.locator('#rail')).toBeHidden()
+    await expect(page.locator('table.props thead').first()).not.toBeInViewport()
+    await noHorizontalScroll(page)
+  })
+
+  for (const p of PAGES) {
+    for (const width of WIDTHS) {
+      for (const scheme of ['light', 'dark'] as const) {
+        test(`${p.path} em ${width}px, tema ${scheme}: sem rolagem horizontal, sem erros, nada externo`, async ({
+          page,
+        }) => {
+          await page.emulateMedia({ colorScheme: scheme })
+          await page.setViewportSize({ width, height: 900 })
+          await goto(page, p.path)
+          await noHorizontalScroll(page)
+        })
+      }
+    }
+  }
+})

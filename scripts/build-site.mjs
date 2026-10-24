@@ -4,6 +4,8 @@
 //   /es/          página inicial em espanhol
 //   /philosophy/, /pt/filosofia/, /es/filosofia/
 //                 The VersaEdit Philosophy (original em português e traduções)
+//   /quick-start/, /pt/guia-rapido/, /es/guia-rapida/
+//                 guia rápido, com o código do exemplo examples/quick-start
 //   /playground/  playground (build do Vite com --mode site)
 //   /assets/      logo
 //   npm run build:site
@@ -12,7 +14,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { CONTENT, PHILOSOPHY } from './site/content.mjs'
-import { renderPage, renderPhilosophy } from './site/template.mjs'
+import { QUICKSTART, localizeCode } from './site/quickstart.mjs'
+import { renderPage, renderPhilosophy, renderQuickStart } from './site/template.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const SITE = path.join(ROOT, 'site')
@@ -44,9 +47,25 @@ for (const t of Object.values(CONTENT)) {
   fs.mkdirSync(dir, { recursive: true })
   fs.writeFileSync(path.join(dir, 'index.html'), renderPhilosophy(manifesto, t, { editedDate }))
 }
+// Guia rápido em cada língua, com o código do exemplo testado (examples/quick-start)
+const example = (file) =>
+  fs.readFileSync(path.join(ROOT, 'examples', 'quick-start', 'src', file), 'utf8')
+for (const t of Object.values(CONTENT)) {
+  const code = {
+    app: localizeCode(t.key, 'App.tsx', example('App.tsx')),
+    save: localizeCode(t.key, 'saveContent.ts', example('saveContent.ts')),
+  }
+  const dir = path.join(SITE, QUICKSTART[t.key].path)
+  fs.mkdirSync(dir, { recursive: true })
+  fs.writeFileSync(path.join(dir, 'index.html'), renderQuickStart(t, code, { editedDate }))
+}
 fs.cpSync(path.join(ROOT, 'site-src', 'assets'), path.join(SITE, 'assets'), { recursive: true })
 // Domínio próprio no GitHub Pages; sem processamento Jekyll
 fs.writeFileSync(path.join(SITE, 'CNAME'), 'versaedit.dev\n')
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '')
-const pages = Object.values(CONTENT).flatMap((t) => [t.path, PHILOSOPHY[t.key].path])
+const pages = Object.values(CONTENT).flatMap((t) => [
+  t.path,
+  PHILOSOPHY[t.key].path,
+  QUICKSTART[t.key].path,
+])
 console.log(`\n✔ site/ pronto: ${pages.join(', ')}, /playground/, /assets/, CNAME`)
