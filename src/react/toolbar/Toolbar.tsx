@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useRef, useState } from 'react'
+import React, { Fragment, useCallback, useEffect, useRef, useState } from 'react'
 import type { FontFamilyOption } from '../../core/defaults'
 import type { LinkDraft, TextboxBorder, VersaEditCore } from '../../core/editor'
 import type { SpeechRecognitionConstructor } from '../../core/speech'
@@ -31,6 +31,7 @@ import { HighlightPicker } from './HighlightPicker'
 import { LinkPopover } from './LinkPopover'
 import { TextboxControls } from './TextboxControls'
 import { ToolbarBtn, ToolbarSep } from './ToolbarButton'
+import { useEscapeToClose } from './usePopup'
 
 const HEADING_BLOCKS: { label: keyof VersaEditLabels; tag: string }[] = [
   { label: 'paragraph', tag: 'p' },
@@ -125,6 +126,14 @@ export function Toolbar({
   // Paleta aberta ('text' | 'bg')
   const [openPalette, setOpenPalette] = useState<ColorKind | null>(null)
   const colorPanelRef = useRef<HTMLDivElement>(null)
+
+  const closePalette = useCallback(() => {
+    setOpenPalette(null)
+    core()?.restorePreview()
+  }, [core])
+  // Esc fecha a paleta também com o foco no texto (o Esc dentro da barra continua
+  // em handleKeyDown)
+  useEscapeToClose(openPalette !== null, colorPanelRef, closePalette)
 
   // Fecha a paleta ao clicar fora dela
   useEffect(() => {

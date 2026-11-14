@@ -14,6 +14,11 @@ const accent = (percent: number) => `color-mix(in srgb, var(--ve-accent) ${perce
 
 export const EDITOR_CSS = `
 .ve-root { position: relative; --ve-accent: #2563eb; }
+/* Alinhamento isolado da página: o editor não herda o text-align do elemento pai
+   (ex.: body centralizado). 'start' é o valor inicial do CSS — à esquerda em textos
+   da esquerda para a direita, à direita em rtl. O alinhamento de cada parágrafo
+   continua no style dele. */
+.ve-root, .ve-content { text-align: start; }
 .ve-icon { display: block; }
 
 /* Barra de ferramentas */
@@ -139,7 +144,7 @@ export function injectStyles() {
 // esconde a alça de arrasto das caixas de texto. Cores e fontes do texto vêm
 // do estilo gravado em cada trecho; o resto fica com o CSS do site.
 export const CONTENT_CSS = `
-.versaedit-content { --ve-accent: #2563eb; }
+.versaedit-content { --ve-accent: #2563eb; text-align: start; }
 .versaedit-content::after { content: ''; display: block; clear: both; }
 .versaedit-content img { display: block; max-width: 100%; height: auto; }
 .versaedit-content img.pos-left { float: left; margin: 40px; max-width: 50%; }

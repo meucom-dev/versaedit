@@ -28,6 +28,19 @@ by the internal stabilization batches.
   block under the pointer; images keep their inline behaviour.
 - After a drag, an empty `style=""` left on the element is removed, so saving and reopening returns
   the same HTML.
+- The editor inherited `text-align` from the host page (the Vite starter centers `body`, so the
+  editor text appeared centered). `.ve-root`, `.ve-content` and the published `.versaedit-content`
+  now start from `text-align: start` (left in left-to-right text, right in `rtl`). The alignment
+  commands and explicit alignment in loaded content are unchanged; the saved HTML gets no extra
+  style.
+- Toolbar menus (font, text and paper color, highlight, link form) opened near the right edge of the
+  window (narrow window, phone, high zoom) went past it and were cut off, in every browser. An open
+  menu now slides horizontally just enough to stay inside the window, still under its button,
+  without changing its size.
+- With the caret in the text (toolbar buttons hand the focus back to the editor to keep the
+  selection), Esc did not close the font menu, the color palette or the highlight palette. Esc now
+  closes them without cancelling the key or touching the selection; Esc outside the editor does not
+  close them. The highlight palette also closes on a click outside, like the other menus.
 
 ## [0.5.0-beta.1] - 2026-10-23
 
@@ -328,3 +341,7 @@ caret-color: …">`, or the same declarations added to the user's own elements).
   Firefox + WebKit run and passed 15/15 when repeated alone; suspected timing under parallel load.
 - Firefox diagnostic: `onConfirm "async-yes"` (`tests/e2e/dialogs.spec.ts`) failed once in the full
   run (v0.4.x) and passed 40/40 when repeated alone — same pattern as above.
+- Firefox diagnostic: `dialogs.spec.ts` "conteúdo cortado chega como aviso" and
+  `cursor-selection.spec.ts` "Esc tira a seleção da caixa" failed once each; both pass alone (3/3)
+  and in series. Rerunning both files in parallel (3 runs) failed other, random tests with
+  `browserContext.newPage`/`close` timeouts — the same parallel-load pattern, not editor defects.

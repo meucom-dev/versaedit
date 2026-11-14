@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { LinkDraft, VersaEditCore } from '../../core/editor'
 import type { VersaEditLabels } from '../../core/i18n'
+import { useKeepInViewport } from './usePopup'
 
 // Formulário de link (no lugar do prompt() do navegador): endereço e texto.
 // Enter aplica, Esc ou clique fora cancela.
@@ -20,6 +21,7 @@ export function LinkPopover({
   const [invalid, setInvalid] = useState(false)
   const boxRef = useRef<HTMLFormElement>(null)
   const urlRef = useRef<HTMLInputElement>(null)
+  useKeepInViewport(true, boxRef)
 
   const cancel = () => {
     core()?.cancelLink()

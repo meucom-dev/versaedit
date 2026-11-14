@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { VersaEditCore } from '../../core/editor'
 import type { VersaEditLabels } from '../../core/i18n'
 import { ToolbarBtn } from './ToolbarButton'
+import { useEscapeToClose, useKeepInViewport } from './usePopup'
 
 // Marca-texto: paleta de cores de fundo para o trecho selecionado
 export function HighlightPicker({
@@ -14,13 +15,29 @@ export function HighlightPicker({
   colors: string[]
 }) {
   const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const paletteRef = useRef<HTMLDivElement>(null)
+  const close = () => setOpen(false)
+  useKeepInViewport(open, paletteRef)
+  useEscapeToClose(open, wrapRef, close)
+
+  // Fecha ao clicar fora, como os outros menus
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [open])
+
   return (
-    <div className="ve-highlight-wrap">
+    <div className="ve-highlight-wrap" ref={wrapRef}>
       <ToolbarBtn onClick={() => setOpen(!open)} title={L.highlight}>
         <span className="ve-highlight-sample">S</span>
       </ToolbarBtn>
       {open && (
-        <div className="ve-highlight-palette">
+        <div className="ve-highlight-palette" ref={paletteRef}>
           {colors.map((c) => {
             const title = c === 'transparent' ? L.highlightNone : c
             return (

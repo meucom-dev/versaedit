@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import type { VersaEditCore } from '../../core/editor'
 import { format, type VersaEditLabels } from '../../core/i18n'
 import { IconPaper, IconTextColor } from '../icons'
+import { useKeepInViewport } from './usePopup'
 
 export type ColorKind = 'text' | 'bg'
 
@@ -28,6 +29,8 @@ export function ColorPicker({
   onPick: (kind: ColorKind, color: string) => void
   onPickCustom: (kind: ColorKind, color: string) => void
 }) {
+  const paletteRef = useRef<HTMLDivElement>(null)
+  useKeepInViewport(openPalette === kind, paletteRef)
   const command = kind === 'text' ? 'foreColor' : 'hiliteColor'
   const label = kind === 'text' ? L.textColor : L.paperColor
   const applyLabel = format(L.applyColor, { label, color })
@@ -63,7 +66,7 @@ export function ColorPicker({
         <span className="ve-color-indicator" style={{ backgroundColor: color }} />
       </button>
       {openPalette === kind && (
-        <div className="ve-palette" onMouseLeave={() => core()?.restorePreview()}>
+        <div ref={paletteRef} className="ve-palette" onMouseLeave={() => core()?.restorePreview()}>
           {palette.map((c) => (
             <button
               key={c}

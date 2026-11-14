@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { FontFamilyOption } from '../../core/defaults'
 import type { VersaEditCore } from '../../core/editor'
 import type { VersaEditLabels } from '../../core/i18n'
+import { useEscapeToClose, useKeepInViewport } from './usePopup'
 
 // Menu de famílias de fonte: pré-visualiza a fonte no trecho selecionado ao
 // passar o mouse e grava ao clicar
@@ -20,6 +21,13 @@ export function FontPicker({
 }) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const optionsRef = useRef<HTMLDivElement>(null)
+  const close = () => {
+    setOpen(false)
+    core()?.restorePreview()
+  }
+  useKeepInViewport(open, optionsRef)
+  useEscapeToClose(open, menuRef, close)
 
   // Fecha ao clicar fora do menu
   useEffect(() => {
@@ -63,6 +71,7 @@ export function FontPicker({
       </button>
       {open && (
         <div
+          ref={optionsRef}
           className="ve-font-options"
           role="listbox"
           aria-label={L.fontFamily}
