@@ -3,6 +3,10 @@ import { useEffect, useLayoutEffect, type RefObject } from 'react'
 // Distância mínima entre o menu e a borda da janela
 const EDGE = 8
 
+// No servidor (SSR) o useLayoutEffect não roda e o React 18 avisa; lá usa-se
+// useEffect (que também não roda), como em VersaEdit.tsx
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
+
 /**
  * Mantém o menu aberto inteiro dentro da janela: perto da borda (janela estreita,
  * celular, zoom alto) ele desliza na horizontal o necessário, sem mudar de tamanho
@@ -10,7 +14,7 @@ const EDGE = 8
  * `transform` do próprio CSS do menu.
  */
 export function useKeepInViewport(open: boolean, ref: RefObject<HTMLElement | null>) {
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const el = ref.current
     if (!open || !el) return
     const fit = () => {
