@@ -8,9 +8,70 @@
 //   --ve-accent         cor de destaque (seleção, caixas de texto, alças)
 //   --ve-heading-font   fonte dos títulos (padrão: a mesma do texto)
 
+import { DEFAULT_FONT } from './defaults'
+
 const STYLE_ID = 'versaedit-styles'
 
 const accent = (percent: number) => `color-mix(in srgb, var(--ve-accent) ${percent}%, transparent)`
+
+// ─── TEXTO: UMA SÓ DEFINIÇÃO PARA A EDIÇÃO E A PUBLICAÇÃO ────────────
+// Aparência do texto na área de edição. As mesmas regras valem para o conteúdo
+// publicado com o Layout Mirror (classe ve-mirror): o escopo muda, os valores não.
+// Escopos: '.ve-content' (editor) e '.versaedit-content:where(.ve-mirror)' — o
+// :where() não soma especificidade, então as regras publicadas competem com as
+// classes do conteúdo (pos-left, rich-textbox…) exatamente como no editor.
+// Caminho inverso (futuro, fora deste lote): o editor reproduzir o CSS do site
+// pelo contentClassName, com estas regras desligadas — por isso elas são geradas
+// por escopo e não escritas à mão para cada lado.
+const TEXT = { size: '12pt', lineHeight: '1.6', color: '#1f2328', paper: '#fff' }
+
+// Caixa da alça de arrasto das caixas de texto (o que ocupa espaço na linha). No
+// publicado com o espelho ela vira um espaço invisível do mesmo tamanho, para a
+// primeira linha da caixa quebrar no mesmo ponto da edição.
+const HANDLE_BOX =
+  'display: inline-flex; align-items: center; justify-content: center; border: 1px solid transparent; font-size: 14px; line-height: 1; padding: 4px 8px; margin-right: 6px; vertical-align: middle;'
+
+const textRules = (s: string) => `
+${s} p { margin: 0; padding: 0; line-height: 1.3; }
+${s} div, ${s} span { margin: 0; padding: 0; }
+${s} h1, ${s} h2, ${s} h3, ${s} h4, ${s} h5, ${s} h6 { font-family: var(--ve-heading-font, inherit); margin: 0; padding: 0; line-height: 1.2; }
+${s} blockquote { border-left: 3px solid var(--ve-accent); margin: 0; padding: 8px 16px; background: ${accent(5)}; color: #555; font-style: italic; clear: both; }
+/* Recuo (Chromium e WebKit recuam com um blockquote marcado role="presentation",
+   ver core/indent.ts): só a margem, sem a aparência de citação (itálico, fundo, cor) */
+${s} blockquote[role="presentation"] { font-style: normal; background: none; color: inherit; }
+
+/* Tabelas e código (colados ou carregados) */
+${s} table { border-collapse: collapse; max-width: 100%; margin: 4px 0; }
+${s} th, ${s} td { border: 1px solid #c8ccd0; padding: 4px 8px; vertical-align: top; min-width: 2em; }
+${s} th { background-color: #f3f4f6; font-weight: 600; text-align: left; }
+${s} caption { caption-side: top; padding: 4px 0; font-weight: 600; text-align: left; }
+${s} pre { margin: 4px 0; padding: 8px 12px; background: #f6f8fa; border-radius: 4px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
+${s} code { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
+`
+
+// ─── LAYOUT MIRROR (classe ve-mirror) ────────────────────────────────
+// Isola o texto do CSS da página, dos dois lados: o editor com a prop layoutMirror e
+// o conteúdo publicado em <div class="versaedit-content ve-mirror">. Sem a classe,
+// nada disto se aplica (o site estiliza o conteúdo como sempre).
+// - Raiz: as propriedades herdadas fixadas com os valores da área de edição (o site
+//   não muda fonte, tamanho, cor, espaçamento entre letras…).
+// - Descendentes: all: revert devolve cada propriedade ao padrão do navegador antes
+//   das regras do VersaEdit; a regra fica com especificidade (0,1,0), abaixo de
+//   todas as do conteúdo (0,1,1 em diante), então só desfaz o CSS do site (seletores
+//   de elemento, como p {} ou ul {}). Estilos gravados no HTML (style="…") ganham
+//   sempre.
+// - O que difere entre os dois lados sem o espelho: caixa de texto (border-box no
+//   publicado, content-box no editor, e o fundo), imagem (o publicado encolhe na
+//   coluna) e a quebra de palavras longas (o contenteditable quebra; o site não).
+// - Colunas estreitas (celular): a caixa de texto de largura fixa encolhe para caber
+//   com as margens (102px = margens 2×40 + padding 2×10 + borda 2×1); as flutuantes
+//   seguem com o limite de 50%.
+const mirrorRules = (s: string) => `
+${s} { font-family: var(--ve-font, ${DEFAULT_FONT}); font-size: ${TEXT.size}; line-height: ${TEXT.lineHeight}; color: ${TEXT.color}; background-color: ${TEXT.paper}; font-weight: normal; font-style: normal; font-variant: normal; letter-spacing: normal; word-spacing: normal; text-transform: none; text-indent: 0; text-align: start; overflow-wrap: break-word; }
+${s} :where(*) { all: revert; }
+${s} img { max-width: 100%; height: auto; }
+${s} .rich-textbox { box-sizing: content-box; background: ${accent(3)}; max-width: calc(100% - 102px); }
+`
 
 export const EDITOR_CSS = `
 .ve-root { position: relative; --ve-accent: #2563eb; }
@@ -78,26 +139,11 @@ export const EDITOR_CSS = `
 
 /* Moldura e área de edição */
 .ve-frame { position: relative; max-width: 100%; margin: 0; box-sizing: border-box; }
-.ve-content { display: block; max-width: 100%; box-sizing: border-box; padding: 8px 16px; border: none; overflow: hidden; resize: none; line-height: 1.6; font-size: 12pt; color: #1f2328; background-color: #fff; caret-color: currentColor; outline: none; }
+.ve-content { display: block; max-width: 100%; box-sizing: border-box; padding: 8px 16px; border: none; overflow: hidden; resize: none; line-height: ${TEXT.lineHeight}; font-size: ${TEXT.size}; color: ${TEXT.color}; background-color: ${TEXT.paper}; caret-color: currentColor; outline: none; }
 .ve-content.ve-scroll { overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
 .ve-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .ve-content:empty::before { content: attr(data-placeholder); color: #999; pointer-events: none; font-style: italic; }
-.ve-content p { margin: 0; padding: 0; line-height: 1.3; }
-.ve-content div, .ve-content span { margin: 0; padding: 0; }
-.ve-content h1, .ve-content h2, .ve-content h3, .ve-content h4, .ve-content h5, .ve-content h6 { font-family: var(--ve-heading-font, inherit); margin: 0; padding: 0; line-height: 1.2; }
-.ve-content blockquote { border-left: 3px solid var(--ve-accent); margin: 0; padding: 8px 16px; background: ${accent(5)}; color: #555; font-style: italic; clear: both; }
-/* Recuo (Chromium e WebKit recuam com um blockquote marcado role="presentation",
-   ver core/indent.ts): só a margem, sem a aparência de citação (itálico, fundo, cor) */
-.ve-content blockquote[role="presentation"] { font-style: normal; background: none; color: inherit; }
-
-/* Tabelas e código (colados ou carregados) */
-.ve-content table { border-collapse: collapse; max-width: 100%; margin: 4px 0; }
-.ve-content th, .ve-content td { border: 1px solid #c8ccd0; padding: 4px 8px; vertical-align: top; min-width: 2em; }
-.ve-content th { background-color: #f3f4f6; font-weight: 600; text-align: left; }
-.ve-content caption { caption-side: top; padding: 4px 0; font-weight: 600; text-align: left; }
-.ve-content pre { margin: 4px 0; padding: 8px 12px; background: #f6f8fa; border-radius: 4px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
-.ve-content code { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-size: 0.9em; }
-
+${textRules('.ve-content')}
 /* Áudio e vídeo externos suspensos no editor (core/media.ts) */
 .ve-content video[data-ve-media], .ve-content audio[data-ve-media] { outline: 1px dashed #999; outline-offset: 2px; }
 
@@ -117,7 +163,7 @@ export const EDITOR_CSS = `
 .ve-content .rich-textbox.selected { outline-color: var(--ve-accent); outline-width: 3px; cursor: text; }
 .ve-content .rich-textbox.tb-float-left { float: left; margin: 40px; max-width: 50%; }
 .ve-content .rich-textbox.tb-float-right { float: right; margin: 40px; max-width: 50%; }
-.ve-content .textbox-handle { touch-action: none; display: inline-flex; align-items: center; justify-content: center; cursor: grab; color: var(--ve-accent); background: ${accent(15)}; border: 1px solid ${accent(40)}; border-radius: 4px; font-size: 14px; line-height: 1; user-select: none; -webkit-user-drag: none; padding: 4px 8px; margin-right: 6px; vertical-align: middle; }
+.ve-content .textbox-handle { touch-action: none; ${HANDLE_BOX} cursor: grab; color: var(--ve-accent); background: ${accent(15)}; border-color: ${accent(40)}; border-radius: 4px; user-select: none; -webkit-user-drag: none; }
 .ve-content .textbox-handle:active { cursor: grabbing; }
 
 /* Menus flutuantes de imagem e caixa de texto */
@@ -128,7 +174,9 @@ export const EDITOR_CSS = `
 .ve-float-sep { width: 1px; background: #ddd; }
 .ve-resize-handle { touch-action: none; position: absolute; width: 14px; height: 14px; background: var(--ve-accent); border: 2px solid #fff; border-radius: 3px; cursor: nwse-resize; z-index: 110; box-shadow: 0 1px 4px rgba(0,0,0,0.3); user-select: none; -webkit-user-drag: none; }
 .ve-resize-handle:hover { filter: brightness(0.85); }
-`
+
+/* Layout Mirror na área de edição (prop layoutMirror): texto isolado do CSS da página */
+${mirrorRules('.ve-content:where(.ve-mirror)')}`
 
 export function injectStyles() {
   if (typeof document === 'undefined' || document.getElementById(STYLE_ID)) return
@@ -173,4 +221,17 @@ export const CONTENT_CSS = `
    o role ao serem criados ou carregados (core/indent.ts), e o CSS do editor não a
    tem. Não remover enquanto houver conteúdo publicado nesse formato. */
 .versaedit-content blockquote:not([role])[style*="margin: 0 0 0 40px"][style*="border: none"] { font-style: normal; }
+
+/* ── LAYOUT MIRROR (opcional): <div class="versaedit-content ve-mirror"> ──
+   O conteúdo publicado com a mesma aparência da área de edição: as mesmas regras de
+   texto do editor (mesma fonte nas duas pontas, src/core/styles.ts) e o texto isolado
+   do CSS do site. A largura continua com o site: com a mesma largura útil da área de
+   edição, as linhas quebram nos mesmos pontos. Fonte do texto e dos títulos pelas
+   variáveis --ve-font e --ve-heading-font (as props fontFamily e headingFontFamily). */
+.versaedit-content:where(.ve-mirror) { display: flow-root; }
+${textRules('.versaedit-content:where(.ve-mirror)')}
+${mirrorRules('.versaedit-content:where(.ve-mirror)')}
+.versaedit-content:where(.ve-mirror) .textbox-handle { ${HANDLE_BOX} visibility: hidden; }
+/* Recuo antigo (regra de compatibilidade acima): no editor ele já abre como recuo */
+.versaedit-content:where(.ve-mirror) blockquote:not([role])[style*="margin: 0 0 0 40px"][style*="border: none"] { background: none; color: inherit; }
 `

@@ -14,6 +14,17 @@ by the internal stabilization batches.
   HTML to an API and server-side sanitization. Linked from the site menu and the home page.
 - `examples/quick-start`: the guide's code as an example covered by `npm run test:package` (also
   with `--from-registry`); the site shows these files, so the guide cannot drift from tested code.
+- Layout Mirror (optional): published content can look exactly as it did while editing. Add the
+  `layoutMirror` prop to the editor and the `ve-mirror` class to the published container
+  (`<div class="versaedit-content ve-mirror">`, with `versaedit-content.css`). Both sides then use
+  the same text rules (one definition in `src/core/styles.ts`, generated per scope) and are
+  isolated from the page's element rules (`p {}`, `ul {}`, `h2 {}`…): font, size, line height,
+  paragraph and heading spacing, lists, quotes, links, alignments, tables, code, images and text
+  boxes match. With the same usable width, lines break at the same points; in narrower columns
+  images and text boxes shrink to fit. A custom font goes through `--ve-font` /
+  `--ve-heading-font`. The saved HTML is unchanged; without the prop and the class nothing changes
+  (editor and published CSS rules are the same as before, only new `.ve-mirror` rules were added).
+  The playground shows the published preview when `layoutMirror` is on (Properties panel).
 
 ### Fixed
 

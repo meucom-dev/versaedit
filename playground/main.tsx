@@ -1,13 +1,15 @@
 import { StrictMode, useCallback, useRef, useState, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
 import { VersaEdit, VersaEditDictation, type VersaEditHandle, type VersaEditLocale } from '../src'
-import { DEFAULT_SETTINGS, PropsPanel, settingsToProps } from './PropsPanel'
+import { CONTENT_CSS } from '../src/core/styles'
+import { DEFAULT_SETTINGS, PLAYGROUND_FONTS, PropsPanel, settingsToProps } from './PropsPanel'
 
 // Textos do próprio playground (o editor tem os seus em src/core/i18n)
 const TEXT = {
   en: {
     locale: 'Language',
     showHtml: 'Show HTML',
+    published: 'Published content (versaedit-content ve-mirror)',
     useOnSave: 'Show editor with onSave',
     hideOnSave: 'Hide editor with onSave',
     siteNote:
@@ -16,6 +18,7 @@ const TEXT = {
   'pt-BR': {
     locale: 'Idioma',
     showHtml: 'Ver HTML',
+    published: 'Conteúdo publicado (versaedit-content ve-mirror)',
     useOnSave: 'Mostrar editor com onSave',
     hideOnSave: 'Esconder editor com onSave',
     siteNote:
@@ -24,6 +27,7 @@ const TEXT = {
   es: {
     locale: 'Idioma',
     showHtml: 'Ver HTML',
+    published: 'Contenido publicado (versaedit-content ve-mirror)',
     useOnSave: 'Mostrar editor con onSave',
     hideOnSave: 'Ocultar editor con onSave',
     siteNote:
@@ -60,6 +64,49 @@ const columnWidth = () => Math.min(1000, window.innerWidth) - 32
 function useFitWidth(width: number | string): number | string {
   const available = useSyncExternalStore(onResize, columnWidth, () => 1000)
   return typeof width === 'number' && width > available ? '100%' : width
+}
+
+// Layout Mirror (prop layoutMirror ligada no painel Propriedades): o HTML do editor
+// exibido como um site faria, com versaedit-content.css e a classe ve-mirror, na
+// mesma largura útil da área de edição (largura − moldura − 32px de padding)
+function PublishedPreview(props: {
+  html: string
+  title: string
+  width: number | string
+  frameWidth: number
+}) {
+  useSyncExternalStore(noSubscribe, injectContentCss, injectContentCss)
+  const inset = props.frameWidth * 2 + 32
+  const style = {
+    width:
+      typeof props.width === 'number' ? props.width - inset : `calc(${props.width} - ${inset}px)`,
+    '--ve-font': PLAYGROUND_FONTS.fontFamily,
+    '--ve-heading-font': PLAYGROUND_FONTS.headingFontFamily,
+    outline: '1px dashed #bbb',
+  } as React.CSSProperties
+  return (
+    <>
+      <h2 style={{ fontSize: 16 }}>{props.title}</h2>
+      {/* O HTML vem do próprio editor (já sanitizado por ele) */}
+      <div
+        className="versaedit-content ve-mirror"
+        data-testid="published-mirror"
+        style={style}
+        dangerouslySetInnerHTML={{ __html: props.html }}
+      />
+    </>
+  )
+}
+const noSubscribe = () => () => {}
+// CSS de exibição na página, uma vez (como o import 'versaedit/versaedit-content.css')
+const injectContentCss = () => {
+  if (typeof document !== 'undefined' && !document.getElementById('pg-content-css')) {
+    const style = document.createElement('style')
+    style.id = 'pg-content-css'
+    style.textContent = CONTENT_CSS
+    document.head.appendChild(style)
+  }
+  return true
 }
 
 function App() {
@@ -146,6 +193,14 @@ function App() {
       <details style={{ marginTop: 24 }}>
         <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{T.showHtml}</summary>
         <pre style={{ ...codeStyle, background: '#f4f4f4' }}>{shortenDataUris(html)}</pre>
+        {settings.layoutMirror && (
+          <PublishedPreview
+            html={html}
+            title={T.published}
+            width={editorWidth}
+            frameWidth={settings.frameWidth}
+          />
+        )}
         <PropsPanel
           locale={locale}
           settings={settings}

@@ -73,6 +73,13 @@ export interface VersaEditProps {
   /** Classe extra na área de edição (para estilos do site que vai exibir o conteúdo) */
   contentClassName?: string
   contentStyle?: React.CSSProperties
+  /**
+   * Layout Mirror (padrão: false): isola o texto da área de edição do CSS da página
+   * (classe ve-mirror). Publique o HTML em
+   * `<div class="versaedit-content ve-mirror">` com 'versaedit/versaedit-content.css'
+   * e ele terá a mesma aparência da edição. O HTML entregue não muda.
+   */
+  layoutMirror?: boolean
   /** Texto exibido com o editor vazio (padrão: o do idioma) */
   placeholder?: string
   /** Colagem: junta linhas em branco seguidas em uma só */
@@ -199,6 +206,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     onConfirm,
     contentClassName = '',
     contentStyle,
+    layoutMirror = false,
     placeholder,
     singleLineBreaks = false,
     pasteImages = true,
@@ -452,7 +460,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
           role="textbox"
           aria-multiline="true"
           aria-describedby={hintId}
-          className={`ve-content${scrollable ? ' ve-scroll' : ''} ${contentClassName}`.trim()}
+          className={`ve-content${scrollable ? ' ve-scroll' : ''}${layoutMirror ? ' ve-mirror' : ''} ${contentClassName}`.trim()}
           data-placeholder={placeholder ?? L.placeholder}
           style={{
             // Número: medida exata em px (como sempre); medida CSS: ocupa a moldura

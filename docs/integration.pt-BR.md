@@ -197,3 +197,11 @@ import 'versaedit/versaedit-content.css'
 O `versaedit-content.css` posiciona imagens, desenha caixas de texto (escondendo a alça de arrasto) e
 estiliza tabelas, citações e código. _Verificado:_ aba "Display content" de `examples/vite-react` e o
 exemplo Next.js.
+
+**Mesma aparência da edição (Layout Mirror).** Acrescente `layoutMirror` ao editor e a classe
+`ve-mirror` ao contêiner: `<div className="versaedit-content ve-mirror">`. O texto fica isolado das
+regras de elemento do site nas duas pontas, e as linhas quebram nos mesmos pontos quando o contêiner
+tem a largura útil da área de edição (`width` − moldura − 32 px). O HTML salvo é o mesmo com ou sem
+o espelho. Veja [Layout Mirror](../README.pt-BR.md#layout-mirror). _Verificado:_
+`tests/e2e/layout-mirror.spec.ts` (estilos calculados e posições reais comparados elemento a
+elemento, no Chromium, Firefox e WebKit, com e sem um CSS de site agressivo).

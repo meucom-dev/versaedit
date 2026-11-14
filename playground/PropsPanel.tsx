@@ -22,6 +22,7 @@ export interface Settings {
   allowExternalMedia: boolean
   truncateOnOverflow: boolean
   singleLineBreaks: boolean
+  layoutMirror: boolean
   useOnError: boolean
 }
 
@@ -41,6 +42,7 @@ export const DEFAULT_SETTINGS: Settings = {
   allowExternalMedia: false,
   truncateOnOverflow: false,
   singleLineBreaks: false,
+  layoutMirror: false,
   useOnError: false,
 }
 
@@ -50,6 +52,7 @@ const BOOLEANS = [
   'allowExternalMedia',
   'truncateOnOverflow',
   'singleLineBreaks',
+  'layoutMirror',
 ] as const
 
 // Props do editor que diferem do padrão do playground (só essas são passadas)

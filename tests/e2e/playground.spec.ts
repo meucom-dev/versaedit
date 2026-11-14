@@ -43,6 +43,29 @@ test('grupos da barra, largura e JSX equivalente', async ({ page }) => {
   await expect(page.getByTestId('jsx')).not.toContainText('toolbar=')
 })
 
+test('layoutMirror: prévia publicada com ve-mirror, igual ao editor', async ({ page }) => {
+  await openPanel(page)
+  await expect(page.getByTestId('published-mirror')).toHaveCount(0)
+  await page.getByLabel('layoutMirror', { exact: true }).check()
+  await expect(page.getByTestId('jsx')).toContainText('layoutMirror={true}')
+  await expect(page.locator('.ve-content')).toHaveClass(/\bve-mirror\b/)
+  await page.getByRole('button', { name: 'Load: Formatted text' }).click()
+  const published = page.getByTestId('published-mirror')
+  await expect(published).toHaveClass('versaedit-content ve-mirror')
+  await expect(published.locator('h2')).toHaveText('Heading')
+  // Mesma fonte, tamanho e espaço do título e da lista nas duas pontas
+  const look = (root: string) =>
+    page.evaluate((r) => {
+      const el = document.querySelector(r)!
+      const h2 = getComputedStyle(el.querySelector('h2')!)
+      const ul = el.querySelector('ul')!
+      return [h2.fontFamily, h2.fontSize, h2.marginTop, ul.getBoundingClientRect().height]
+    }, root)
+  expect(await look('[data-testid="published-mirror"]')).toEqual(await look('.ve-content'))
+  await page.getByLabel('layoutMirror', { exact: true }).uncheck()
+  await expect(page.getByTestId('published-mirror')).toHaveCount(0)
+})
+
 test('conteúdos de exemplo e registro de eventos', async ({ page }) => {
   await openPanel(page)
   await page.getByRole('button', { name: 'Load: Table' }).click()

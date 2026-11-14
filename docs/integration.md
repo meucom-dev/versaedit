@@ -196,3 +196,11 @@ import 'versaedit/versaedit-content.css'
 `versaedit-content.css` positions images, draws text boxes (hiding their drag handle) and styles
 tables, quotes and code. _Verified:_ "Display content" tab of `examples/vite-react` and the Next.js
 example.
+
+**Same appearance as the editor (Layout Mirror).** Add `layoutMirror` to the editor and the
+`ve-mirror` class to the container: `<div className="versaedit-content ve-mirror">`. The text is
+then isolated from the site's element rules on both sides, and lines break at the same points
+when the container has the editing area's usable width (`width` − frame − 32 px). The saved HTML
+is the same with or without it. See [Layout Mirror](../README.md#layout-mirror). _Verified:_
+`tests/e2e/layout-mirror.spec.ts` (computed styles and real positions compared element by element,
+in Chromium, Firefox and WebKit, with and without an aggressive site stylesheet).

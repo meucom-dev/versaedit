@@ -243,6 +243,46 @@ declare global {
     __showContent: (html: string) => void
   }
 }
+
+// Publicado ao lado do editor (Layout Mirror, lote 3): o HTML em #published, com o CSS de
+// exibição, sem desmontar o editor — para comparar as duas aparências na mesma página
+export interface PublishedOptions {
+  /** Classe ve-mirror no contêiner publicado */
+  mirror?: boolean
+  /** Largura do contêiner em px (padrão: a largura útil da área de edição) */
+  width?: number
+  /** Estilo extra no contêiner (ex.: variáveis --ve-font) */
+  style?: string
+}
+declare global {
+  interface Window {
+    __showPublished: (html: string, options?: PublishedOptions) => void
+  }
+}
+window.__showPublished = (html, options = {}) => {
+  if (!document.getElementById('content-css')) {
+    const style = document.createElement('style')
+    style.id = 'content-css'
+    style.textContent = CONTENT_CSS
+    document.head.appendChild(style)
+  }
+  document.getElementById('published')?.remove()
+  const content = document.querySelector<HTMLElement>('#host .ve-content')
+  const cs = content ? getComputedStyle(content) : null
+  // Largura útil da área de edição (sem o padding): as linhas quebram no mesmo ponto
+  const width =
+    options.width ??
+    (content && cs
+      ? content.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
+      : 800)
+  const box = document.createElement('div')
+  box.id = 'published'
+  box.className = `versaedit-content${options.mirror ? ' ve-mirror' : ''}`
+  box.setAttribute('style', `width:${width}px;margin-top:24px;${options.style ?? ''}`)
+  box.innerHTML = html
+  document.getElementById('host')!.after(box)
+}
+
 window.__showContent = (html) => {
   root?.unmount()
   root = null

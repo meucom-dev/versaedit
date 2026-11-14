@@ -58,36 +58,37 @@ export function PostEditor({
 
 ## Props
 
-| Prop                                                 | Type                                                | Default                   | Description                                                                                                   |
-| ---------------------------------------------------- | --------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `initialContent`                                     | `string`                                            | `''`                      | HTML to load. External changes reload the editor (and reset undo).                                            |
-| `onChange`                                           | `(html) => void`                                    | —                         | Called when the HTML actually changes.                                                                        |
-| `onOverflowChange`                                   | `(boolean) => void`                                 | —                         | Content does / doesn't fit the editor height.                                                                 |
-| `onFocus` / `onBlur`                                 | `() => void`                                        | —                         | Focus entered / left the editor (toolbar buttons keep focus).                                                 |
-| `onError`                                            | `(VersaEditError) => void`                          | `alert()`                 | Errors and warnings with a stable `code` (see below).                                                         |
-| `onConfirm`                                          | `(VersaEditConfirm) => boolean \| Promise<boolean>` | `confirm()`               | Confirmations (e.g. replace content when opening a file).                                                     |
-| `onSave`                                             | `(html) => void`                                    | download                  | Save button gives you the HTML instead of downloading a `.html` file.                                         |
-| `onImageUpload`                                      | `(file) => Promise<url>`                            | base64                    | Upload images and insert the returned URL (recommended).                                                      |
-| `width`                                              | `number \| string`                                  | `640`                     | Total width; a number is px, a string is CSS (`'100%'`).                                                      |
-| `height`                                             | `number`                                            | `480`                     | Total height in px.                                                                                           |
-| `toolbarWidth`                                       | `number \| string`                                  | `width`                   | Toolbar width (numbers center it over the editor).                                                            |
-| `frame`                                              | `{ width, color, radius } \| false`                 | `1px #d0d7de, 8px`        | Border around the editing area.                                                                               |
-| `accentColor`                                        | `string`                                            | `#2563eb`                 | Selection outlines, text boxes, handles.                                                                      |
-| `fontFamily` / `headingFontFamily`                   | `string`                                            | system font               | Text and heading fonts.                                                                                       |
-| `fontFamilies` / `fontSizes`                         | arrays                                              | defaults                  | Font menu (`{ label, value }`) and sizes (pt).                                                                |
-| `colorPalette` / `highlightColors`                   | `string[]`                                          | defaults                  | Text/paper colors and highlighter colors (`'transparent'` = none).                                            |
-| `loadGoogleFonts`                                    | `string[]`                                          | —                         | Families to load from Google Fonts (off by default).                                                          |
-| `toolbar`                                            | `ToolbarGroup[]`                                    | all                       | Toolbar groups to show (see below). `[]` hides the toolbar.                                                   |
-| `showFileButtons`                                    | `boolean`                                           | `true`                    | Save/Open file buttons.                                                                                       |
-| `showDictation` / `speechLang` / `speechRecognition` | —                                                   | `true` / locale / browser | Dictation (see below).                                                                                        |
-| `pasteImages`                                        | `boolean`                                           | `true`                    | Keep images when pasting (see Security).                                                                      |
-| `allowExternalMedia`                                 | `boolean`                                           | `false`                   | Let `<audio>`/`<video>` in loaded content load inside the editor.                                             |
-| `scrollable`                                         | `boolean`                                           | `true`                    | The editing area scrolls when content is taller. `false`: extra content is hidden, like a fixed-height block. |
-| `truncateOnOverflow`                                 | `boolean`                                           | `false`                   | Cut content that exceeds the editor height.                                                                   |
-| `singleLineBreaks`                                   | `boolean`                                           | `false`                   | Paste: collapse consecutive blank lines.                                                                      |
-| `injectStyles`                                       | `boolean`                                           | `true`                    | Inject the editor CSS; set `false` and import the CSS file instead.                                           |
-| `locale` / `labels`                                  | `'en' \| 'pt-BR' \| 'es'` / partial                 | `'en'`                    | Interface language and text overrides.                                                                        |
-| `contentClassName` / `contentStyle` / `placeholder`  | —                                                   | —                         | Editing area class, style and placeholder.                                                                    |
+| Prop                                                 | Type                                                | Default                   | Description                                                                                                           |
+| ---------------------------------------------------- | --------------------------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `initialContent`                                     | `string`                                            | `''`                      | HTML to load. External changes reload the editor (and reset undo).                                                    |
+| `onChange`                                           | `(html) => void`                                    | —                         | Called when the HTML actually changes.                                                                                |
+| `onOverflowChange`                                   | `(boolean) => void`                                 | —                         | Content does / doesn't fit the editor height.                                                                         |
+| `onFocus` / `onBlur`                                 | `() => void`                                        | —                         | Focus entered / left the editor (toolbar buttons keep focus).                                                         |
+| `onError`                                            | `(VersaEditError) => void`                          | `alert()`                 | Errors and warnings with a stable `code` (see below).                                                                 |
+| `onConfirm`                                          | `(VersaEditConfirm) => boolean \| Promise<boolean>` | `confirm()`               | Confirmations (e.g. replace content when opening a file).                                                             |
+| `onSave`                                             | `(html) => void`                                    | download                  | Save button gives you the HTML instead of downloading a `.html` file.                                                 |
+| `onImageUpload`                                      | `(file) => Promise<url>`                            | base64                    | Upload images and insert the returned URL (recommended).                                                              |
+| `width`                                              | `number \| string`                                  | `640`                     | Total width; a number is px, a string is CSS (`'100%'`).                                                              |
+| `height`                                             | `number`                                            | `480`                     | Total height in px.                                                                                                   |
+| `toolbarWidth`                                       | `number \| string`                                  | `width`                   | Toolbar width (numbers center it over the editor).                                                                    |
+| `frame`                                              | `{ width, color, radius } \| false`                 | `1px #d0d7de, 8px`        | Border around the editing area.                                                                                       |
+| `accentColor`                                        | `string`                                            | `#2563eb`                 | Selection outlines, text boxes, handles.                                                                              |
+| `fontFamily` / `headingFontFamily`                   | `string`                                            | system font               | Text and heading fonts.                                                                                               |
+| `fontFamilies` / `fontSizes`                         | arrays                                              | defaults                  | Font menu (`{ label, value }`) and sizes (pt).                                                                        |
+| `colorPalette` / `highlightColors`                   | `string[]`                                          | defaults                  | Text/paper colors and highlighter colors (`'transparent'` = none).                                                    |
+| `loadGoogleFonts`                                    | `string[]`                                          | —                         | Families to load from Google Fonts (off by default).                                                                  |
+| `toolbar`                                            | `ToolbarGroup[]`                                    | all                       | Toolbar groups to show (see below). `[]` hides the toolbar.                                                           |
+| `showFileButtons`                                    | `boolean`                                           | `true`                    | Save/Open file buttons.                                                                                               |
+| `showDictation` / `speechLang` / `speechRecognition` | —                                                   | `true` / locale / browser | Dictation (see below).                                                                                                |
+| `pasteImages`                                        | `boolean`                                           | `true`                    | Keep images when pasting (see Security).                                                                              |
+| `allowExternalMedia`                                 | `boolean`                                           | `false`                   | Let `<audio>`/`<video>` in loaded content load inside the editor.                                                     |
+| `scrollable`                                         | `boolean`                                           | `true`                    | The editing area scrolls when content is taller. `false`: extra content is hidden, like a fixed-height block.         |
+| `truncateOnOverflow`                                 | `boolean`                                           | `false`                   | Cut content that exceeds the editor height.                                                                           |
+| `singleLineBreaks`                                   | `boolean`                                           | `false`                   | Paste: collapse consecutive blank lines.                                                                              |
+| `injectStyles`                                       | `boolean`                                           | `true`                    | Inject the editor CSS; set `false` and import the CSS file instead.                                                   |
+| `locale` / `labels`                                  | `'en' \| 'pt-BR' \| 'es'` / partial                 | `'en'`                    | Interface language and text overrides.                                                                                |
+| `contentClassName` / `contentStyle` / `placeholder`  | —                                                   | —                         | Editing area class, style and placeholder.                                                                            |
+| `layoutMirror`                                       | `boolean`                                           | `false`                   | Isolate the editing area from the page CSS, so published content can look the same ([Layout Mirror](#layout-mirror)). |
 
 **Toolbar groups** (`TOOLBAR_GROUPS`, always shown in this order): `dictation`, `file`, `history`,
 `font`, `block`, `format`, `highlight`, `color`, `align`, `list`, `indent`, `link`, `insert`,
@@ -122,6 +123,33 @@ import 'versaedit/versaedit-content.css'
 
 Formatting such as colors and font sizes is stored in inline `style` attributes; a CSP that blocks
 inline style attributes (`style-src-attr`) will not render it.
+
+### Layout Mirror
+
+Without it, published content takes your site's typography (fonts, sizes, spacing), which is
+usually what a site wants. Turn on Layout Mirror when the published text must look exactly as it
+did while editing: same font, size, line height, paragraph and heading spacing, lists, quotes,
+alignments, images and text boxes.
+
+```tsx
+// Editing: the editing area ignores the page CSS
+;<VersaEdit layoutMirror onChange={save} />
+
+// Publishing: the content stylesheet, plus the ve-mirror class
+import 'versaedit/versaedit-content.css'
+;<div className="versaedit-content ve-mirror" dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
+```
+
+- The saved HTML does not change: the mirror is CSS only, and it is optional on both sides.
+- Lines break at the same points when the published container has the same usable width as the
+  editing area: `width` minus the frame (1 px on each side by default) minus 32 px of padding
+  (640 → 606 px). In narrower columns the text reflows, and images and text boxes shrink to fit.
+- A custom `fontFamily` / `headingFontFamily` is passed with CSS variables:
+  `style={{ '--ve-font': 'Georgia, serif', '--ve-heading-font': 'Inter, sans-serif' }}`.
+- Your site's element rules (`p {}`, `h2 {}`, `ul {}`…) do not reach mirrored content. Rules
+  that target it through a class (e.g. `.post p {}`) are more specific and still apply, as do
+  `!important` rules: keep them away from the `ve-mirror` container.
+- Without React, add the `ve-mirror` class to the editing element yourself.
 
 ## Examples and guides
 

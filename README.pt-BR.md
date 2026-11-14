@@ -88,6 +88,7 @@ O `initialContent` é carregado (e sanitizado) quando muda; o editor ignora o ec
 | `injectStyles`                                       | `boolean`                                           | `true`                            | Injeta o CSS do editor; com `false`, importe o arquivo de CSS.                                                               |
 | `locale` / `labels`                                  | `'en' \| 'pt-BR' \| 'es'` / parcial                 | `'en'`                            | Idioma da interface e troca de textos.                                                                                       |
 | `contentClassName` / `contentStyle` / `placeholder`  | —                                                   | —                                 | Classe, estilo e texto de vazio da área de edição.                                                                           |
+| `layoutMirror`                                       | `boolean`                                           | `false`                           | Isola a área de edição do CSS da página, para o conteúdo publicado ficar igual ([Layout Mirror](#layout-mirror)).            |
 
 **Grupos da barra** (`TOOLBAR_GROUPS`, sempre nesta ordem): `dictation`, `file`, `history`, `font`,
 `block`, `format`, `highlight`, `color`, `align`, `list`, `indent`, `link`, `insert`, `textbox`,
@@ -122,6 +123,37 @@ import 'versaedit/versaedit-content.css'
 
 Cores e tamanhos de fonte ficam em atributos `style` no próprio HTML; uma CSP que bloqueie estilos
 em atributos (`style-src-attr`) não vai mostrá-los.
+
+### Layout Mirror
+
+Sem ele, o conteúdo publicado assume a tipografia do site (fontes, tamanhos, espaçamentos), que é o
+que um site costuma querer. Ligue o Layout Mirror quando o texto publicado precisar ficar exatamente
+como estava na edição: mesma fonte, tamanho, altura da linha, espaço de parágrafos e títulos, listas,
+citações, alinhamentos, imagens e caixas de texto.
+
+```tsx
+// Edição: a área de edição ignora o CSS da página
+;<VersaEdit layoutMirror onChange={salvar} />
+
+// Publicação: o mesmo CSS de exibição, mais a classe ve-mirror
+import 'versaedit/versaedit-content.css'
+;<div
+  className="versaedit-content ve-mirror"
+  dangerouslySetInnerHTML={{ __html: htmlSanitizado }}
+/>
+```
+
+- O HTML salvo não muda: o espelho é só CSS, e é opcional nas duas pontas.
+- As linhas quebram nos mesmos pontos quando o contêiner publicado tem a mesma largura útil da área
+  de edição: `width` menos a moldura (1 px de cada lado, por padrão) menos 32 px de padding
+  (640 → 606 px). Em colunas mais estreitas o texto se reacomoda, e imagens e caixas de texto
+  encolhem para caber.
+- `fontFamily` / `headingFontFamily` próprios vão por variáveis CSS:
+  `style={{ '--ve-font': 'Georgia, serif', '--ve-heading-font': 'Inter, sans-serif' }}`.
+- As regras de elemento do site (`p {}`, `h2 {}`, `ul {}`…) não alcançam o conteúdo espelhado.
+  Regras que o alcançam por uma classe (ex.: `.post p {}`) são mais específicas e continuam valendo,
+  assim como as com `!important`: mantenha-as longe do contêiner `ve-mirror`.
+- Sem React, coloque você mesmo a classe `ve-mirror` no elemento de edição.
 
 ## Exemplos e guias
 
