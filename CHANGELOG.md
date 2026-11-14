@@ -15,6 +15,20 @@ by the internal stabilization batches.
 - `examples/quick-start`: the guide's code as an example covered by `npm run test:package` (also
   with `--from-registry`); the site shows these files, so the guide cannot drift from tested code.
 
+### Fixed
+
+- Text box inserted into an empty editor (or after the last paragraph) was the only block around:
+  clicking the first line put the caret inside the box, there was nowhere to type before or after
+  it, and the box alone had nowhere to be dragged vertically. A new box at either end of the
+  content now gets an empty line (`<p><br></p>`) before/after it. Clicking the editor background
+  above, below or between boxes — including the box margin — places the caret in the neighbouring
+  block, or creates the line when there is none (loaded HTML is not changed until then).
+- Dropping a text box onto text placed the `<div>` inside the `<p>` (invalid HTML that the browser
+  splits when the file is reopened). A text box is now dropped between blocks, before or after the
+  block under the pointer; images keep their inline behaviour.
+- After a drag, an empty `style=""` left on the element is removed, so saving and reopening returns
+  the same HTML.
+
 ## [0.5.0-beta.1] - 2026-10-23
 
 First public beta.

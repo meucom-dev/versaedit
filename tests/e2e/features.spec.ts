@@ -108,8 +108,9 @@ test.describe('inserções sem apagar a seleção', () => {
     const t = await mount(page, { initialContent: '<p>keep this text</p>' })
     await selectText(page, 'this')
     await t.btn('Insert text box').click()
+    // Caixa no fim do conteúdo: ganha uma linha vazia depois (onde o cursor fica)
     expect(await t.html()).toBe(
-      '<p>keep this text</p><div class="rich-textbox"><span class="textbox-handle" contenteditable="false" title="Drag text box">⠿</span></div>',
+      '<p>keep this text</p><div class="rich-textbox"><span class="textbox-handle" contenteditable="false" title="Drag text box">⠿</span></div><p><br></p>',
     )
   })
 

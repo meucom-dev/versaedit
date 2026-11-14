@@ -89,6 +89,13 @@ export function keepDropPosition(el: HTMLElement, editor: HTMLElement, dropped: 
   el.style[floatLeft ? 'marginLeft' : 'marginRight'] = `${Math.round(base + extra)}px`
 }
 
+// Linha vazia editável (onde o cursor pode ficar antes/depois de uma caixa)
+export function emptyLine(): HTMLParagraphElement {
+  const p = document.createElement('p')
+  p.appendChild(document.createElement('br'))
+  return p
+}
+
 // Move o elemento um bloco acima/abaixo no fluxo do conteúdo
 export function moveElementInFlow(el: HTMLElement, dir: -1 | 1) {
   const parent = el.parentNode
@@ -165,6 +172,24 @@ export function dropElementAtPoint(
     if (!range || !editor.contains(range.startContainer)) return false
     const container = range.startContainer
     if (container === el || el.contains(container)) return false
+    // Caixa de texto (bloco): entra entre os blocos — antes ou depois do bloco sob o
+    // ponto —, nunca dentro de um parágrafo. Uma <div> dentro de <p> é HTML
+    // inválido: ao reabrir o arquivo o navegador partia o parágrafo em dois.
+    if (el.classList.contains('rich-textbox')) {
+      let block: Node = container
+      while (block.parentNode && block.parentNode !== editor) block = block.parentNode
+      if (block.parentNode === editor && block !== el) {
+        const rect =
+          block instanceof Element
+            ? block.getBoundingClientRect()
+            : (block.parentElement ?? editor).getBoundingClientRect()
+        editor.insertBefore(el, y < rect.top + rect.height / 2 ? block : block.nextSibling)
+        clearManualOffsets(el)
+        const editorBox = editor.getBoundingClientRect()
+        setFloatSide(el, x < editorBox.left + editorBox.width / 2 ? 'left' : 'right')
+        return true
+      }
+    }
 
     if (container.nodeType === Node.TEXT_NODE && container.parentNode) {
       const textNode = container as Text

@@ -41,6 +41,7 @@ import {
   truncateEditableToFit,
 } from './measure'
 import {
+  emptyLine,
   createPointerTracker,
   dropElementAtPoint,
   keepDropPosition,
@@ -1224,12 +1225,67 @@ export class VersaEditCore {
     } else {
       editor.appendChild(box)
     }
+    // Caixa na ponta do conteúdo (editor vazio, ou depois do último parágrafo):
+    // uma linha vazia antes/depois dela. Sem essa linha não há onde pôr o cursor
+    // fora da caixa — o clique na primeira linha caía dentro dela — e a caixa
+    // sozinha no editor não tinha para onde ser arrastada na vertical.
+    this.lineAroundBox(box)
     // Cursor dentro da caixa, depois da alça
     const caret = document.createRange()
     caret.selectNodeContents(box)
     caret.collapse(false)
     this.restoreRange(caret)
     this.emitChange()
+  }
+
+  // Linha vazia (<p><br></p>) antes da caixa que abre o conteúdo e depois da que o
+  // fecha. Um <br> solto que o navegador deixou no editor vazio vira a linha.
+  private lineAroundBox(box: HTMLElement): void {
+    const prev = box.previousElementSibling
+    if (!prev) box.before(emptyLine())
+    else if (prev.tagName === 'BR' && !prev.previousSibling) prev.replaceWith(emptyLine())
+    if (!box.nextElementSibling) box.after(emptyLine())
+  }
+
+  // Clique no fundo do editor (fora de qualquer bloco) acima ou abaixo de uma caixa
+  // — inclusive na margem dela: o cursor vai para o bloco vizinho do lado clicado
+  // (fim do de cima, início do de baixo). Sem vizinho (caixa na ponta do conteúdo
+  // ou duas caixas seguidas), cria ali uma linha vazia. Sem isso o navegador punha
+  // o cursor dentro da caixa mais próxima.
+  private caretAtGap(y: number): Range | null {
+    const kids = Array.from(this.el.children) as HTMLElement[]
+    const isBox = (n?: Element | null) => !!n && n.classList.contains('rich-textbox')
+    const caret = document.createRange()
+    for (const box of kids) {
+      if (!isBox(box)) continue
+      const r = box.getBoundingClientRect()
+      const above = y < r.top
+      const below = y > r.bottom
+      if (!above && !below) continue
+      const side = above ? box.previousElementSibling : box.nextElementSibling
+      // Vizinho já mais perto do clique que a caixa: o lado certo é outro
+      if (side && !isBox(side)) {
+        const sr = side.getBoundingClientRect()
+        if (above ? y < sr.bottom : y > sr.top) continue
+        caret.selectNodeContents(side)
+        caret.collapse(!above)
+        return caret
+      }
+      // Acima de uma caixa só quando ela é a primeira ou vem depois de outra caixa;
+      // abaixo, quando é a última ou vem antes de outra caixa
+      const other = above ? box.previousElementSibling : box.nextElementSibling
+      if (other && isBox(other)) {
+        const or = other.getBoundingClientRect()
+        if (above ? y < or.bottom : y > or.top) continue
+      }
+      const line = emptyLine()
+      if (above) box.before(line)
+      else box.after(line)
+      caret.setStart(line, 0)
+      caret.collapse(true)
+      return caret
+    }
+    return null
   }
 
   // Zera a área de edição: apaga todo o conteúdo e volta o papel ao padrão
@@ -1544,6 +1600,9 @@ export class VersaEditCore {
       // A imagem mudou de lugar: o cursor vai junto
       if (type === 'image') this.caretAfter(el)
     }
+    // Sem estilo a mais no HTML: o style="" vazio que sobra do arrasto sumia ao
+    // reabrir e o HTML salvo não voltava igual
+    if (el.getAttribute('style') === '') el.removeAttribute('style')
     this.updateObjectToolbar(el)
     this.updateResizeHandlePosition(el)
     this.emitChange()
@@ -1641,6 +1700,18 @@ export class VersaEditCore {
     const target = e.target as HTMLElement
     if (target.tagName === 'IMG' || target.classList.contains('textbox-handle')) {
       e.preventDefault()
+      return
+    }
+    // Fundo do editor ao lado de uma caixa sem linha (acima, abaixo ou entre caixas)
+    if (target === this.el && e.button === 0) {
+      const caret = this.caretAtGap(e.clientY)
+      if (caret) {
+        e.preventDefault()
+        this.deselectImage()
+        this.deselectTextbox()
+        this.restoreRange(caret)
+        this.emitChange()
+      }
     }
   }
 
