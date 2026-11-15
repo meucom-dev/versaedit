@@ -1,7 +1,15 @@
 import { StrictMode, useCallback, useRef, useState, useSyncExternalStore } from 'react'
 import { createRoot } from 'react-dom/client'
-import { VersaEdit, VersaEditDictation, type VersaEditHandle, type VersaEditLocale } from '../src'
+import {
+  objectMarginStyle,
+  VersaEdit,
+  VersaEditDictation,
+  type ObjectMargin,
+  type VersaEditHandle,
+  type VersaEditLocale,
+} from '../src'
 import { CONTENT_CSS } from '../src/core/styles'
+
 import {
   DEFAULT_SETTINGS,
   PLAYGROUND_FONTS,
@@ -80,6 +88,8 @@ function PublishedPreview(props: {
   title: string
   width: number | string
   frameWidth: number
+  /** Margem dos objetos do editor: o publicado usa a mesma (objectMarginStyle) */
+  objectMargin?: ObjectMargin
 }) {
   useSyncExternalStore(noSubscribe, injectContentCss, injectContentCss)
   const inset = props.frameWidth * 2 + 32
@@ -89,6 +99,7 @@ function PublishedPreview(props: {
     '--ve-font': PLAYGROUND_FONTS.fontFamily,
     '--ve-heading-font': PLAYGROUND_FONTS.headingFontFamily,
     outline: '1px dashed #bbb',
+    ...objectMarginStyle(props.objectMargin),
   } as React.CSSProperties
   return (
     <>
@@ -218,6 +229,7 @@ function App() {
             title={T.published}
             width={settings.resizable && visibleWidth !== null ? visibleWidth : editorWidth}
             frameWidth={settings.frameWidth}
+            objectMargin={settingsToProps(settings).objectMargin}
           />
         )}
         <PropsPanel

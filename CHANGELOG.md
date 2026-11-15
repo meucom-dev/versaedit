@@ -80,7 +80,8 @@ by the internal stabilization batches.
   the new `objectMarginStyle()` returns them for the published container, and
   `DEFAULT_OBJECT_MARGIN` is exported. The margin is not written into the HTML. Changing the prop
   while editing recalculates where objects side by side move down (`data-ve-stack`) and calls
-  `onChange` only if that changed the HTML, without adding to the undo history.
+  `onChange` only if that changed the HTML, without adding to the undo history. The playground has
+  the four sides in the gear's Appearance section.
 
 ### Changed
 

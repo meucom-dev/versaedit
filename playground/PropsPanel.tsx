@@ -1,11 +1,13 @@
 // Painel "Propriedades" do playground: muda props do editor ao vivo, carrega
 // conteúdos de exemplo, registra os eventos e mostra o JSX equivalente.
 // Recolhido por padrão; sem mudanças, o editor recebe as props de sempre.
-import { useState, type CSSProperties } from 'react'
+import { Fragment, useId } from 'react'
 import {
   DEFAULT_FRAME_HANDLES,
+  DEFAULT_OBJECT_MARGIN,
   TOOLBAR_GROUPS,
   type FrameHandle,
+  type ObjectMargin,
   type ResizableOptions,
   type ToolbarGroup,
   type VersaEditLocale,
@@ -20,7 +22,8 @@ export interface Settings {
   frameWidth: number
   frameColor: string
   frameRadius: number
-  showFileButtons: boolean
+  /** Margem dos objetos, por lado (prop objectMargin) */
+  objectMargin: Required<ObjectMargin>
   pasteImages: boolean
   allowExternalMedia: boolean
   truncateOnOverflow: boolean
@@ -42,6 +45,10 @@ export interface Settings {
 
 const ALL_HANDLES: FrameHandle[] = ['e', 's', 'se', 'w', 'n', 'nw', 'ne', 'sw']
 const LIMITS = ['minWidth', 'maxWidth', 'minHeight', 'maxHeight'] as const
+const MARGIN_SIDES = ['text', 'outer', 'top', 'bottom'] as const
+// Opções de Dimensões (largura em px ou '100%'; altura em px)
+const WIDTHS = ['800', '900', '640', '100%']
+const HEIGHTS = [300, 400, 500, 600, 700, 800, 900]
 
 // Grupos que o painel controla (o ditado fica fora da barra no playground)
 const GROUPS = TOOLBAR_GROUPS.filter((g) => g !== 'dictation')
@@ -54,14 +61,15 @@ export const DEFAULT_SETTINGS: Settings = {
   frameWidth: 1,
   frameColor: '#d0d7de',
   frameRadius: 8,
-  showFileButtons: true,
+  objectMargin: { ...DEFAULT_OBJECT_MARGIN },
   pasteImages: true,
   allowExternalMedia: false,
   truncateOnOverflow: false,
   singleLineBreaks: false,
   layoutMirror: false,
   useOnError: false,
-  pasteSpacing: 'remove',
+  // Colagem do Word mantendo o espaçamento (a biblioteca usa 'remove' por padrão)
+  pasteSpacing: 'preserve',
   resizable: false,
   sizeControls: false,
   handles: [...DEFAULT_FRAME_HANDLES],
@@ -72,7 +80,6 @@ export const DEFAULT_SETTINGS: Settings = {
 }
 
 const BOOLEANS = [
-  'showFileButtons',
   'pasteImages',
   'allowExternalMedia',
   'truncateOnOverflow',
@@ -127,8 +134,14 @@ export function settingsToProps(s: Settings): Partial<VersaEditProps> {
     s.frameRadius !== d.frameRadius
   )
     props.frame = { width: s.frameWidth, color: s.frameColor, radius: s.frameRadius }
+  // Só os lados diferentes do padrão da biblioteca
+  const margin: ObjectMargin = {}
+  for (const side of MARGIN_SIDES)
+    if (s.objectMargin[side] !== DEFAULT_OBJECT_MARGIN[side]) margin[side] = s.objectMargin[side]
+  if (Object.keys(margin).length) props.objectMargin = margin
   for (const key of BOOLEANS) if (s[key] !== d[key]) props[key] = s[key]
-  if (s.pasteSpacing !== d.pasteSpacing) props.pasteSpacing = s.pasteSpacing
+  // Comparado com o padrão da biblioteca ('remove'), não com o do playground
+  if (s.pasteSpacing !== 'remove') props.pasteSpacing = s.pasteSpacing
   if (s.resizable) {
     const options: ResizableOptions = {}
     const defaultHandles =
@@ -275,8 +288,8 @@ export const PANEL_TEXT = {
   en: {
     title: 'Playground tools',
     diagnostics: 'Diagnostics',
-    toolbar: 'Toolbar groups',
-    size: 'Size',
+    toolbar: 'Menu functions',
+    size: 'Dimensions',
     width: 'Width',
     height: 'Height',
     look: 'Appearance',
@@ -285,16 +298,69 @@ export const PANEL_TEXT = {
     frameWidth: 'Frame width',
     frameColor: 'Frame color',
     frameRadius: 'Frame radius',
+    objectMargin: 'Object margin (images and text boxes)',
+    marginNames: {
+      text: 'Text side',
+      outer: 'Outer side',
+      top: 'Top',
+      bottom: 'Bottom',
+    },
     behavior: 'Behavior',
     useOnError: 'onError (log instead of alert)',
     resize: 'Resizing',
     handles: 'Handles',
-    limits: 'Limits (px, empty: default)',
+    limits: 'Limits',
+    limitsHint: 'Empty field: the editor default (shown in gray).',
+    limitDefaults: { minWidth: '160', maxWidth: 'container', minHeight: '80', maxHeight: 'none' },
     content: 'Sample content',
     load: 'Load',
     events: 'Events',
     jsx: 'Equivalent JSX',
     reset: 'Reset',
+    groups: {
+      file: 'File',
+      history: 'Undo and redo',
+      font: 'Font',
+      block: 'Paragraph style',
+      format: 'Formatting',
+      highlight: 'Highlighter',
+      color: 'Colors',
+      align: 'Alignment',
+      list: 'Lists',
+      indent: 'Indentation',
+      link: 'Link',
+      insert: 'Insert',
+      textbox: 'Text box',
+      clear: 'Clear (editing area and formatting)',
+    },
+    options: {
+      pasteImages: 'Paste images',
+      allowExternalMedia: 'External audio and video',
+      truncateOnOverflow: 'Cut content beyond the height',
+      singleLineBreaks: 'Collapse blank lines when pasting',
+      layoutMirror: 'Layout Mirror',
+      pasteSpacing: 'Word spacing when pasting',
+      spacingRemove: 'Remove',
+      spacingPreserve: 'Keep',
+      resizable: 'Resizable area',
+      sizeControls: 'Size fields',
+    },
+    handleNames: {
+      e: 'Right',
+      s: 'Bottom',
+      se: 'Bottom right',
+      w: 'Left',
+      n: 'Top',
+      nw: 'Top left',
+      ne: 'Top right',
+      sw: 'Bottom left',
+    },
+    limitNames: {
+      minWidth: 'Min. width',
+      maxWidth: 'Max. width',
+      minHeight: 'Min. height',
+      maxHeight: 'Max. height',
+    },
     samples: {
       empty: 'Empty',
       formatted: 'Formatted text',
@@ -307,8 +373,8 @@ export const PANEL_TEXT = {
   'pt-BR': {
     title: 'Ferramentas do playground',
     diagnostics: 'Diagnóstico',
-    toolbar: 'Grupos da barra',
-    size: 'Tamanho',
+    toolbar: 'Funções do Menu',
+    size: 'Dimensões',
     width: 'Largura',
     height: 'Altura',
     look: 'Aparência',
@@ -317,16 +383,74 @@ export const PANEL_TEXT = {
     frameWidth: 'Largura da moldura',
     frameColor: 'Cor da moldura',
     frameRadius: 'Raio da moldura',
+    objectMargin: 'Margem dos objetos (imagens e caixas de texto)',
+    marginNames: {
+      text: 'Lado do texto',
+      outer: 'Lado de fora',
+      top: 'Em cima',
+      bottom: 'Embaixo',
+    },
     behavior: 'Comportamento',
     useOnError: 'onError (registro em vez de alert)',
     resize: 'Redimensionamento',
     handles: 'Alças',
-    limits: 'Limites (px, vazio: padrão)',
+    limits: 'Limites',
+    limitsHint: 'Campo vazio: o padrão do editor (em cinza).',
+    limitDefaults: {
+      minWidth: '160',
+      maxWidth: 'contêiner',
+      minHeight: '80',
+      maxHeight: 'sem limite',
+    },
     content: 'Conteúdo de exemplo',
     load: 'Carregar',
     events: 'Eventos',
     jsx: 'JSX equivalente',
     reset: 'Restaurar',
+    groups: {
+      file: 'Arquivo',
+      history: 'Desfazer e refazer',
+      font: 'Fonte',
+      block: 'Estilo do parágrafo',
+      format: 'Formatação',
+      highlight: 'Marca-texto',
+      color: 'Cores',
+      align: 'Alinhamento',
+      list: 'Listas',
+      indent: 'Recuo',
+      link: 'Link',
+      insert: 'Inserir',
+      textbox: 'Caixa de texto',
+      clear: 'Limpar (área de edição e formatação)',
+    },
+    options: {
+      pasteImages: 'Colar imagens',
+      allowExternalMedia: 'Áudio e vídeo externos',
+      truncateOnOverflow: 'Cortar o que passar da altura',
+      singleLineBreaks: 'Juntar linhas em branco ao colar',
+      layoutMirror: 'Espelho de layout (Layout Mirror)',
+      pasteSpacing: 'Espaçamento do Word ao colar',
+      spacingRemove: 'Remover',
+      spacingPreserve: 'Manter',
+      resizable: 'Área redimensionável',
+      sizeControls: 'Campos de tamanho',
+    },
+    handleNames: {
+      e: 'Direita',
+      s: 'Inferior',
+      se: 'Inferior direito',
+      w: 'Esquerda',
+      n: 'Superior',
+      nw: 'Superior esquerdo',
+      ne: 'Superior direito',
+      sw: 'Inferior esquerdo',
+    },
+    limitNames: {
+      minWidth: 'Largura mín.',
+      maxWidth: 'Largura máx.',
+      minHeight: 'Altura mín.',
+      maxHeight: 'Altura máx.',
+    },
     samples: {
       empty: 'Vazio',
       formatted: 'Texto formatado',
@@ -339,8 +463,8 @@ export const PANEL_TEXT = {
   es: {
     title: 'Herramientas del playground',
     diagnostics: 'Diagnóstico',
-    toolbar: 'Grupos de la barra',
-    size: 'Tamaño',
+    toolbar: 'Funciones del menú',
+    size: 'Dimensiones',
     width: 'Ancho',
     height: 'Alto',
     look: 'Apariencia',
@@ -349,16 +473,74 @@ export const PANEL_TEXT = {
     frameWidth: 'Ancho del marco',
     frameColor: 'Color del marco',
     frameRadius: 'Radio del marco',
+    objectMargin: 'Margen de los objetos (imágenes y cuadros de texto)',
+    marginNames: {
+      text: 'Lado del texto',
+      outer: 'Lado exterior',
+      top: 'Arriba',
+      bottom: 'Abajo',
+    },
     behavior: 'Comportamiento',
     useOnError: 'onError (registro en lugar de alert)',
     resize: 'Redimensionamiento',
     handles: 'Controladores',
-    limits: 'Límites (px, vacío: predeterminado)',
+    limits: 'Límites',
+    limitsHint: 'Campo vacío: el valor predeterminado del editor (en gris).',
+    limitDefaults: {
+      minWidth: '160',
+      maxWidth: 'contenedor',
+      minHeight: '80',
+      maxHeight: 'sin límite',
+    },
     content: 'Contenido de ejemplo',
     load: 'Cargar',
     events: 'Eventos',
     jsx: 'JSX equivalente',
     reset: 'Restablecer',
+    groups: {
+      file: 'Archivo',
+      history: 'Deshacer y rehacer',
+      font: 'Fuente',
+      block: 'Estilo de párrafo',
+      format: 'Formato',
+      highlight: 'Resaltador',
+      color: 'Colores',
+      align: 'Alineación',
+      list: 'Listas',
+      indent: 'Sangría',
+      link: 'Enlace',
+      insert: 'Insertar',
+      textbox: 'Cuadro de texto',
+      clear: 'Limpiar (área de edición y formato)',
+    },
+    options: {
+      pasteImages: 'Pegar imágenes',
+      allowExternalMedia: 'Audio y video externos',
+      truncateOnOverflow: 'Cortar lo que supere la altura',
+      singleLineBreaks: 'Unir líneas en blanco al pegar',
+      layoutMirror: 'Espejo de diseño (Layout Mirror)',
+      pasteSpacing: 'Espaciado de Word al pegar',
+      spacingRemove: 'Quitar',
+      spacingPreserve: 'Conservar',
+      resizable: 'Área redimensionable',
+      sizeControls: 'Campos de tamaño',
+    },
+    handleNames: {
+      e: 'Derecha',
+      s: 'Inferior',
+      se: 'Inferior derecha',
+      w: 'Izquierda',
+      n: 'Superior',
+      nw: 'Superior izquierda',
+      ne: 'Superior derecha',
+      sw: 'Inferior izquierda',
+    },
+    limitNames: {
+      minWidth: 'Ancho mín.',
+      maxWidth: 'Ancho máx.',
+      minHeight: 'Alto mín.',
+      maxHeight: 'Alto máx.',
+    },
     samples: {
       empty: 'Vacío',
       formatted: 'Texto con formato',
@@ -370,64 +552,17 @@ export const PANEL_TEXT = {
   },
 } as const satisfies Record<VersaEditLocale, unknown>
 
-// Campo numérico com rascunho: o que se digita fica só no campo até ser confirmado
-// (Enter ou sair do campo); Esc volta ao valor confirmado. Na confirmação, o valor
-// vai para o limite mais próximo, e um campo vazio ou inválido volta ao anterior.
-// As setas (teclado ou do próprio campo) geram valores válidos e aplicam na hora.
-function NumberField({
-  value,
-  min,
-  max,
-  step,
-  onCommit,
-  style,
-}: {
-  value: number
-  min: number
-  max: number
-  step: number
-  onCommit: (value: number) => void
-  style?: CSSProperties
-}) {
-  const [draft, setDraft] = useState<string | null>(null)
-  const commit = (text: string) => {
-    const typed = Math.round(Number(text))
-    setDraft(null)
-    if (text.trim() === '' || !Number.isFinite(typed)) return
-    const next = Math.min(max, Math.max(min, typed))
-    if (next !== value) onCommit(next)
-  }
-  return (
-    <input
-      type="number"
-      min={min}
-      max={max}
-      step={step}
-      value={draft ?? String(value)}
-      aria-invalid={draft !== null && !(Number(draft) >= min && Number(draft) <= max)}
-      onChange={(e) => {
-        // Digitar, apagar ou colar: rascunho. Passo das setas (sem inputType no
-        // Chromium e no WebKit; insertReplacementText no Firefox): confirma
-        const type = (e.nativeEvent as InputEvent).inputType
-        const editing = !!type && type !== 'insertReplacementText'
-        if (editing) setDraft(e.target.value)
-        else commit(e.target.value)
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' && draft !== null) commit(draft)
-        if (e.key === 'Escape' && draft !== null) {
-          e.preventDefault()
-          setDraft(null)
-        }
-      }}
-      onBlur={() => draft !== null && commit(draft)}
-      style={style}
-    />
-  )
-}
-
 const fieldset = { border: '1px solid #ddd', borderRadius: 6, margin: '8px 0', padding: 8 } as const
 const row = { display: 'flex', flexWrap: 'wrap', gap: '4px 16px', alignItems: 'center' } as const
+const column = { display: 'flex', flexDirection: 'column', gap: 4 } as const
+// Rótulo | campo | unidade, alinhados em colunas
+const grid = {
+  display: 'grid',
+  gridTemplateColumns: 'max-content max-content max-content',
+  gap: '4px 8px',
+  alignItems: 'center',
+} as const
+const subtitle = { margin: '6px 0 2px' } as const
 
 // Conteúdo da engrenagem do editor (prop settingsPanel): as configurações gerais
 // do VersaEdit. Cada controle existe só aqui; o JSX equivalente (em Ver HTML)
@@ -442,6 +577,7 @@ export function SettingsControls({
   onSettings: (s: Settings) => void
 }) {
   const T = PANEL_TEXT[locale]
+  const id = useId()
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) =>
     onSettings({ ...s, [key]: value })
   const toggleGroup = (g: ToolbarGroup, on: boolean) =>
@@ -452,53 +588,6 @@ export function SettingsControls({
 
   return (
     <div data-testid="settings-panel">
-      <fieldset style={fieldset}>
-        <legend>{T.toolbar}</legend>
-        <div style={row}>
-          {GROUPS.map((g) => (
-            <label key={g}>
-              <input
-                type="checkbox"
-                checked={s.toolbar.includes(g)}
-                onChange={(e) => toggleGroup(g, e.target.checked)}
-              />{' '}
-              {g}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-
-      <fieldset style={fieldset}>
-        <legend>{T.size}</legend>
-        <div style={row}>
-          <label>
-            {T.width}{' '}
-            <select
-              value={String(s.width)}
-              onChange={(e) =>
-                set('width', e.target.value.endsWith('%') ? e.target.value : Number(e.target.value))
-              }
-            >
-              <option value="800">800</option>
-              <option value="900">900</option>
-              <option value="640">640</option>
-              <option value="100%">100%</option>
-            </select>
-          </label>
-          <label>
-            {T.height}{' '}
-            <NumberField
-              min={150}
-              max={900}
-              step={10}
-              value={s.height}
-              onCommit={(height) => set('height', height)}
-              style={{ width: 70 }}
-            />
-          </label>
-        </div>
-      </fieldset>
-
       <fieldset style={fieldset}>
         <legend>{T.look}</legend>
         <div style={row}>
@@ -538,29 +627,74 @@ export function SettingsControls({
             />
           </span>
         </div>
+        <div style={subtitle}>{T.objectMargin}:</div>
+        <div style={grid} data-testid="object-margin">
+          {MARGIN_SIDES.map((side) => (
+            <Fragment key={side}>
+              <label htmlFor={`${id}-margin-${side}`} title={`objectMargin.${side}`}>
+                {T.marginNames[side]}
+              </label>
+              <input
+                id={`${id}-margin-${side}`}
+                type="number"
+                min={0}
+                max={200}
+                step={1}
+                value={s.objectMargin[side]}
+                onChange={(e) => {
+                  const value = Number(e.target.value)
+                  if (e.target.value === '' || !Number.isFinite(value)) return
+                  set('objectMargin', {
+                    ...s.objectMargin,
+                    [side]: Math.min(200, Math.max(0, Math.round(value))),
+                  })
+                }}
+                style={{ width: 70 }}
+              />
+              <span>px</span>
+            </Fragment>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset style={fieldset}>
+        <legend>{T.toolbar}</legend>
+        {/* Uma coluna, na ordem dos botões da barra (TOOLBAR_GROUPS) */}
+        <div data-testid="toolbar-groups" style={column}>
+          {GROUPS.map((g) => (
+            <label key={g} title={g}>
+              <input
+                type="checkbox"
+                checked={s.toolbar.includes(g)}
+                onChange={(e) => toggleGroup(g, e.target.checked)}
+              />{' '}
+              {T.groups[g as keyof typeof T.groups]}
+            </label>
+          ))}
+        </div>
       </fieldset>
 
       <fieldset style={fieldset}>
         <legend>{T.behavior}</legend>
         <div style={row}>
           {BOOLEANS.map((key) => (
-            <label key={key}>
+            <label key={key} title={key}>
               <input
                 type="checkbox"
                 checked={s[key]}
                 onChange={(e) => set(key, e.target.checked)}
               />{' '}
-              {key}
+              {T.options[key]}
             </label>
           ))}
-          <label>
-            pasteSpacing{' '}
+          <label title="pasteSpacing">
+            {T.options.pasteSpacing}{' '}
             <select
               value={s.pasteSpacing}
               onChange={(e) => set('pasteSpacing', e.target.value as Settings['pasteSpacing'])}
             >
-              <option value="remove">remove</option>
-              <option value="preserve">preserve</option>
+              <option value="remove">{T.options.spacingRemove}</option>
+              <option value="preserve">{T.options.spacingPreserve}</option>
             </select>
           </label>
         </div>
@@ -568,29 +702,61 @@ export function SettingsControls({
 
       <fieldset style={fieldset} data-testid="resize-settings">
         <legend>{T.resize}</legend>
-        <div style={row}>
-          <label>
+        <div style={subtitle}>{T.size}:</div>
+        <div style={grid}>
+          <label htmlFor={`${id}-width`}>{T.width}</label>
+          <select
+            id={`${id}-width`}
+            value={String(s.width)}
+            onChange={(e) =>
+              set('width', e.target.value.endsWith('%') ? e.target.value : Number(e.target.value))
+            }
+          >
+            {WIDTHS.map((w) => (
+              <option key={w} value={w}>
+                {w.endsWith('%') ? w : `${w} px`}
+              </option>
+            ))}
+          </select>
+          <span />
+          <label htmlFor={`${id}-height`}>{T.height}</label>
+          <select
+            id={`${id}-height`}
+            value={s.height}
+            onChange={(e) => set('height', Number(e.target.value))}
+          >
+            {HEIGHTS.map((h) => (
+              <option key={h} value={h}>
+                {h} px
+              </option>
+            ))}
+          </select>
+          <span />
+        </div>
+        {/* Um respiro entre Dimensões (vale sempre) e o que depende da caixa */}
+        <div style={{ ...row, marginTop: 10 }}>
+          <label title="resizable">
             <input
               type="checkbox"
               checked={s.resizable}
               onChange={(e) => set('resizable', e.target.checked)}
             />{' '}
-            resizable
+            {T.options.resizable}
           </label>
-          <label>
+          <label title="sizeControls">
             <input
               type="checkbox"
               checked={s.sizeControls}
               disabled={!s.resizable}
               onChange={(e) => set('sizeControls', e.target.checked)}
             />{' '}
-            sizeControls
+            {T.options.sizeControls}
           </label>
         </div>
-        <div style={row}>
-          <span>{T.handles}:</span>
+        <div style={subtitle}>{T.handles}:</div>
+        <div style={column}>
           {ALL_HANDLES.map((h) => (
-            <label key={h}>
+            <label key={h} title={`'${h}'`}>
               <input
                 type="checkbox"
                 checked={s.handles.includes(h)}
@@ -602,29 +768,35 @@ export function SettingsControls({
                   )
                 }
               />{' '}
-              {h}
+              {T.handleNames[h]}
             </label>
           ))}
         </div>
-        <div style={row}>
-          <span>{T.limits}:</span>
+        <div style={subtitle}>{T.limits}:</div>
+        <div style={grid}>
           {LIMITS.map((key) => (
-            <label key={key}>
-              {key}{' '}
+            <Fragment key={key}>
+              <label htmlFor={`${id}-${key}`} title={key}>
+                {T.limitNames[key]}
+              </label>
               <input
+                id={`${id}-${key}`}
                 type="number"
                 min={0}
                 step={10}
                 disabled={!s.resizable}
+                placeholder={T.limitDefaults[key]}
                 value={s[key] ?? ''}
                 onChange={(e) =>
                   set(key, e.target.value === '' ? null : Math.max(0, Number(e.target.value)))
                 }
-                style={{ width: 70 }}
+                style={{ width: 90 }}
               />
-            </label>
+              <span>px</span>
+            </Fragment>
           ))}
         </div>
+        <small style={{ color: '#666' }}>{T.limitsHint}</small>
       </fieldset>
 
       <button type="button" onClick={() => onSettings(DEFAULT_SETTINGS)}>

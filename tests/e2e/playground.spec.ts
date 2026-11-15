@@ -3,9 +3,12 @@
 // playground (exemplos, diagnóstico, eventos e JSX equivalente) ficam em Ver HTML
 import { expect, test, type Page } from '@playwright/test'
 import { PANEL_TEXT } from '../../playground/PropsPanel'
+import { TOOLBAR_GROUPS } from '../../src/react/toolbar/Toolbar'
 import { en } from '../../src/core/i18n/en'
 import { es } from '../../src/core/i18n/es'
 import { ptBR } from '../../src/core/i18n/pt-BR'
+
+const E = PANEL_TEXT.en
 
 async function openPanel(page: Page) {
   await page.goto('/')
@@ -35,14 +38,11 @@ test('grupos da barra, largura e JSX equivalente', async ({ page }) => {
   const toolbar = page.getByRole('toolbar').first()
   await expect(toolbar.getByRole('button', { name: 'Insert image' })).toBeVisible()
   const s = await settings(page)
-  await s.getByLabel('insert', { exact: true }).uncheck()
+  await s.getByLabel(E.groups.insert, { exact: true }).uncheck()
   await expect(toolbar.getByRole('button', { name: 'Insert image' })).toHaveCount(0)
   await expect(page.getByTestId('jsx')).toContainText('toolbar={["file"')
 
-  await s
-    .locator('label', { hasText: /^Width/ })
-    .locator('select')
-    .selectOption('100%')
+  await s.getByLabel(E.width, { exact: true }).selectOption('100%')
   await expect(page.getByTestId('jsx')).toContainText('width="100%"')
   const [root, column] = await Promise.all([
     page.locator('.ve-root').first().boundingBox(),
@@ -64,7 +64,7 @@ test('grupos da barra, largura e JSX equivalente', async ({ page }) => {
 test('layoutMirror: prévia publicada com ve-mirror, igual ao editor', async ({ page }) => {
   await openPanel(page)
   await expect(page.getByTestId('published-mirror')).toHaveCount(0)
-  await (await settings(page)).getByLabel('layoutMirror', { exact: true }).check()
+  await (await settings(page)).getByLabel(E.options.layoutMirror, { exact: true }).check()
   await expect(page.getByTestId('jsx')).toContainText('layoutMirror={true}')
   await expect(page.locator('.ve-content')).toHaveClass(/\bve-mirror\b/)
   await page.getByRole('button', { name: 'Load: Formatted text' }).click()
@@ -80,7 +80,7 @@ test('layoutMirror: prévia publicada com ve-mirror, igual ao editor', async ({ 
       return [h2.fontFamily, h2.fontSize, h2.marginTop, ul.getBoundingClientRect().height]
     }, root)
   expect(await look('[data-testid="published-mirror"]')).toEqual(await look('.ve-content'))
-  await (await settings(page)).getByLabel('layoutMirror', { exact: true }).uncheck()
+  await (await settings(page)).getByLabel(E.options.layoutMirror, { exact: true }).uncheck()
   await expect(page.getByTestId('published-mirror')).toHaveCount(0)
 })
 
@@ -217,6 +217,27 @@ test('seletor de idioma: editor, painel e textos do playground em en, pt-BR e es
     await expect(page.getByText(PANEL_TEXT[locale].title, { exact: true })).toBeVisible()
     const s = await settings(page, L[locale].settings)
     await expect(s.getByLabel(PANEL_TEXT[locale].frameRadius)).toBeVisible()
+    // Engrenagem no idioma: nenhum nome de prop, grupo, alça ou valor como texto
+    // visível (o nome técnico fica só na dica, em title)
+    const visible = (await s.innerText()).split(/\s+/)
+    for (const id of [
+      'insert',
+      'format',
+      'layoutMirror',
+      'pasteImages',
+      'pasteSpacing',
+      'preserve',
+      'resizable',
+      'sizeControls',
+      'nw',
+      'maxWidth',
+    ]) {
+      expect(visible, `${id} visível em ${locale}`).not.toContain(id)
+    }
+    await expect(s.getByLabel(PANEL_TEXT[locale].options.resizable)).toBeVisible()
+    await expect(s.getByTitle('pasteSpacing')).toContainText(
+      PANEL_TEXT[locale].options.pasteSpacing,
+    )
     await expect(page.getByTestId('jsx')).toContainText(
       locale === 'en' ? '<VersaEdit\n  ref={editorRef}\n  width' : `locale="${locale}"`,
     )
@@ -315,50 +336,70 @@ test('trocar o idioma não muda o conteúdo em edição; o exemplo muda só ao c
   expect(await second.innerHTML()).toBe(secondEdited)
 })
 
-test('campo Altura: o editor só muda quando o valor é confirmado', async ({ page }) => {
+test('Dimensões: largura e altura selecionáveis, uma abaixo da outra, com a unidade', async ({
+  page,
+}) => {
   await openPanel(page)
-  const field = (await settings(page)).getByRole('spinbutton', { name: 'Height', exact: true })
+  const s = await settings(page)
+  const width = s.getByLabel(E.width, { exact: true })
+  const height = s.getByLabel(E.height, { exact: true })
   const jsx = page.getByTestId('jsx')
-  const select = () => page.keyboard.press('ControlOrMeta+a')
-  await expect(jsx).toContainText('height={500}')
-  // Digitar: nada é aplicado antes de confirmar (nem o "6" de "600")
-  await field.click()
-  await select()
-  await page.keyboard.type('600')
-  expect(await field.inputValue()).toBe('600')
-  await expect(jsx).toContainText('height={500}')
-  // Enter confirma
-  await page.keyboard.press('Enter')
-  await expect(jsx).toContainText('height={600}')
-  // Esc cancela o que foi digitado
-  await select()
-  await page.keyboard.type('7')
-  await page.keyboard.press('Escape')
-  expect(await field.inputValue()).toBe('600')
-  await expect(jsx).toContainText('height={600}')
-  // Abaixo do mínimo: confirma no mínimo (aqui, saindo do campo)
-  await select()
-  await page.keyboard.type('5')
-  // Sair do campo (Tab): confirma; o painel continua aberto
-  await page.keyboard.press('Tab')
-  await expect(jsx).toContainText('height={150}')
-  expect(await field.inputValue()).toBe('150')
-  // Acima do máximo: confirma no máximo
-  await field.click()
-  await select()
-  await page.keyboard.type('2000')
-  await page.keyboard.press('Enter')
-  await expect(jsx).toContainText('height={900}')
-  // Vazio ou inválido: volta ao valor confirmado
-  await select()
-  await page.keyboard.press('Backspace')
-  await page.keyboard.press('Enter')
-  expect(await field.inputValue()).toBe('900')
-  await expect(jsx).toContainText('height={900}')
-  // Setas: cada passo é um valor válido, aplicado na hora
-  await page.keyboard.press('ArrowDown')
-  await expect(jsx).toContainText('height={890}')
-  expect(await field.inputValue()).toBe('890')
+  // Uma abaixo da outra, alinhadas
+  const [w, h] = [(await width.boundingBox())!, (await height.boundingBox())!]
+  expect(Math.round(w.x)).toBe(Math.round(h.x))
+  expect(h.y).toBeGreaterThan(w.y + w.height - 1)
+  // Altura é uma seleção em px; o editor muda na hora e o painel fica aberto
+  await expect(height).toHaveValue('500')
+  expect(await height.locator('option').allTextContents()).toEqual(
+    ['300', '400', '500', '600', '700', '800', '900'].map((v) => `${v} px`),
+  )
+  await height.selectOption('700')
+  await expect(jsx).toContainText('height={700}')
+  expect(Math.round((await page.locator('.ve-frame').first().boundingBox())!.height)).toBe(700)
+  await expect(s).toBeVisible()
+  // Largura: px nas opções numéricas
+  expect(await width.locator('option').allTextContents()).toEqual([
+    '800 px',
+    '900 px',
+    '640 px',
+    '100%',
+  ])
+  // Restaurar padrões: 800 × 500
+  await s.getByRole('button', { name: 'Reset' }).click()
+  await expect(height).toHaveValue('500')
+  await expect(width).toHaveValue('800')
+})
+
+test('Alças em uma coluna; Limites com px e o padrão do editor no campo vazio', async ({
+  page,
+}) => {
+  await openPanel(page)
+  await settings(page)
+  const panel = page.getByTestId('resize-settings')
+  const handles = await panel
+    .getByRole('checkbox')
+    .evaluateAll((els) =>
+      els
+        .filter((el) => el.closest('label')?.getAttribute('title')?.startsWith("'"))
+        .map((el) => Math.round(el.getBoundingClientRect().left)),
+    )
+  expect(handles).toHaveLength(8)
+  expect(new Set(handles).size).toBe(1)
+  const placeholders: string[] = []
+  for (const key of ['minWidth', 'maxWidth', 'minHeight', 'maxHeight'] as const) {
+    const field = panel.getByLabel(E.limitNames[key], { exact: true })
+    placeholders.push((await field.getAttribute('placeholder'))!)
+    // A unidade logo à direita do campo
+    const box = (await field.boundingBox())!
+    const unit = await field.evaluate((el) => {
+      const r = el.nextElementSibling!.getBoundingClientRect()
+      return { text: el.nextElementSibling!.textContent, left: r.left }
+    })
+    expect(unit.text).toBe('px')
+    expect(unit.left).toBeGreaterThan(box.x + box.width - 1)
+  }
+  expect(placeholders).toEqual(['160', 'container', '80', 'none'])
+  await expect(panel.getByText(E.limitsHint)).toBeVisible()
 })
 
 // Redimensionamento da área (Lote 3): ligado no painel, com campos, alças e limites;
@@ -368,10 +409,10 @@ test('painel: redimensionamento com campos, alças, limites e onResize no regist
 }) => {
   await openPanel(page)
   const panel = (await settings(page)).getByTestId('resize-settings')
-  await panel.getByLabel('resizable').check()
-  await panel.getByLabel('sizeControls').check()
-  await panel.getByLabel('nw', { exact: true }).check()
-  await panel.getByLabel('maxWidth').fill('800')
+  await panel.getByLabel(E.options.resizable).check()
+  await panel.getByLabel(E.options.sizeControls).check()
+  await panel.getByLabel(E.handleNames.nw, { exact: true }).check()
+  await panel.getByLabel(E.limitNames.maxWidth).fill('800')
   const editor = page.locator('.ve-root').first()
   await expect(editor.locator('.ve-frame-handle-nw')).toHaveCount(1)
   const width = editor.locator('.ve-size-controls').getByLabel('Width')
@@ -391,10 +432,10 @@ test('painel: redimensionamento com campos, alças, limites e onResize no regist
 test('painel: Layout Mirror acompanha a largura escolhida pelos campos', async ({ page }) => {
   await openPanel(page)
   const s = await settings(page)
-  await s.getByLabel('layoutMirror').check()
+  await s.getByLabel(E.options.layoutMirror, { exact: true }).check()
   const panel = s.getByTestId('resize-settings')
-  await panel.getByLabel('resizable').check()
-  await panel.getByLabel('sizeControls').check()
+  await panel.getByLabel(E.options.resizable).check()
+  await panel.getByLabel(E.options.sizeControls).check()
   const width = page.locator('.ve-root').first().locator('.ve-size-controls').getByLabel('Width')
   await width.fill('700')
   await width.press('Enter')
@@ -411,16 +452,26 @@ test('painel: Layout Mirror acompanha a largura escolhida pelos campos', async (
 test('configurações gerais na engrenagem, sem duplicação; JSX acompanha', async ({ page }) => {
   await openPanel(page)
   const tools = page.getByTestId('props-panel')
-  for (const label of ['insert', 'layoutMirror', 'resizable', 'pasteSpacing']) {
+  for (const label of [
+    E.groups.insert,
+    E.options.layoutMirror,
+    E.options.resizable,
+    E.options.pasteSpacing,
+  ]) {
     await expect(tools.getByLabel(label, { exact: true })).toHaveCount(0)
   }
   await expect(tools.getByRole('button', { name: 'Reset' })).toHaveCount(0)
   // Ferramentas que ficam em Ver HTML
   await expect(tools.getByRole('button', { name: 'Load: Table' })).toBeVisible()
   await expect(tools.getByLabel('onError (log instead of alert)')).toBeVisible()
-  // pasteSpacing na engrenagem; o JSX muda sem fechar o painel
+  // pasteSpacing na engrenagem: Manter por padrão; o JSX muda sem fechar o painel
   const s = await settings(page)
-  await s.getByLabel('pasteSpacing').selectOption('preserve')
+  const spacing = s.getByLabel(E.options.pasteSpacing)
+  await expect(spacing).toHaveValue('preserve')
+  await expect(page.getByTestId('jsx')).toContainText('pasteSpacing="preserve"')
+  await spacing.selectOption('remove')
+  await expect(page.getByTestId('jsx')).not.toContainText('pasteSpacing')
+  await spacing.selectOption('preserve')
   await expect(page.getByTestId('jsx')).toContainText('pasteSpacing="preserve"')
   await expect(s).toBeVisible()
   // Todos os grupos desligados: a barra continua com a engrenagem, para religar
@@ -439,13 +490,66 @@ test('configurações gerais na engrenagem, sem duplicação; JSX acompanha', as
     'insert',
     'textbox',
     'clear',
-  ]) {
-    await s.getByLabel(g, { exact: true }).uncheck()
+  ] as const) {
+    await s.getByLabel(E.groups[g], { exact: true }).uncheck()
   }
+  // Botões de arquivo só em Funções do Menu (Arquivo), sem repetição em Comportamento
+  await expect(s.getByLabel(E.groups.file, { exact: true })).toHaveCount(1)
+  await expect(s.getByText('File buttons')).toHaveCount(0)
+  // Funções do Menu: uma coluna, na ordem dos botões da barra
+  const groups = s.getByTestId('toolbar-groups').locator('label')
+  const boxes = await groups.evaluateAll((els) =>
+    els.map((el) => {
+      const r = el.getBoundingClientRect()
+      return { x: Math.round(r.left), y: r.top, id: el.getAttribute('title') }
+    }),
+  )
+  expect(boxes.map((b) => b.id)).toEqual(TOOLBAR_GROUPS.filter((g) => g !== 'dictation'))
+  expect(new Set(boxes.map((b) => b.x)).size).toBe(1)
+  for (let i = 1; i < boxes.length; i++) expect(boxes[i].y).toBeGreaterThan(boxes[i - 1].y)
   const toolbar = page.getByRole('toolbar').first()
   // Na barra, só a engrenagem (o painel aberto fica dentro dela)
   await expect(toolbar.locator(':scope > *')).toHaveCount(1)
   await expect(toolbar.locator(':scope > .ve-settings-wrap')).toHaveCount(1)
-  await s.getByLabel('format', { exact: true }).check()
+  await s.getByLabel(E.groups.format, { exact: true }).check()
   await expect(toolbar.getByRole('button', { name: /^Bold/ })).toBeVisible()
+})
+
+// Margem dos objetos (prop objectMargin) em Aparência: padrão da biblioteca, só os
+// lados mudados no JSX, editor e prévia publicada (Layout Mirror) com a mesma margem
+test('Aparência: margem dos objetos por lado, no editor, no JSX e no publicado', async ({
+  page,
+}) => {
+  await openPanel(page)
+  await page.getByRole('button', { name: 'Load: Image' }).click()
+  const s = await settings(page)
+  const fields = s.getByTestId('object-margin')
+  const field = (side: keyof typeof E.marginNames) =>
+    fields.getByLabel(E.marginNames[side], { exact: true })
+  for (const [side, value] of [
+    ['text', '16'],
+    ['outer', '0'],
+    ['top', '4'],
+    ['bottom', '12'],
+  ] as const) {
+    await expect(field(side)).toHaveValue(value)
+  }
+  await expect(page.getByTestId('jsx')).not.toContainText('objectMargin')
+  await field('text').fill('30')
+  await field('outer').fill('6')
+  await expect(page.getByTestId('jsx')).toContainText('objectMargin={{text: 30,outer: 6}}')
+  const marginOf = (root: string) =>
+    page.evaluate((sel) => {
+      const cs = getComputedStyle(document.querySelector(`${sel} img.pos-right`)!)
+      return [cs.marginTop, cs.marginRight, cs.marginBottom, cs.marginLeft]
+    }, root)
+  // Imagem à direita: topo | fora | baixo | texto
+  expect(await marginOf('.ve-root')).toEqual(['4px', '6px', '12px', '30px'])
+  await s.getByLabel(E.options.layoutMirror, { exact: true }).check()
+  await expect(page.getByTestId('published-mirror')).toBeVisible()
+  expect(await marginOf('[data-testid="published-mirror"]')).toEqual(['4px', '6px', '12px', '30px'])
+  // Restaurar: volta ao padrão e some do JSX
+  await s.getByRole('button', { name: 'Reset' }).click()
+  await expect(field('text')).toHaveValue('16')
+  await expect(page.getByTestId('jsx')).not.toContainText('objectMargin')
 })

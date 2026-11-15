@@ -14,6 +14,7 @@ describe('JSX equivalente do painel Propriedades', () => {
     expect(settingsToProps(DEFAULT_SETTINGS)).toEqual({
       width: 800,
       height: 500,
+      pasteSpacing: 'preserve',
       ...PLAYGROUND_FONTS,
     })
   })
