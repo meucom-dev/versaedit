@@ -32,9 +32,20 @@ import {
 } from '../core/editor'
 import { resolveLabels, type VersaEditLabels, type VersaEditLocale } from '../core/i18n'
 import { SPEECH_LANG, type SpeechRecognitionConstructor } from '../core/speech'
+import {
+  DEFAULT_FRAME_HANDLES,
+  createFrameResizer,
+  type FrameHandle,
+  type FrameLimits,
+  type FrameResizePhase,
+  type FrameResizer,
+  type FrameSize,
+} from '../core/frame-resize'
 import { injectStyles } from '../core/styles'
 import { ObjectToolbar } from './floating/ObjectToolbar'
 import { ResizeHandle } from './floating/ResizeHandle'
+import { SizeControls } from './SizeControls'
+import { CloseMenusSignal } from './toolbar/usePopup'
 import { useBrowserSpeechRecognition } from './useBrowserSpeechRecognition'
 import { Toolbar, TOOLBAR_GROUPS, type ToolbarGroup, type ToolbarState } from './toolbar/Toolbar'
 
@@ -116,6 +127,31 @@ export interface VersaEditProps {
   /** Altura total do bloco em px, moldura incluída */
   height?: number
   /**
+   * Alças para redimensionar a área de edição (padrão: false): à direita, embaixo
+   * e no canto entre elas, com mouse, toque ou as setas (Shift: 1px). Com um
+   * objeto, escolhe as alças (`handles`, entre 'e', 's', 'se', 'w', 'n', 'nw',
+   * 'ne', 'sw') e os limites em px (moldura incluída): minWidth (160), maxWidth (o
+   * espaço disponível; nunca passa dele), minHeight (80), maxHeight (sem limite).
+   * Muda só a área visível: o HTML, o histórico e a seleção não
+   * mudam, e o limite de conteúdo (truncateOnOverflow, onOverflowChange) continua
+   * sendo o de `width` e `height`. Se `width` ou `height` mudarem, o novo valor
+   * prevalece.
+   */
+  resizable?: boolean | ResizableOptions
+  /**
+   * Campos de largura e altura (px) abaixo da área de edição, ligados ao
+   * redimensionamento (só com `resizable`). Enter ou sair do campo aplica; Esc
+   * desfaz o que foi digitado.
+   */
+  sizeControls?: boolean
+  /**
+   * Tamanho visível mudado pela pessoa (moldura incluída, px). Arraste das alças:
+   * 'start', 'move' (um por quadro em que o tamanho mudou) e 'end'. Setas nas alças,
+   * campos de tamanho e o ajuste quando o contêiner encolhe: só 'end', e só quando o
+   * tamanho mudou. setSize e mudanças de width/height não chamam.
+   */
+  onResize?: (size: FrameSize, phase: FrameResizePhase) => void
+  /**
    * Largura da barra de ferramentas (padrão: a do bloco). Com números, a barra
    * fica centralizada sobre o bloco; com medida CSS, alinhada à esquerda.
    */
@@ -188,8 +224,21 @@ export interface VersaEditHandle {
   clear(): void
   undo(): void
   redo(): void
+  /** Tamanho visível da área (moldura incluída, px); null antes de montar */
+  getSize(): FrameSize | null
+  /**
+   * Muda o tamanho visível (só com `resizable`), dentro dos limites; devolve o
+   * aplicado (null sem `resizable`). Não chama onResize nem onChange.
+   */
+  setSize(size: Partial<FrameSize>): FrameSize | null
   /** Núcleo do editor, para usos avançados */
   readonly core: VersaEditCore | null
+}
+
+/** Opções de `resizable`: alças e limites (px, moldura incluída) */
+export interface ResizableOptions extends FrameLimits {
+  /** Alças mostradas (padrão: ['e', 's', 'se']) */
+  handles?: FrameHandle[]
 }
 
 // ─── COMPONENTE ───────────────────────────────────────────────────
@@ -200,6 +249,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     initialContent = '',
     onChange,
     onOverflowChange,
+    onResize,
     onFocus,
     onBlur,
     onError,
@@ -215,7 +265,9 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     truncateOnOverflow = false,
     width = DEFAULT_WIDTH,
     height = DEFAULT_HEIGHT,
-    toolbarWidth = width,
+    resizable = false,
+    sizeControls = false,
+    toolbarWidth: toolbarWidthProp,
     frame,
     accentColor = DEFAULT_ACCENT,
     fontFamily = DEFAULT_FONT,
@@ -245,6 +297,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
   const fontSizeOptions = fontSizes.length ? fontSizes : DEFAULT_FONT_SIZES
 
   const editorRef = useRef<HTMLDivElement>(null)
+  const frameRef = useRef<HTMLDivElement>(null)
   const coreRef = useRef<VersaEditCore | null>(null)
   const getCore = useCallback(() => coreRef.current, [])
 
@@ -267,6 +320,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
   const latest = useRef({
     onChange,
     onOverflowChange,
+    onResize,
     onSave,
     onImageUpload,
     onFocus,
@@ -278,6 +332,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     latest.current = {
       onChange,
       onOverflowChange,
+      onResize,
       onSave,
       onImageUpload,
       onFocus,
@@ -304,6 +359,14 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
       clear: () => coreRef.current?.clearAll(),
       undo: () => coreRef.current?.undo(),
       redo: () => coreRef.current?.redo(),
+      getSize: () => {
+        const f = frameRef.current
+        return (
+          resizerRef.current?.getSize() ??
+          (f ? { width: f.offsetWidth, height: f.offsetHeight } : null)
+        )
+      },
+      setSize: (size: Partial<FrameSize>) => resizerRef.current?.setSize(size) ?? null,
       get core() {
         return coreRef.current
       },
@@ -374,6 +437,83 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     })
   })
 
+  // Tamanho visível × configurado: as alças, os campos e setSize mudam só o
+  // visível (userSize); width/height continuam sendo o configurado, e mudá-los
+  // descarta o visível. Sem resizable, nada disso existe.
+  const canResize = !!resizable
+  const resizeOptions: ResizableOptions = typeof resizable === 'object' ? resizable : {}
+  const handlesKey = (resizeOptions.handles ?? DEFAULT_FRAME_HANDLES).join('|')
+  const limitsKey = JSON.stringify({
+    minWidth: resizeOptions.minWidth,
+    maxWidth: resizeOptions.maxWidth,
+    minHeight: resizeOptions.minHeight,
+    maxHeight: resizeOptions.maxHeight,
+  })
+  const [limits, setLimits] = useState<Required<FrameLimits> | null>(null)
+  // Menus da barra fecham ao começar a redimensionar (a barra pode mudar de largura)
+  const [closeMenus, setCloseMenus] = useState(0)
+  const [userSize, setUserSize] = useState<FrameSize | null>(null)
+  const [visibleSize, setVisibleSize] = useState<FrameSize | null>(null)
+  const resizerRef = useRef<FrameResizer | null>(null)
+  useEffect(() => setUserSize(null), [width, height, canResize])
+  const resizeLabels = `${L.frameResizeWidth}|${L.frameResizeHeight}|${L.frameResizeBoth}`
+  useEffect(() => {
+    const frameEl = frameRef.current
+    const content = editorRef.current
+    if (!canResize || !frameEl || !content) return
+    const [w, h, both] = resizeLabels.split('|')
+    const resizer = createFrameResizer({
+      frame: frameEl,
+      content,
+      handles: handlesKey.split('|') as FrameHandle[],
+      labels: { e: w, w, s: h, n: h, se: both, sw: both, ne: both, nw: both },
+      limits: JSON.parse(limitsKey) as FrameLimits,
+      onSizeChange: (size, applied) => {
+        setVisibleSize(size)
+        if (applied) setUserSize(size)
+        coreRef.current?.refreshLayout()
+      },
+      onLimitsChange: setLimits,
+      onResize: (size, phase) => {
+        if (phase === 'start') setCloseMenus((n) => n + 1)
+        latest.current.onResize?.(size, phase)
+      },
+    })
+    resizerRef.current = resizer
+    return () => {
+      resizer.destroy()
+      resizerRef.current = null
+    }
+    // Limites mudados depois: setLimits abaixo (sem recriar as alças)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canResize, resizeLabels, handlesKey])
+  useEffect(() => {
+    resizerRef.current?.setLimits(JSON.parse(limitsKey) as FrameLimits)
+  }, [limitsKey])
+  // Área visível diferente da configurada e sem rolagem (scrollable=false): a
+  // rolagem é ligada, para nada ficar inalcançável; no tamanho configurado, o
+  // corte e o aviso medem como antes (overflow-y da classe)
+  const forceScroll = canResize && !scrollable && userSize !== null
+  useIsomorphicLayoutEffect(() => {
+    coreRef.current?.setContentLimit(
+      canResize ? { width, height, ...(forceScroll && { overflowY: '' }) } : null,
+    )
+  })
+  // Campos de tamanho: Enter, sair do campo ou setas do campo aplicam; avisa com
+  // 'end' só quando o tamanho mudou
+  const commitSize = useCallback((size: Partial<FrameSize>) => {
+    const resizer = resizerRef.current
+    if (!resizer) return
+    const before = resizer.getSize()
+    const after = resizer.setSize(size)
+    if (after.width !== before.width || after.height !== before.height) {
+      latest.current.onResize?.(after, 'end')
+    }
+  }, [])
+  const frameWidth = userSize?.width ?? width
+  const frameHeight = userSize?.height ?? height
+  const toolbarWidth = toolbarWidthProp ?? frameWidth
+
   // Conteúdo vindo de fora
   useEffect(() => {
     coreRef.current?.load(initialContent)
@@ -422,32 +562,35 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
   return (
     <div className="ve-root" style={rootStyle}>
       {groups.size > 0 && (
-        <Toolbar
-          core={getCore}
-          labels={L}
-          width={toolbarWidth}
-          editorWidth={width}
-          showFileButtons={showFileButtons}
-          fontFamilies={fontFamilies}
-          fontSizes={fontSizeOptions}
-          colorPalette={colorPalette}
-          highlightColors={highlightColors}
-          isTextboxSelected={object?.type === 'textbox'}
-          state={toolbarState}
-          setState={patchToolbar}
-          linkDraft={linkDraft}
-          openLink={openLink}
-          closeLink={closeLink}
-          dictation={dictation}
-          groups={groups}
-        />
+        <CloseMenusSignal.Provider value={closeMenus}>
+          <Toolbar
+            core={getCore}
+            labels={L}
+            width={toolbarWidth}
+            editorWidth={frameWidth}
+            showFileButtons={showFileButtons}
+            fontFamilies={fontFamilies}
+            fontSizes={fontSizeOptions}
+            colorPalette={colorPalette}
+            highlightColors={highlightColors}
+            isTextboxSelected={object?.type === 'textbox'}
+            state={toolbarState}
+            setState={patchToolbar}
+            linkDraft={linkDraft}
+            openLink={openLink}
+            closeLink={closeLink}
+            dictation={dictation}
+            groups={groups}
+          />
+        </CloseMenusSignal.Provider>
       )}
 
       {/* ═══ ÁREA DE EDIÇÃO — largura, altura e moldura configuráveis ═══ */}
       <div
+        ref={frameRef}
         className="ve-frame"
         style={{
-          width,
+          width: frameWidth,
           border: frameOpts.width ? `${frameOpts.width}px solid ${frameOpts.color}` : 'none',
           borderRadius: frameOpts.radius,
         }}
@@ -464,8 +607,9 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
           data-placeholder={placeholder ?? L.placeholder}
           style={{
             // Número: medida exata em px (como sempre); medida CSS: ocupa a moldura
-            width: typeof width === 'number' ? width - frameOpts.width * 2 : '100%',
-            height: height - frameOpts.width * 2,
+            width: typeof frameWidth === 'number' ? frameWidth - frameOpts.width * 2 : '100%',
+            height: frameHeight - frameOpts.width * 2,
+            ...(forceScroll && { overflowY: 'auto' as const }),
             borderRadius: Math.max(0, frameOpts.radius - frameOpts.width),
             fontFamily,
             ...contentStyle,
@@ -485,6 +629,15 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
           <ResizeHandle position={object.handle} title={L.resizeFree} core={getCore} />
         )}
       </div>
+
+      {canResize && sizeControls && (
+        <SizeControls
+          size={visibleSize ?? (typeof width === 'number' ? { width, height } : null)}
+          limits={limits}
+          labels={L}
+          onCommit={commitSize}
+        />
+      )}
     </div>
   )
 })

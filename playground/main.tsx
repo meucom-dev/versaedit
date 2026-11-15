@@ -119,6 +119,10 @@ function App() {
   const editorRef = useRef<VersaEditHandle>(null)
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
   const editorWidth = useFitWidth(settings.width)
+  // Largura visível escolhida pelas alças ou campos (Layout Mirror acompanha);
+  // trocar as propriedades volta à largura configurada
+  const [chosen, setChosen] = useState<{ settings: typeof settings; width: number } | null>(null)
+  const visibleWidth = chosen?.settings === settings ? chosen.width : null
   const secondWidth = useFitWidth(600)
   // Registro de eventos do painel "Propriedades" (os 30 mais recentes)
   const [events, setEvents] = useState<string[]>([])
@@ -184,6 +188,11 @@ function App() {
         onFocus={() => log('onFocus')}
         onBlur={() => log('onBlur')}
         onOverflowChange={(overflow) => log(`onOverflowChange (${overflow})`)}
+        onResize={(size, phase) => {
+          // 'move' chega a cada quadro: no registro, só o começo e o fim
+          if (phase !== 'move') log(`onResize ${phase} (${size.width}×${size.height})`)
+          setChosen({ settings, width: size.width })
+        }}
         onError={settings.useOnError ? (e) => log(`onError ${e.code}: ${e.message}`) : undefined}
         locale={locale}
         {...settingsToProps(settings)}
@@ -197,7 +206,7 @@ function App() {
           <PublishedPreview
             html={html}
             title={T.published}
-            width={editorWidth}
+            width={settings.resizable && visibleWidth !== null ? visibleWidth : editorWidth}
             frameWidth={settings.frameWidth}
           />
         )}

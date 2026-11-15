@@ -63,6 +63,7 @@ O `initialContent` é carregado (e sanitizado) quando muda; o editor ignora o ec
 | `initialContent`                                     | `string`                                            | `''`                              | HTML a carregar. Mudanças vindas de fora recarregam o editor (e reiniciam o desfazer).                                       |
 | `onChange`                                           | `(html) => void`                                    | —                                 | Chamado quando o HTML muda de fato.                                                                                          |
 | `onOverflowChange`                                   | `(boolean) => void`                                 | —                                 | O conteúdo cabe / não cabe na altura do editor.                                                                              |
+| `onResize`                                           | `(size, phase) => void`                             | —                                 | A pessoa redimensionou a área de edição: `'start'`, `'move'`, `'end'` ([detalhes](#área-de-edição-redimensionável)).         |
 | `onFocus` / `onBlur`                                 | `() => void`                                        | —                                 | O foco entrou / saiu do editor (botões da barra não tiram o foco).                                                           |
 | `onError`                                            | `(VersaEditError) => void`                          | `alert()`                         | Erros e avisos com `code` estável (abaixo).                                                                                  |
 | `onConfirm`                                          | `(VersaEditConfirm) => boolean \| Promise<boolean>` | `confirm()`                       | Confirmações (ex.: substituir o conteúdo ao abrir arquivo).                                                                  |
@@ -70,6 +71,8 @@ O `initialContent` é carregado (e sanitizado) quando muda; o editor ignora o ec
 | `onImageUpload`                                      | `(file) => Promise<url>`                            | base64                            | Envia a imagem e insere a URL devolvida (recomendado).                                                                       |
 | `width`                                              | `number \| string`                                  | `640`                             | Largura total; número em px, texto é medida CSS (`'100%'`).                                                                  |
 | `height`                                             | `number`                                            | `480`                             | Altura total em px.                                                                                                          |
+| `resizable`                                          | `boolean \| ResizableOptions`                       | `false`                           | Alças para redimensionar a área de edição ([detalhes](#área-de-edição-redimensionável)).                                     |
+| `sizeControls`                                       | `boolean`                                           | `false`                           | Campos de largura e altura (px) abaixo da área de edição (com `resizable`).                                                  |
 | `toolbarWidth`                                       | `number \| string`                                  | `width`                           | Largura da barra (com números, centralizada sobre o editor).                                                                 |
 | `frame`                                              | `{ width, color, radius } \| false`                 | `1px #d0d7de, 8px`                | Moldura da área de edição.                                                                                                   |
 | `accentColor`                                        | `string`                                            | `#2563eb`                         | Contorno de seleção, caixas de texto, alças.                                                                                 |
@@ -101,6 +104,7 @@ pelo teclado funcionam sempre.
 ## Métodos da ref (`VersaEditHandle`)
 
 `getHTML()` · `setHTML(html)` (reinicia o desfazer) · `focus()` · `clear()` · `undo()` · `redo()` ·
+`getSize()` · `setSize({ width?, height? })` ([Área de edição redimensionável](#área-de-edição-redimensionável)) ·
 `core` (o `VersaEditCore` por trás, **experimental**).
 
 ## CSS
@@ -161,6 +165,50 @@ import 'versaedit/versaedit-content.css'
   Regras que o alcançam por uma classe (ex.: `.post p {}`) são mais específicas e continuam valendo,
   assim como as com `!important`: mantenha-as longe do contêiner `ve-mirror`.
 - Sem React, coloque você mesmo a classe `ve-mirror` no elemento de edição.
+
+### Área de edição redimensionável
+
+Desligada por padrão. Com `resizable`, alças na borda direita, na borda de baixo e no canto entre
+elas redimensionam a área de edição com o mouse, o dedo ou as setas (com a alça focada; Shift:
+1 px). `sizeControls` acrescenta campos de largura e altura abaixo da área.
+
+```tsx
+<VersaEdit
+  width={720}
+  height={400}
+  resizable={{ handles: ['e', 's', 'se', 'w'], minWidth: 320, maxHeight: 900 }}
+  sizeControls
+  onResize={(size, phase) => phase === 'end' && salvarTamanho(size)}
+/>
+```
+
+- Muda só a área visível: o HTML, o histórico de desfazer, a seleção e o `onChange` não são
+  afetados, e nada é gravado no documento.
+- `handles`: qualquer combinação de `'e'`, `'s'`, `'se'` (padrão), `'w'`, `'n'`, `'nw'`, `'ne'`,
+  `'sw'`. As alças da esquerda e de cima também aumentam a área quando puxadas para fora; com o
+  editor alinhado à esquerda na página, quem se move é a borda oposta. Uma alça lateral sem
+  espaço ao lado do editor (editor na largura toda) fica oculta, e o canto continua funcionando.
+- Limites em px, moldura incluída: `minWidth` (160), `maxWidth` (a largura disponível; a área
+  nunca passa do contêiner), `minHeight` (80), `maxHeight` (sem limite). Se o contêiner ficar
+  mais estreito que a largura escolhida, a área encolhe para caber e avisa com `'end'`.
+- `onResize(size, phase)`, tamanhos em px com a moldura: o arraste chama `'start'`, depois
+  `'move'` uma vez por quadro em que o tamanho mudou, depois `'end'`. As setas, os campos de
+  tamanho e o contêiner que encolhe chamam só `'end'`, e só quando o tamanho mudou. `setSize()` e
+  novas props `width`/`height` não chamam; assim, guardar o tamanho e restaurá-lo com `setSize()`
+  nunca entra em laço.
+- `getSize()` devolve o tamanho visível (`null` antes de montar); `setSize()` aplica um tamanho
+  dentro dos limites e o devolve (só com `resizable`). Novas props `width`/`height` substituem o
+  tamanho escolhido.
+- `truncateOnOverflow` e `onOverflowChange` continuam usando o `width`/`height` configurado:
+  redimensionar nunca corta conteúdo, nem na próxima digitação, colagem ou carregamento, e uma
+  área maior não permite mais conteúdo. O que passa de uma área menor rola (mesmo com
+  `scrollable={false}`).
+- Para manter o tamanho entre visitas, guarde-o no `onResize` e devolva-o como `width` e `height`
+  (ou chame `setSize()`). Com o [Layout Mirror](#layout-mirror), dê ao contêiner publicado a
+  largura útil do tamanho escolhido (`width` − moldura − 32 px).
+- Sem React: `createFrameResizer({ frame, content, handles, limits, onResize })` coloca as alças em
+  qualquer moldura, e `core.setContentLimit({ width, height })` mantém o limite de conteúdo no
+  tamanho configurado.
 
 ## Exemplos e guias
 
@@ -226,6 +274,11 @@ como diagnóstico (`VE_ALL_BROWSERS=1 npx playwright test --project=firefox --pr
 | Firefox         | Funciona; o HTML difere em detalhes (ex.: imagem inserida dentro do parágrafo). A colagem não é coberta pelos testes automáticos no Firefox. |
 | Safari (WebKit) | Funciona; listas ganham `<span style="font-size">` extras; as outras diferenças são de forma.                                                |
 
+Descer um objeto flutuante para baixo de outro quando a coluna de texto entre eles ficaria estreita
+demais (`data-ve-stack`, no editor e no `versaedit-content.css`) precisa de `:has()` e consultas de
+contêiner: Chrome/Edge 105+, Safari 16+, Firefox 121+. Em navegadores mais antigos os objetos ficam
+lado a lado, como antes; nada mais muda.
+
 ## Limitações conhecidas
 
 - Usa `document.execCommand` (antigo, mas suportado por todos os navegadores); o HTML gerado varia um
@@ -237,6 +290,9 @@ como diagnóstico (`VE_ALL_BROWSERS=1 npx playwright test --project=firefox --pr
   `<span style="font-weight: bold">` em vez de `<b>` (funciona igual).
 - A colagem do Microsoft Word ainda não foi validada com documentos reais.
 - Só exporta HTML (sem JSON nem Markdown).
+- WebKit (Safari), com `truncateOnOverflow` e a área de edição redimensionada: os espaços
+  digitados depois do limite de conteúdo podem ser gravados com uma mistura diferente de espaços e
+  `&nbsp;` da de uma área nunca redimensionada. O texto e o ponto de corte são os mesmos.
 
 ## Desenvolvimento
 

@@ -289,7 +289,7 @@ test('trocar o idioma não muda o conteúdo em edição; o exemplo muda só ao c
 
 test('campo Altura: o editor só muda quando o valor é confirmado', async ({ page }) => {
   await openPanel(page)
-  const field = page.getByRole('spinbutton', { name: 'Height' })
+  const field = page.getByRole('spinbutton', { name: 'Height', exact: true })
   const jsx = page.getByTestId('jsx')
   const select = () => page.keyboard.press('ControlOrMeta+a')
   await expect(jsx).toContainText('height={420}')
@@ -330,4 +330,52 @@ test('campo Altura: o editor só muda quando o valor é confirmado', async ({ pa
   await page.keyboard.press('ArrowDown')
   await expect(jsx).toContainText('height={890}')
   expect(await field.inputValue()).toBe('890')
+})
+
+// Redimensionamento da área (Lote 3): ligado no painel, com campos, alças e limites;
+// o registro mostra onResize e o JSX equivalente acompanha
+test('painel: redimensionamento com campos, alças, limites e onResize no registro', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.getByText('Show HTML').click()
+  await page.getByTestId('props-panel').locator('summary').click()
+  const panel = page.getByTestId('resize-settings')
+  await panel.getByLabel('resizable').check()
+  await panel.getByLabel('sizeControls').check()
+  await panel.getByLabel('nw', { exact: true }).check()
+  await panel.getByLabel('maxWidth').fill('800')
+  const editor = page.locator('.ve-root').first()
+  await expect(editor.locator('.ve-frame-handle-nw')).toHaveCount(1)
+  const width = editor.locator('.ve-size-controls').getByLabel('Width')
+  await width.fill('700')
+  await width.press('Enter')
+  await expect(page.getByTestId('events')).toContainText('onResize end (700×')
+  await expect(page.getByTestId('jsx')).toContainText(
+    'resizable={{handles: ["e","s","se","nw"],maxWidth: 800}}',
+  )
+  await expect(page.getByTestId('jsx')).toContainText('sizeControls={true}')
+  // Acima do limite configurado: fica no máximo
+  await width.fill('950')
+  await width.press('Enter')
+  await expect(width).toHaveValue('800')
+})
+
+test('painel: Layout Mirror acompanha a largura escolhida pelos campos', async ({ page }) => {
+  await page.goto('/')
+  await page.getByText('Show HTML').click()
+  await page.getByTestId('props-panel').locator('summary').click()
+  await page.getByTestId('props-panel').getByLabel('layoutMirror').check()
+  const panel = page.getByTestId('resize-settings')
+  await panel.getByLabel('resizable').check()
+  await panel.getByLabel('sizeControls').check()
+  const width = page.locator('.ve-root').first().locator('.ve-size-controls').getByLabel('Width')
+  await width.fill('700')
+  await width.press('Enter')
+  // Largura útil da área: 700 − moldura (2 × 1) − 32 de espaço interno
+  await expect
+    .poll(() =>
+      page.getByTestId('published-mirror').evaluate((el) => el.getBoundingClientRect().width),
+    )
+    .toBe(666)
 })

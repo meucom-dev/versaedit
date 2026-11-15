@@ -1,5 +1,5 @@
 export { default as VersaEdit, default } from './react/VersaEdit'
-export type { VersaEditHandle, VersaEditProps } from './react/VersaEdit'
+export type { ResizableOptions, VersaEditHandle, VersaEditProps } from './react/VersaEdit'
 export { VersaEditDictation } from './react/VersaEditDictation'
 export { TOOLBAR_GROUPS, type ToolbarGroup } from './react/toolbar/Toolbar'
 export type { VersaEditDictationProps } from './react/VersaEditDictation'
@@ -13,6 +13,15 @@ export {
 } from './core/defaults'
 // Núcleo sem React, para quem quiser montar a própria interface
 export { VersaEditCore } from './core/editor'
+export { createFrameResizer, DEFAULT_FRAME_HANDLES } from './core/frame-resize'
+export type {
+  FrameHandle,
+  FrameLimits,
+  FrameResizePhase,
+  FrameResizer,
+  FrameResizerOptions,
+  FrameSize,
+} from './core/frame-resize'
 export { applyVoiceCommands, browserSpeechRecognition, createDictation } from './core/speech'
 export type {
   Dictation,
@@ -22,6 +31,7 @@ export type {
 } from './core/speech'
 export type { VersaEditConfirm, VersaEditError, VersaEditErrorCode } from './core/editor'
 export type {
+  ContentLimit,
   CoreCallbacks,
   CoreOptions,
   ObjectState,

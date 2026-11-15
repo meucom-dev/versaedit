@@ -57,6 +57,8 @@ export interface HarnessOutput {
   blur: number
   errors: { code: string; level: string; message: string }[]
   confirms: string[]
+  /** onResize: fase e tamanho de cada chamada */
+  resizes: { phase: string; width: number; height: number }[]
 }
 
 declare global {
@@ -128,6 +130,7 @@ window.__mount = async (props, options = {}) => {
     blur: 0,
     errors: [],
     confirms: [],
+    resizes: [],
   }
   window.__out = out
   const ref = createRef<VersaEditHandle>()
@@ -193,6 +196,7 @@ window.__mount = async (props, options = {}) => {
               }
             : undefined
         }
+        onResize={(size, phase) => out.resizes.push({ phase, ...size })}
         onFocus={() => out.focus++}
         onBlur={() => out.blur++}
         onImageUpload={

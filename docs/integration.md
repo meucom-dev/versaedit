@@ -89,6 +89,33 @@ The file buttons (Save/Open `.html`) are for the end user's own files. To send t
 button to your backend instead of downloading, pass `onSave={(html) => …}`.
 _Verified:_ `getHTML`, `onChange` and `onSave` in the example tests (`examples/vite-react`).
 
+## Keeping the editing area size
+
+With `resizable`, people can resize the editing area (see
+[Resizable editing area](../README.md#resizable-editing-area)). The size is not part of the HTML:
+store it yourself when the resize ends and pass it back on the next visit.
+
+```tsx
+const [size, setSize] = useState(() => readSavedSize() ?? { width: 720, height: 400 })
+
+<VersaEdit
+  width={size.width}
+  height={size.height}
+  resizable={{ minWidth: 320 }}
+  sizeControls
+  onResize={(next, phase) => {
+    if (phase === 'end') saveSize(next) // localStorage, user profile...
+  }}
+/>
+```
+
+Passing the saved size as `width` and `height` also makes it the content limit of
+`truncateOnOverflow`. To keep a fixed content limit and restore only the visible size, keep
+`width`/`height` fixed and call `editor.current!.setSize(saved)` after mounting (it does not call
+`onResize`). `onResize` is called once with `'end'` for each change made by the arrow keys or the
+size fields, and `'start'`/`'move'`/`'end'` while dragging. _Verified:_
+`tests/e2e/editor-resize.spec.ts` and `tests/e2e/editor-resize-api.spec.ts`.
+
 ## Supabase
 
 Use only the **public** key (`anon` or `sb_publishable_…`) in the browser, with **Row Level

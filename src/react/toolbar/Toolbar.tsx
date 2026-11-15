@@ -31,7 +31,7 @@ import { HighlightPicker } from './HighlightPicker'
 import { LinkPopover } from './LinkPopover'
 import { TextboxControls } from './TextboxControls'
 import { ToolbarBtn, ToolbarSep } from './ToolbarButton'
-import { useEscapeToClose } from './usePopup'
+import { useCloseOnSignal, useEscapeToClose } from './usePopup'
 
 const HEADING_BLOCKS: { label: keyof VersaEditLabels; tag: string }[] = [
   { label: 'paragraph', tag: 'p' },
@@ -134,6 +134,7 @@ export function Toolbar({
   // Esc fecha a paleta também com o foco no texto (o Esc dentro da barra continua
   // em handleKeyDown)
   useEscapeToClose(openPalette !== null, colorPanelRef, closePalette)
+  useCloseOnSignal(openPalette !== null, closePalette)
 
   // Fecha a paleta ao clicar fora dela
   useEffect(() => {

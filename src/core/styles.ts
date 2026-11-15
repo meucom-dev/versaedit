@@ -172,6 +172,52 @@ ${stackRules('.ve-content')}
 .ve-content .textbox-handle { touch-action: none; ${HANDLE_BOX} cursor: grab; color: var(--ve-accent); background: ${accent(15)}; border-color: ${accent(40)}; border-radius: 4px; user-select: none; -webkit-user-drag: none; }
 .ve-content .textbox-handle:active { cursor: grabbing; }
 
+/* Alças da moldura (prop resizable, core/frame-resize.ts): fora da área de edição,
+   sem cobrir texto nem a barra de rolagem. As de baixo e as de cima ficam em faixas
+   logo abaixo e logo acima da moldura (a margem reserva o espaço: nada da página fica
+   embaixo delas); as dos lados, do lado de fora, só aparecem quando cabem ao lado da
+   moldura (sem rolagem lateral). Os lados deixam espaço aos cantos presentes */
+.ve-frame.ve-frame-resizable { margin-bottom: 10px; }
+.ve-frame.ve-frame-resizable-top { margin-top: 10px; }
+.ve-frame-handle { position: absolute; z-index: 105; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; outline: none; }
+.ve-frame-handle-e { top: 0; bottom: 0; right: -9px; width: 8px; cursor: ew-resize; }
+.ve-frame-handle-w { top: 0; bottom: 0; left: -9px; width: 8px; cursor: ew-resize; }
+.ve-frame-handle-s, .ve-frame-handle-n { left: 0; right: 0; height: 10px; cursor: ns-resize; }
+.ve-frame-handle-s { bottom: -11px; }
+.ve-frame-handle-n { top: -11px; }
+.ve-frame-has-se > .ve-frame-handle-s, .ve-frame-has-ne > .ve-frame-handle-n { right: 18px; }
+.ve-frame-has-sw > .ve-frame-handle-s, .ve-frame-has-nw > .ve-frame-handle-n { left: 18px; }
+.ve-frame-handle-se, .ve-frame-handle-sw, .ve-frame-handle-ne, .ve-frame-handle-nw { width: 18px; height: 10px; background: linear-gradient(to bottom, transparent 3px, ${accent(55)} 3px 4px, transparent 4px 6px, ${accent(55)} 6px 7px, transparent 7px) center / 12px 100% no-repeat; }
+.ve-frame-handle-se { right: -1px; bottom: -11px; cursor: nwse-resize; }
+.ve-frame-handle-sw { left: -1px; bottom: -11px; cursor: nesw-resize; }
+.ve-frame-handle-ne { right: -1px; top: -11px; cursor: nesw-resize; }
+.ve-frame-handle-nw { left: -1px; top: -11px; cursor: nwse-resize; }
+.ve-frame-handle-e:hover, .ve-frame-handle-e.ve-frame-handle-active { box-shadow: inset 2px 0 0 var(--ve-accent); }
+.ve-frame-handle-w:hover, .ve-frame-handle-w.ve-frame-handle-active { box-shadow: inset -2px 0 0 var(--ve-accent); }
+.ve-frame-handle-s:hover, .ve-frame-handle-s.ve-frame-handle-active { box-shadow: inset 0 2px 0 var(--ve-accent); }
+.ve-frame-handle-n:hover, .ve-frame-handle-n.ve-frame-handle-active { box-shadow: inset 0 -2px 0 var(--ve-accent); }
+.ve-frame-handle:focus-visible { box-shadow: inset 0 0 0 2px var(--ve-accent); }
+@media (pointer: coarse) {
+  .ve-frame.ve-frame-resizable { margin-bottom: 22px; }
+  .ve-frame.ve-frame-resizable-top { margin-top: 22px; }
+  .ve-frame-handle-e { right: -17px; width: 16px; }
+  .ve-frame-handle-w { left: -17px; width: 16px; }
+  .ve-frame-handle-s, .ve-frame-handle-n { height: 22px; }
+  .ve-frame-handle-s { bottom: -23px; }
+  .ve-frame-handle-n { top: -23px; }
+  .ve-frame-has-se > .ve-frame-handle-s, .ve-frame-has-ne > .ve-frame-handle-n { right: 34px; }
+  .ve-frame-has-sw > .ve-frame-handle-s, .ve-frame-has-nw > .ve-frame-handle-n { left: 34px; }
+  .ve-frame-handle-se, .ve-frame-handle-sw, .ve-frame-handle-ne, .ve-frame-handle-nw { width: 34px; height: 22px; background-size: 12px 10px; }
+  .ve-frame-handle-se, .ve-frame-handle-sw { bottom: -23px; }
+  .ve-frame-handle-ne, .ve-frame-handle-nw { top: -23px; }
+}
+
+/* Campos de tamanho da área (prop sizeControls), abaixo da moldura */
+.ve-size-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; margin: 0 0 4px; font-size: 12px; color: #555; }
+.ve-size-field { display: inline-flex; align-items: center; gap: 4px; }
+.ve-size-field input { width: 6.5em; min-height: 28px; box-sizing: border-box; padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; font: inherit; color: #333; background: #fff; }
+.ve-size-field input:focus-visible { outline: 2px solid var(--ve-accent); outline-offset: 1px; }
+
 /* Menus flutuantes de imagem e caixa de texto */
 .ve-float-toolbar { position: absolute; display: flex; flex-wrap: wrap; width: max-content; max-width: calc(100% - 22px); white-space: nowrap; gap: 4px; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 4px 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 100; }
 .ve-float-toolbar button { border: none; background: none; cursor: pointer; padding: 2px 6px; border-radius: 4px; font: inherit; font-size: 13px; color: #555; display: inline-flex; align-items: center; gap: 4px; }

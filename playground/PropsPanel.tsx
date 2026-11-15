@@ -3,7 +3,10 @@
 // Recolhido por padrão; sem mudanças, o editor recebe as props de sempre.
 import { useState, type CSSProperties } from 'react'
 import {
+  DEFAULT_FRAME_HANDLES,
   TOOLBAR_GROUPS,
+  type FrameHandle,
+  type ResizableOptions,
   type ToolbarGroup,
   type VersaEditLocale,
   type VersaEditProps,
@@ -24,7 +27,19 @@ export interface Settings {
   singleLineBreaks: boolean
   layoutMirror: boolean
   useOnError: boolean
+  /** Redimensionamento da área (prop resizable e campos de tamanho) */
+  resizable: boolean
+  sizeControls: boolean
+  handles: FrameHandle[]
+  /** Limites; null: padrão do editor */
+  minWidth: number | null
+  maxWidth: number | null
+  minHeight: number | null
+  maxHeight: number | null
 }
+
+const ALL_HANDLES: FrameHandle[] = ['e', 's', 'se', 'w', 'n', 'nw', 'ne', 'sw']
+const LIMITS = ['minWidth', 'maxWidth', 'minHeight', 'maxHeight'] as const
 
 // Grupos que o painel controla (o ditado fica fora da barra no playground)
 const GROUPS = TOOLBAR_GROUPS.filter((g) => g !== 'dictation')
@@ -44,6 +59,13 @@ export const DEFAULT_SETTINGS: Settings = {
   singleLineBreaks: false,
   layoutMirror: false,
   useOnError: false,
+  resizable: false,
+  sizeControls: false,
+  handles: [...DEFAULT_FRAME_HANDLES],
+  minWidth: null,
+  maxWidth: null,
+  minHeight: null,
+  maxHeight: null,
 }
 
 const BOOLEANS = [
@@ -103,6 +125,16 @@ export function settingsToProps(s: Settings): Partial<VersaEditProps> {
   )
     props.frame = { width: s.frameWidth, color: s.frameColor, radius: s.frameRadius }
   for (const key of BOOLEANS) if (s[key] !== d[key]) props[key] = s[key]
+  if (s.resizable) {
+    const options: ResizableOptions = {}
+    const defaultHandles =
+      s.handles.length === DEFAULT_FRAME_HANDLES.length &&
+      DEFAULT_FRAME_HANDLES.every((h) => s.handles.includes(h))
+    if (!defaultHandles) options.handles = ALL_HANDLES.filter((h) => s.handles.includes(h))
+    for (const key of LIMITS) if (s[key] !== null) options[key] = s[key]
+    props.resizable = Object.keys(options).length ? options : true
+    if (s.sizeControls) props.sizeControls = true
+  }
   return props
 }
 
@@ -120,6 +152,7 @@ export function settingsToJsx(s: Settings, locale: VersaEditLocale): string {
     else lines.push(`  ${key}={${jsLiteral(value)}}`)
   }
   if (s.useOnError) lines.push('  onError={(error) => console.warn(error.code, error.message)}')
+  if (s.resizable) lines.push('  onResize={(size, phase) => console.log(phase, size)}')
   lines.push('  onChange={setHtml}', '/>')
   return lines.join('\n')
 }
@@ -249,6 +282,9 @@ export const PANEL_TEXT = {
     frameRadius: 'Frame radius',
     behavior: 'Behavior',
     useOnError: 'onError (log instead of alert)',
+    resize: 'Resizing',
+    handles: 'Handles',
+    limits: 'Limits (px, empty: default)',
     content: 'Sample content',
     load: 'Load',
     events: 'Events',
@@ -277,6 +313,9 @@ export const PANEL_TEXT = {
     frameRadius: 'Raio da moldura',
     behavior: 'Comportamento',
     useOnError: 'onError (registro em vez de alert)',
+    resize: 'Redimensionamento',
+    handles: 'Alças',
+    limits: 'Limites (px, vazio: padrão)',
     content: 'Conteúdo de exemplo',
     load: 'Carregar',
     events: 'Eventos',
@@ -305,6 +344,9 @@ export const PANEL_TEXT = {
     frameRadius: 'Radio del marco',
     behavior: 'Comportamiento',
     useOnError: 'onError (registro en lugar de alert)',
+    resize: 'Redimensionamiento',
+    handles: 'Controladores',
+    limits: 'Límites (px, vacío: predeterminado)',
     content: 'Contenido de ejemplo',
     load: 'Cargar',
     events: 'Eventos',
@@ -510,6 +552,67 @@ export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, even
             />{' '}
             {T.useOnError}
           </label>
+        </div>
+      </fieldset>
+
+      <fieldset style={fieldset} data-testid="resize-settings">
+        <legend>{T.resize}</legend>
+        <div style={row}>
+          <label>
+            <input
+              type="checkbox"
+              checked={s.resizable}
+              onChange={(e) => set('resizable', e.target.checked)}
+            />{' '}
+            resizable
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={s.sizeControls}
+              disabled={!s.resizable}
+              onChange={(e) => set('sizeControls', e.target.checked)}
+            />{' '}
+            sizeControls
+          </label>
+        </div>
+        <div style={row}>
+          <span>{T.handles}:</span>
+          {ALL_HANDLES.map((h) => (
+            <label key={h}>
+              <input
+                type="checkbox"
+                checked={s.handles.includes(h)}
+                disabled={!s.resizable}
+                onChange={(e) =>
+                  set(
+                    'handles',
+                    ALL_HANDLES.filter((x) => (x === h ? e.target.checked : s.handles.includes(x))),
+                  )
+                }
+              />{' '}
+              {h}
+            </label>
+          ))}
+        </div>
+        <div style={row}>
+          <span>{T.limits}:</span>
+          {LIMITS.map((key) => (
+            <label key={key}>
+              {key}{' '}
+              <input
+                type="number"
+                min={0}
+                step={10}
+                disabled={!s.resizable}
+                value={s[key] ?? ''}
+                onChange={(e) =>
+                  set(key, e.target.value === '' ? null : Math.max(0, Number(e.target.value)))
+                }
+                style={{ width: 70 }}
+              />
+            </label>
+          ))}
         </div>
       </fieldset>
 

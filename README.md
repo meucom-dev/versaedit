@@ -63,6 +63,7 @@ export function PostEditor({
 | `initialContent`                                     | `string`                                            | `''`                      | HTML to load. External changes reload the editor (and reset undo).                                                    |
 | `onChange`                                           | `(html) => void`                                    | —                         | Called when the HTML actually changes.                                                                                |
 | `onOverflowChange`                                   | `(boolean) => void`                                 | —                         | Content does / doesn't fit the editor height.                                                                         |
+| `onResize`                                           | `(size, phase) => void`                             | —                         | The person resized the editing area: `'start'`, `'move'`, `'end'` ([details](#resizable-editing-area)).               |
 | `onFocus` / `onBlur`                                 | `() => void`                                        | —                         | Focus entered / left the editor (toolbar buttons keep focus).                                                         |
 | `onError`                                            | `(VersaEditError) => void`                          | `alert()`                 | Errors and warnings with a stable `code` (see below).                                                                 |
 | `onConfirm`                                          | `(VersaEditConfirm) => boolean \| Promise<boolean>` | `confirm()`               | Confirmations (e.g. replace content when opening a file).                                                             |
@@ -70,6 +71,8 @@ export function PostEditor({
 | `onImageUpload`                                      | `(file) => Promise<url>`                            | base64                    | Upload images and insert the returned URL (recommended).                                                              |
 | `width`                                              | `number \| string`                                  | `640`                     | Total width; a number is px, a string is CSS (`'100%'`).                                                              |
 | `height`                                             | `number`                                            | `480`                     | Total height in px.                                                                                                   |
+| `resizable`                                          | `boolean \| ResizableOptions`                       | `false`                   | Let people resize the editing area by dragging its edges ([Resizable editing area](#resizable-editing-area)).         |
+| `sizeControls`                                       | `boolean`                                           | `false`                   | Width and height fields (px) below the editing area (with `resizable`).                                               |
 | `toolbarWidth`                                       | `number \| string`                                  | `width`                   | Toolbar width (numbers center it over the editor).                                                                    |
 | `frame`                                              | `{ width, color, radius } \| false`                 | `1px #d0d7de, 8px`        | Border around the editing area.                                                                                       |
 | `accentColor`                                        | `string`                                            | `#2563eb`                 | Selection outlines, text boxes, handles.                                                                              |
@@ -101,6 +104,7 @@ the link form. Undo/redo shortcuts always work.
 ## Ref methods (`VersaEditHandle`)
 
 `getHTML()` · `setHTML(html)` (resets undo) · `focus()` · `clear()` · `undo()` · `redo()` ·
+`getSize()` · `setSize({ width?, height? })` ([Resizable editing area](#resizable-editing-area)) ·
 `core` (the underlying `VersaEditCore`, **experimental**).
 
 ## CSS
@@ -157,6 +161,49 @@ import 'versaedit/versaedit-content.css'
   that target it through a class (e.g. `.post p {}`) are more specific and still apply, as do
   `!important` rules: keep them away from the `ve-mirror` container.
 - Without React, add the `ve-mirror` class to the editing element yourself.
+
+### Resizable editing area
+
+Off by default. With `resizable`, handles on the right edge, the bottom edge and the corner
+between them resize the editing area with a mouse, a finger or the arrow keys (focused handle;
+Shift: 1 px). `sizeControls` adds width and height fields below the area.
+
+```tsx
+<VersaEdit
+  width={720}
+  height={400}
+  resizable={{ handles: ['e', 's', 'se', 'w'], minWidth: 320, maxHeight: 900 }}
+  sizeControls
+  onResize={(size, phase) => phase === 'end' && saveEditorSize(size)}
+/>
+```
+
+- Only the visible area changes: the HTML, undo history, selection and `onChange` are not
+  affected, and nothing is written into the document.
+- `handles`: any of `'e'`, `'s'`, `'se'` (default), `'w'`, `'n'`, `'nw'`, `'ne'`, `'sw'`. The
+  left and top handles also grow the area when pulled outwards; with the editor aligned to the
+  left of the page, the opposite edge is the one that moves. A side handle without room beside
+  the editor (full-width editor) is hidden, and the corner keeps working.
+- Limits in px, frame included: `minWidth` (160), `maxWidth` (the available width; the area
+  never goes past its container), `minHeight` (80), `maxHeight` (none). If the container gets
+  narrower than the chosen width, the area shrinks to fit and reports `'end'`.
+- `onResize(size, phase)`, sizes in px with the frame: dragging calls `'start'`, then `'move'`
+  once per frame in which the size changed, then `'end'`. The arrow keys, the size fields and
+  the container shrinking call only `'end'`, and only when the size changed. `setSize()` and new
+  `width`/`height` props do not call it, so saving the size and restoring it with `setSize()`
+  never loops.
+- `getSize()` returns the visible size (`null` before mounting); `setSize()` applies one within
+  the limits and returns it (only with `resizable`). New `width`/`height` props replace the
+  chosen size.
+- `truncateOnOverflow` and `onOverflowChange` keep using the configured `width`/`height`:
+  resizing never cuts content, also on the next keystroke, paste or load, and a larger area does
+  not allow more content. Content beyond a smaller area scrolls (even with `scrollable={false}`).
+- To keep the size between visits, store it from `onResize` and pass it back as `width` and
+  `height` (or call `setSize()`). With [Layout Mirror](#layout-mirror), give the published
+  container the usable width of the chosen size (`width` − frame − 32 px).
+- Without React: `createFrameResizer({ frame, content, handles, limits, onResize })` adds the
+  handles to any frame, and `core.setContentLimit({ width, height })` keeps the content limit at
+  the configured size.
 
 ## Examples and guides
 
@@ -221,6 +268,11 @@ diagnostic (`VE_ALL_BROWSERS=1 npx playwright test --project=firefox --project=w
 | Firefox         | Works; HTML differs in details (e.g. images inserted inside the paragraph). Paste is not covered by automated tests in Firefox. |
 | Safari (WebKit) | Works; lists get extra `<span style="font-size">` wrappers; other differences are cosmetic.                                     |
 
+Moving a floated object below another when the text column between them would be too narrow
+(`data-ve-stack`, in the editor and in `versaedit-content.css`) needs `:has()` and container
+queries: Chrome/Edge 105+, Safari 16+, Firefox 121+. In older browsers the objects stay side by
+side, as before; nothing else changes.
+
 ## Known limitations
 
 - Built on `document.execCommand` (legacy but supported by all browsers); output HTML varies slightly
@@ -232,6 +284,9 @@ diagnostic (`VE_ALL_BROWSERS=1 npx playwright test --project=firefox --project=w
   instead of `<b>` (works the same).
 - Pasting from Microsoft Word has not been validated with real documents yet.
 - Only HTML output (no JSON or Markdown export).
+- WebKit (Safari), with `truncateOnOverflow` and a resized editing area: spaces typed after the
+  content limit may be saved as a different mix of spaces and `&nbsp;` than in an area that was
+  never resized. The text and the cut point are the same.
 
 ## Development
 

@@ -41,8 +41,11 @@ import {
   truncateEditableToFit,
 } from './measure'
 import {
+  claimGesture,
   emptyLine,
   createPointerTracker,
+  gestureOwner,
+  releaseGesture,
   dropElementAtPoint,
   fitInEditor,
   keepDropPosition,
@@ -130,6 +133,16 @@ export interface CoreOptions {
   allowExternalMedia: boolean
   /** Atalhos ligados: Ctrl+K (link) e Ctrl+B/I/U (formatação) */
   shortcuts: { link: boolean; format: boolean }
+}
+
+/** Tamanho configurado da área (ver VersaEditCore.setContentLimit) */
+export interface ContentLimit {
+  /** Largura total em px (moldura incluída) ou medida CSS, como '100%' */
+  width: number | string
+  /** Altura total em px, moldura incluída */
+  height: number
+  /** overflow-y da área no tamanho configurado, se diferente do atual */
+  overflowY?: string
 }
 
 export interface CoreCallbacks {
@@ -426,6 +439,10 @@ export class VersaEditCore {
   // (formulário de link, menus) são da interface: contam como comando.
   private interactionKind(e: Event): InteractionKind {
     const target = e.target as Node | null
+    // Alças da moldura (frame-resize.ts) e campos de tamanho: mudam só o tamanho
+    // da área, não são uma operação do histórico (a digitação de antes e de depois continua junta)
+    if (target instanceof Element && target.closest('.ve-frame-handle, .ve-size-controls'))
+      return null
     if (
       (e.type === 'keydown' || e.type === 'beforeinput') &&
       !(target && isNodeWithinEditor(this.el, target))
@@ -510,12 +527,93 @@ export class VersaEditCore {
     })
   }
 
+  // ─── LIMITE DE CONTEÚDO × ÁREA VISÍVEL ─────────────────────────
+  // Com a área redimensionável (frame-resize.ts), o tamanho visível pode diferir do
+  // configurado pela aplicação. O corte (truncateOnOverflow), o aviso de transbordo
+  // (onOverflowChange) e o bloqueio do Enter medem sempre no tamanho configurado:
+  // o tamanho da moldura e da área é trocado para o configurado só durante a medida,
+  // de forma síncrona (nada é pintado entre a troca e a volta), e a rolagem volta ao
+  // ponto onde estava. Assim cada decisão é a mesma de uma área nunca redimensionada:
+  // reduzir a área visível nunca corta conteúdo (nem na próxima digitação, colagem
+  // ou carregamento), e aumentá-la não libera espaço além do configurado.
+  private contentLimit: ContentLimit | null = null
+
+  /**
+   * Tamanho configurado pela aplicação (moldura incluída, como as props width e
+   * height), usado pelo corte e pelo aviso de transbordo quando a área visível foi
+   * redimensionada. A moldura é o elemento pai da área de edição. null (padrão):
+   * mede a área como ela está.
+   */
+  setContentLimit(limit: ContentLimit | null): void {
+    this.contentLimit = limit
+  }
+
+  private atContentLimit<T>(measure: () => T): T {
+    const limit = this.contentLimit
+    const frame = this.el.parentElement
+    if (!limit || !frame) return measure()
+    const el = this.el
+    const cs = window.getComputedStyle(frame)
+    const bx = (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0)
+    const by = (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0)
+    const numeric = typeof limit.width === 'number'
+    const target = {
+      fw: numeric ? `${limit.width}px` : String(limit.width),
+      cw: numeric ? `${(limit.width as number) - bx}px` : '100%',
+      ch: `${limit.height - by}px`,
+      oy: limit.overflowY ?? el.style.overflowY,
+    }
+    const saved = {
+      fw: frame.style.width,
+      cw: el.style.width,
+      ch: el.style.height,
+      oy: el.style.overflowY,
+    }
+    if (
+      saved.fw === target.fw &&
+      saved.cw === target.cw &&
+      saved.ch === target.ch &&
+      saved.oy === target.oy
+    ) {
+      return measure()
+    }
+    const top = el.scrollTop
+    const left = el.scrollLeft
+    frame.style.width = target.fw
+    el.style.width = target.cw
+    el.style.height = target.ch
+    el.style.overflowY = target.oy
+    try {
+      return measure()
+    } finally {
+      frame.style.width = saved.fw
+      el.style.width = saved.cw
+      el.style.height = saved.ch
+      el.style.overflowY = saved.oy
+      el.scrollTop = top
+      el.scrollLeft = left
+    }
+  }
+
+  /**
+   * Reposiciona o menu e a alça do objeto selecionado depois de uma mudança de
+   * tamanho ou posição da área de edição feita por fora (alças da moldura, largura
+   * mudada pela aplicação). Não altera o conteúdo nem o histórico.
+   */
+  refreshLayout(): void {
+    const target = this.selectedImg ?? this.selectedTextbox
+    if (!target || !this.objType) return
+    if (this.handlePos) this.handlePos = resizeHandlePosition(target, this.el)
+    this.updateToolbarPosition(target)
+  }
+
   /** Remove ouvintes e temporizadores (ao desmontar o editor) */
   destroy(): void {
     this.observer?.disconnect()
     this.observer = null
     this.history.dispose()
     this.pointer.stop()
+    releaseGesture(this.el, 'object')
     if (this.scrollFrame) cancelAnimationFrame(this.scrollFrame)
     document.removeEventListener('selectionchange', this.handleSelectionChange)
     for (const [type, listener] of this.listeners) this.el.removeEventListener(type, listener)
@@ -551,7 +649,7 @@ export class VersaEditCore {
   load(html: string): void {
     const editor = this.el
     if (html === this.lastEmitted) {
-      this.cb.onOverflowChange?.(editorContentExceedsHeight(editor))
+      this.cb.onOverflowChange?.(this.atContentLimit(() => editorContentExceedsHeight(editor)))
       return
     }
 
@@ -566,10 +664,11 @@ export class VersaEditCore {
       editor.innerHTML = cleanInner
     }
     this.suspendExternalMedia()
-    const wasTruncated = this.opts.truncateOnOverflow && truncateEditableToFit(editor)
+    const wasTruncated =
+      this.opts.truncateOnOverflow && this.atContentLimit(() => truncateEditableToFit(editor))
     this.lastKnown = serializeEditorContent(editor, paper)
     this.history.reset(snapshotEditor(editor, paper))
-    this.cb.onOverflowChange?.(editorContentExceedsHeight(editor))
+    this.cb.onOverflowChange?.(this.atContentLimit(() => editorContentExceedsHeight(editor)))
     if (wasTruncated && this.cb.onChange) {
       const out = serializeEditorContent(editor, paper)
       this.lastEmitted = out
@@ -603,7 +702,8 @@ export class VersaEditCore {
   emitChange = (): void => {
     // Coluna de texto entre objetos: a fonte ou o texto ao lado podem ter mudado
     keepReadableColumns(this.el)
-    if (this.cb.onOverflowChange) this.cb.onOverflowChange(editorContentExceedsHeight(this.el))
+    if (this.cb.onOverflowChange)
+      this.cb.onOverflowChange(this.atContentLimit(() => editorContentExceedsHeight(this.el)))
     if (this.cb.onChange) {
       const html = this.getHTML()
       if (html === this.lastKnown) return
@@ -1340,7 +1440,7 @@ export class VersaEditCore {
     editor.style.backgroundColor = paper
     editor.innerHTML = this.prepareMedia(cleanInner)
     this.suspendExternalMedia()
-    if (this.opts.truncateOnOverflow && truncateEditableToFit(editor)) {
+    if (this.opts.truncateOnOverflow && this.atContentLimit(() => truncateEditableToFit(editor))) {
       this.report('file-truncated', L.fileTruncated, 'warning')
     }
     editor.focus()
@@ -1617,6 +1717,7 @@ export class VersaEditCore {
     this.isDragging = false
     this.dragType = null
     this.pointer.stop()
+    releaseGesture(this.el, 'object')
     if (!el) return
     el.classList.remove('dragging')
     const moved =
@@ -1693,6 +1794,7 @@ export class VersaEditCore {
     this.isResizing = false
     this.resizeEl = null
     this.pointer.stop()
+    releaseGesture(this.el, 'object')
     // Ao soltar (não durante o gesto, para o objeto não pular enquanto se arrasta)
     if (el) {
       keepReadableColumns(this.el)
@@ -1707,7 +1809,7 @@ export class VersaEditCore {
     const el = (
       this.objType === 'image' ? this.selectedImg : this.selectedTextbox
     ) as HTMLElement | null
-    if (!el) return
+    if (!el || !claimGesture(this.el, 'object')) return
     this.isResizing = true
     this.resizeEl = el
     // Medidas atuais da caixa inteira (offsetWidth/Height): a caixa de texto passa a
@@ -1732,7 +1834,14 @@ export class VersaEditCore {
   private handlePointerDown = (e: PointerEvent): void => {
     const target = e.target as HTMLElement
 
+    // Moldura sendo redimensionada (outro dedo, outro ponteiro): nada começa aqui
+    if (gestureOwner(this.el) === 'frame') {
+      e.preventDefault()
+      return
+    }
+
     if (target.tagName === 'IMG') {
+      if (!claimGesture(this.el, 'object')) return
       this.focusWithoutSelecting()
       this.selectImage(target as HTMLImageElement)
       this.isDragging = true
@@ -1747,7 +1856,7 @@ export class VersaEditCore {
 
     if (target.classList.contains('textbox-handle')) {
       const tb = target.closest('.rich-textbox') as HTMLDivElement
-      if (tb) {
+      if (tb && claimGesture(this.el, 'object')) {
         this.focusWithoutSelecting()
         this.selectTextbox(tb)
         this.isDragging = true
@@ -1878,7 +1987,7 @@ export class VersaEditCore {
 
   private enforceHeight(): boolean {
     if (!this.opts.truncateOnOverflow) return false
-    return truncateEditableToFit(this.el)
+    return this.atContentLimit(() => truncateEditableToFit(this.el))
   }
 
   // Digitação com estilo pendente (fonte, tamanho ou cor escolhidos sem seleção).
@@ -2037,10 +2146,12 @@ export class VersaEditCore {
         computed.lineHeight === 'normal'
           ? parseFloat(computed.fontSize) * 1.6
           : parseFloat(computed.lineHeight)
-      if (
-        editorContentExceedsHeight(editor) ||
-        measureEditorContentHeight(editor) + lineHeight > editor.clientHeight + 1
-      ) {
+      const full = this.atContentLimit(
+        () =>
+          editorContentExceedsHeight(editor) ||
+          measureEditorContentHeight(editor) + lineHeight > editor.clientHeight + 1,
+      )
+      if (full) {
         e.preventDefault()
         this.cb.onOverflowChange?.(true)
         return

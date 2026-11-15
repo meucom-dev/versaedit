@@ -89,6 +89,33 @@ Os botões de arquivo (Salvar/Abrir `.html`) são para arquivos do próprio usu�
 barra enviar ao seu backend em vez de baixar, passe `onSave={(html) => …}`.
 _Verificado:_ `getHTML`, `onChange` e `onSave` nos testes do exemplo (`examples/vite-react`).
 
+## Manter o tamanho da área de edição
+
+Com `resizable`, a pessoa pode redimensionar a área de edição (veja
+[Área de edição redimensionável](../README.pt-BR.md#área-de-edição-redimensionável)). O tamanho não
+faz parte do HTML: guarde-o quando o redimensionamento terminar e devolva-o na próxima visita.
+
+```tsx
+const [tamanho, setTamanho] = useState(() => lerTamanhoSalvo() ?? { width: 720, height: 400 })
+
+<VersaEdit
+  width={tamanho.width}
+  height={tamanho.height}
+  resizable={{ minWidth: 320 }}
+  sizeControls
+  onResize={(novo, phase) => {
+    if (phase === 'end') salvarTamanho(novo) // localStorage, perfil da pessoa...
+  }}
+/>
+```
+
+Passar o tamanho salvo como `width` e `height` também o torna o limite de conteúdo do
+`truncateOnOverflow`. Para manter um limite de conteúdo fixo e restaurar só o tamanho visível,
+mantenha `width`/`height` fixos e chame `editor.current!.setSize(salvo)` depois de montar (ele não
+chama `onResize`). O `onResize` é chamado uma vez com `'end'` a cada mudança feita pelas setas ou
+pelos campos de tamanho, e com `'start'`/`'move'`/`'end'` durante o arraste. _Verificado:_
+`tests/e2e/editor-resize.spec.ts` e `tests/e2e/editor-resize-api.spec.ts`.
+
 ## Supabase
 
 No navegador, use só a chave **pública** (`anon` ou `sb_publishable_…`), com **Row Level Security**

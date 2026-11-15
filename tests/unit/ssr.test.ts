@@ -31,6 +31,29 @@ describe('renderização no servidor', () => {
     expect(warns).not.toHaveBeenCalled()
   })
 
+  it('VersaEdit com resizable renderiza sem erro (as alças só existem no navegador)', () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const warns = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const html = renderToString(
+      createElement(VersaEdit, {
+        initialContent: '<p>olá</p>',
+        resizable: { minWidth: 300, maxHeight: 600 },
+        sizeControls: true,
+        truncateOnOverflow: true,
+        width: 500,
+        height: 300,
+        onResize: () => {},
+      }),
+    )
+    expect(html).toContain('ve-frame')
+    expect(html).not.toContain('ve-frame-handle')
+    // Campos com o tamanho configurado já no HTML do servidor
+    expect(html).toContain('ve-size-controls')
+    expect(html).toMatch(/value="500"/)
+    expect(errors).not.toHaveBeenCalled()
+    expect(warns).not.toHaveBeenCalled()
+  })
+
   it('VersaEditDictation não renderiza nada sem reconhecimento de voz', () => {
     const html = renderToString(createElement(VersaEditDictation, { editor: { current: null } }))
     expect(html).toBe('')

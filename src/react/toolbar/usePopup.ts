@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, type RefObject } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type RefObject,
+} from 'react'
 
 // Distância mínima entre o menu e a borda da janela
 const EDGE = 8
@@ -52,4 +59,26 @@ export function useEscapeToClose(
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [open, ref, close])
+}
+
+/**
+ * Sinal para fechar os menus abertos da barra (o número muda a cada pedido). O
+ * VersaEdit o envia ao começar a redimensionar a área de edição, quando a barra
+ * pode mudar de largura e um menu aberto ficaria fora do lugar. Cada menu fecha
+ * pela própria função de fechar (a mesma do Esc): nada é disparado na página.
+ */
+export const CloseMenusSignal = createContext(0)
+
+export function useCloseOnSignal(open: boolean, close: () => void) {
+  const signal = useContext(CloseMenusSignal)
+  const seen = useRef(signal)
+  const latest = useRef({ open, close })
+  useIsomorphicLayoutEffect(() => {
+    latest.current = { open, close }
+  })
+  useEffect(() => {
+    if (signal === seen.current) return
+    seen.current = signal
+    if (latest.current.open) latest.current.close()
+  }, [signal])
 }

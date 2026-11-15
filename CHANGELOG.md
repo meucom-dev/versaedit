@@ -25,6 +25,21 @@ by the internal stabilization batches.
   `--ve-heading-font`. The saved HTML is unchanged; without the prop and the class nothing changes
   (editor and published CSS rules are the same as before, only new `.ve-mirror` rules were added).
   The playground shows the published preview when `layoutMirror` is on (Properties panel).
+- Resizable editing area (optional, `resizable` prop): handles on the right edge, the bottom edge
+  and the corner between them, used with a mouse, a finger or the arrow keys; `resizable.handles`
+  adds the left, top and other corners. Only the visible area changes: the HTML, undo history,
+  selection and `onChange` are not affected. Limits in `resizable` (`minWidth` 160, `maxWidth` the
+  available width, `minHeight` 80, `maxHeight`); the area never goes past its container and shrinks
+  to fit when the container gets narrower. `sizeControls` shows width and height fields below the
+  area (Enter or leaving the field applies, Esc cancels). `onResize(size, phase)`: `'start'`,
+  `'move'` and `'end'` while dragging; only `'end'` for the arrow keys, the fields and a shrinking
+  container; never for `setSize()` or new `width`/`height` props. New ref methods `getSize()` and
+  `setSize()`. `truncateOnOverflow` and `onOverflowChange` keep measuring at the configured
+  `width`/`height`, so resizing never cuts content (also on the next keystroke, paste or load);
+  content beyond a smaller area scrolls. Without React: `createFrameResizer()` and
+  `core.setContentLimit()`. Opening a menu and then resizing closes the menu through an internal
+  signal (no event is sent to the page). The playground has a Resizing section (handles, limits,
+  fields, `onResize` in the event log, Layout Mirror following the chosen width).
 
 ### Changed
 
@@ -63,8 +78,9 @@ by the internal stabilization batches.
   container query at the width each one actually has (editor, site, phone). A container with such
   objects becomes the named container `versaedit` (`container: versaedit / inline-size`), so the
   queries never match a container of the page; its width must come from the layout (a block), not
-  from its content. With a scrollbar in the editing area the saved width includes the scrollbar,
-  so the text never gets a column below the minimum. Objects inside text boxes, tables, lists or
+  from its content. When the editing area scrolls, the saved width includes the width of the
+  system scrollbar (measured, 0 with overlay scrollbars) whether or not it is showing, so the text
+  never gets a column below the minimum and the saved value does not depend on the area's height. Objects inside text boxes, tables, lists or
   indented paragraphs are not handled by this rule.
 - Text box inserted into an empty editor (or after the last paragraph) was the only block around:
   clicking the first line put the caret inside the box, there was nowhere to type before or after

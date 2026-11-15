@@ -34,6 +34,24 @@ export function createPointerTracker() {
   }
 }
 
+// ─── UM GESTO POR VEZ ────────────────────────────────────────────
+// Arrastar ou redimensionar um objeto (imagem, caixa) e redimensionar a moldura
+// não acontecem ao mesmo tempo na mesma área de edição (dois dedos, mouse e toque):
+// quem começa reserva a área (o elemento da área de edição) até terminar, e o outro
+// gesto é ignorado nesse intervalo. Só memória: nada vai para o DOM.
+export type GestureOwner = 'object' | 'frame'
+const gestures = new WeakMap<Element, GestureOwner>()
+export function claimGesture(area: Element, owner: GestureOwner): boolean {
+  const current = gestures.get(area)
+  if (current && current !== owner) return false
+  gestures.set(area, owner)
+  return true
+}
+export function releaseGesture(area: Element, owner: GestureOwner): void {
+  if (gestures.get(area) === owner) gestures.delete(area)
+}
+export const gestureOwner = (area: Element): GestureOwner | undefined => gestures.get(area)
+
 // ─── REPOSICIONAMENTO POR ARRASTO ───────────────────────────────
 // Limpa os deslocamentos manuais: o espaçamento volta aos 40px do CSS
 export function clearManualOffsets(el: HTMLElement) {
@@ -423,18 +441,35 @@ function followsEditorWidth(el: HTMLElement, editor: HTMLElement, inner: number)
   return Math.abs(content - inner) < 1
 }
 
+// Largura da barra de rolagem vertical que a área de edição pode ter. O Chromium
+// não a desconta da largura consultada pelo contêiner; somada ao limite gravado,
+// a coluna nunca fica abaixo do mínimo, com a barra visível ou não. Assim o valor
+// gravado não depende da altura da área nem da quantidade de conteúdo (a barra
+// aparece e some ao redimensionar a área). Medida a cada vez, num elemento de teste
+// com as mesmas classes da área (barras estilizadas pela página, zoom): 0 com
+// barras sobrepostas (macOS, celulares) ou numa área que não rola.
+function scrollbarGutter(editor: HTMLElement): number {
+  const overflow = window.getComputedStyle(editor).overflowY
+  const host = editor.parentElement
+  if ((overflow !== 'auto' && overflow !== 'scroll') || !host) return 0
+  const probe = document.createElement('div')
+  probe.className = editor.className
+  probe.setAttribute('aria-hidden', 'true')
+  probe.style.cssText =
+    'position:absolute;visibility:hidden;pointer-events:none;top:0;left:0;width:100px;height:50px;padding:0;border:0;overflow-y:scroll;contain:strict'
+  host.appendChild(probe)
+  const width = probe.offsetWidth - probe.clientWidth
+  probe.remove()
+  return Math.max(0, width)
+}
+
 // Idempotente: o atributo só muda quando o valor muda (pode rodar a cada edição,
 // inclusive depois de mudar a fonte do texto ao lado sem mexer no objeto)
 export function keepReadableColumns(editor: HTMLElement) {
   const inner = innerWidth(editor)
-  const ecs = window.getComputedStyle(editor)
-  const gutter = Math.max(
-    0,
-    editor.offsetWidth -
-      editor.clientWidth -
-      (parseFloat(ecs.borderLeftWidth) || 0) -
-      (parseFloat(ecs.borderRightWidth) || 0),
-  )
+  // Medida só quando há um par de objetos a avaliar
+  let gutter: number | undefined
+  const getGutter = () => (gutter ??= scrollbarGutter(editor))
   const all = [...editor.querySelectorAll<HTMLElement>(FLOATING)]
   const floats = all.filter((el) => followsEditorWidth(el, editor, inner))
   const set = (el: HTMLElement, value: string | null) => {
@@ -464,7 +499,7 @@ export function keepReadableColumns(editor: HTMLElement) {
       const pushed = Math.abs(b.top - a.bottom) < 1
       if (!sameBand && !pushed) continue
       const font = adjacentFontPx(editor, Math.min(a.top, b.top), Math.max(a.bottom, b.bottom))
-      value = stackBelow(prev, el, MIN_TEXT_COLUMN_EM * font, gutter)
+      value = stackBelow(prev, el, MIN_TEXT_COLUMN_EM * font, getGutter())
       if (value) break
     }
     set(el, value)

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { VersaEditCore } from '../../core/editor'
 import type { VersaEditLabels } from '../../core/i18n'
 import { ToolbarBtn } from './ToolbarButton'
-import { useEscapeToClose, useKeepInViewport } from './usePopup'
+import { useCloseOnSignal, useEscapeToClose, useKeepInViewport } from './usePopup'
 
 // Marca-texto: paleta de cores de fundo para o trecho selecionado
 export function HighlightPicker({
@@ -20,6 +20,7 @@ export function HighlightPicker({
   const close = () => setOpen(false)
   useKeepInViewport(open, paletteRef)
   useEscapeToClose(open, wrapRef, close)
+  useCloseOnSignal(open, close)
 
   // Fecha ao clicar fora, como os outros menus
   useEffect(() => {
