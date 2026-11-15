@@ -1,11 +1,13 @@
 name: Site (GitHub Pages)
 
 # https://versaedit.dev (página inicial) e https://versaedit.dev/playground/.
+# Só manual (Actions → "Site (GitHub Pages)" → Run workflow), só na main: um push
+# não publica o site. A aprovação vem do ambiente "github-pages" (Settings →
+# Environments → Required reviewers; Deployment branches = main). O CI continua
+# gerando e testando o site em cada push e pull request (ci.yml, job site).
 # O GitHub Pages gratuito só publica repositórios públicos: enquanto o
 # repositório for privado, os jobs não rodam (nada falha no CI).
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -18,7 +20,7 @@ concurrency:
 jobs:
   build:
     name: Gera e testa o site
-    if: ${{ !github.event.repository.private }}
+    if: ${{ !github.event.repository.private && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -38,6 +40,7 @@ jobs:
   deploy:
     name: Publica no GitHub Pages
     needs: build
+    if: ${{ !github.event.repository.private && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     permissions:
       pages: write

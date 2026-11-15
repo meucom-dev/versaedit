@@ -25,8 +25,11 @@ preparados no repositório. Nada é publicado sem a sua confirmação expressa.
    - `CNAME` www → `meucom-dev.github.io`
 4. **(mantenedor)** Repositório → Settings → Pages → Source: **GitHub Actions**; Custom domain:
    `versaedit.dev`; **Enforce HTTPS** (depois que o certificado for emitido).
-5. O workflow `pages.yml` passa a rodar sozinho (só roda com o repositório público). Conferir
-   `https://versaedit.dev` e `https://versaedit.dev/playground/`.
+5. **(mantenedor)** Publicação do site só manual: um push para `main` não publica (o CI apenas gera
+   e testa o site). GitHub → Settings → Environments → **github-pages**: Required reviewers = você;
+   Deployment branches = `main`. Para publicar: Actions → **Site (GitHub Pages)** → Run workflow na
+   `main` → aprovar (só roda com o repositório público). Conferir `https://versaedit.dev` e
+   `https://versaedit.dev/playground/`.
 
 ## 3. Conta no npm
 
