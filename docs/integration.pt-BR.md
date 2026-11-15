@@ -198,6 +198,13 @@ O `versaedit-content.css` posiciona imagens, desenha caixas de texto (escondendo
 estiliza tabelas, citações e código. _Verificado:_ aba "Display content" de `examples/vite-react` e o
 exemplo Next.js.
 
+Objetos flutuantes lado a lado (imagens e caixas de texto) só são responsivos com o
+`versaedit-content.css` carregado: ele faz o objeto seguinte descer para baixo do anterior quando a
+coluna de texto entre eles ficaria estreita demais na largura real do contêiner (consulta de
+contêiner no `.versaedit-content`). Para isso, o `.versaedit-content` precisa receber a largura do
+layout disponível, como um elemento de bloco, e não se dimensionar pelo próprio conteúdo (por
+exemplo, não como item flex que encolhe ao conteúdo nem como `inline-block`).
+
 **Mesma aparência da edição (Layout Mirror).** Acrescente `layoutMirror` ao editor e a classe
 `ve-mirror` ao contêiner: `<div className="versaedit-content ve-mirror">`. O texto fica isolado das
 regras de elemento do site nas duas pontas, e as linhas quebram nos mesmos pontos quando o contêiner

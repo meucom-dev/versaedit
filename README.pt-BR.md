@@ -121,6 +121,13 @@ import 'versaedit/versaedit-content.css'
 ;<div className="versaedit-content" dangerouslySetInnerHTML={{ __html: htmlSanitizado }} />
 ```
 
+Objetos flutuantes lado a lado (imagens e caixas de texto) só são responsivos com o
+`versaedit-content.css` carregado: ele faz o objeto seguinte descer para baixo do anterior quando a
+coluna de texto entre eles ficaria estreita demais na largura real do contêiner (consulta de
+contêiner no `.versaedit-content`). Para isso, o `.versaedit-content` precisa receber a largura do
+layout disponível, como um elemento de bloco, e não se dimensionar pelo próprio conteúdo (por
+exemplo, não como item flex que encolhe ao conteúdo nem como `inline-block`).
+
 Cores e tamanhos de fonte ficam em atributos `style` no próprio HTML; uma CSP que bloqueie estilos
 em atributos (`style-src-attr`) não vai mostrá-los.
 

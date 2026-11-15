@@ -121,6 +121,13 @@ import 'versaedit/versaedit-content.css'
 ;<div className="versaedit-content" dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
 ```
 
+Floated objects side by side (images and text boxes) stay responsive only when
+`versaedit-content.css` is loaded: it moves the later object below the earlier one when the text
+column between them would be too narrow at the container's actual width (container query on
+`.versaedit-content`). For this, `.versaedit-content` must get its width from the available layout,
+like a block element, and not size itself to its content (for example, not as a shrink-to-fit flex
+item or `inline-block`).
+
 Formatting such as colors and font sizes is stored in inline `style` attributes; a CSP that blocks
 inline style attributes (`style-src-attr`) will not render it.
 

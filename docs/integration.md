@@ -197,6 +197,13 @@ import 'versaedit/versaedit-content.css'
 tables, quotes and code. _Verified:_ "Display content" tab of `examples/vite-react` and the Next.js
 example.
 
+Floated objects side by side (images and text boxes) stay responsive only when
+`versaedit-content.css` is loaded: it moves the later object below the earlier one when the text
+column between them would be too narrow at the container's actual width (container query on
+`.versaedit-content`). For this, `.versaedit-content` must get its width from the available layout,
+like a block element, and not size itself to its content (for example, not as a shrink-to-fit flex
+item or `inline-block`).
+
 **Same appearance as the editor (Layout Mirror).** Add `layoutMirror` to the editor and the
 `ve-mirror` class to the container: `<div className="versaedit-content ve-mirror">`. The text is
 then isolated from the site's element rules on both sides, and lines break at the same points
