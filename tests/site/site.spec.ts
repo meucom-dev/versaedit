@@ -722,3 +722,47 @@ test.describe('guia rápido', () => {
     }
   }
 })
+
+// Ícones do site (favicon, 15/11/2026): SVG, ICO e ícone da tela inicial do iPhone,
+// os mesmos arquivos de public/ em todas as páginas e no playground
+test('ícones: favicon SVG e ICO e apple-touch-icon em todas as páginas e no playground', async ({
+  page,
+}) => {
+  const ICONS = [
+    { rel: 'icon', type: 'image/svg+xml', file: 'favicon.svg', mime: 'image/svg+xml' },
+    { rel: 'icon', type: 'image/x-icon', file: 'favicon.ico', mime: 'image/' },
+    { rel: 'apple-touch-icon', type: null, file: 'apple-touch-icon.png', mime: 'image/png' },
+  ]
+  const source = (file: string) => fs.readFileSync(path.join(process.cwd(), 'public', file))
+  for (const url of [
+    '/',
+    '/philosophy/',
+    '/quick-start/',
+    '/pt/',
+    '/pt/filosofia/',
+    '/pt/guia-rapido/',
+    '/es/',
+    '/es/filosofia/',
+    '/es/guia-rapida/',
+    '/playground/',
+  ]) {
+    // O playground carrega o Google Fonts (declarado na nota de privacidade)
+    allowFonts = url === '/playground/'
+    await goto(page, url)
+    await expect(page.locator('link[rel="icon"], link[rel="apple-touch-icon"]'), url).toHaveCount(3)
+    for (const icon of ICONS) {
+      const link = page.locator(
+        icon.type ? `link[rel="${icon.rel}"][type="${icon.type}"]` : `link[rel="${icon.rel}"]`,
+      )
+      await expect(link, `${url} ${icon.file}`).toHaveCount(1)
+      const href = new URL((await link.getAttribute('href'))!, page.url()).href
+      expect(href.endsWith(`/${icon.file}`), `${url} ${href}`).toBe(true)
+      const res = await page.request.get(href)
+      expect(res.status(), `${url} ${icon.file}`).toBe(200)
+      expect(res.headers()['content-type'], `${url} ${icon.file}`).toContain(icon.mime)
+      expect(Buffer.compare(await res.body(), source(icon.file)), `${url} ${icon.file}`).toBe(0)
+    }
+  }
+  await goto(page, '/playground/')
+  await expect(page).toHaveTitle('VersaEdit — Rich Text Editor')
+})

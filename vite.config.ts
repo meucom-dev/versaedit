@@ -29,6 +29,8 @@ function withExtensions(filePath: string, content: string) {
 // fora do pacote. Os arquivos de CSS saem das mesmas constantes que o editor
 // injeta (src/core/styles.ts), então nunca divergem.
 export default defineConfig({
+  // public/ (favicon do site e do playground) não entra no pacote npm
+  publicDir: false,
   plugins: [
     react(),
     dts({

@@ -8,6 +8,7 @@
 //                 guia rápido, com o código do exemplo examples/quick-start
 //   /playground/  playground (build do Vite com --mode site)
 //   /assets/      logo
+//   /favicon.svg  ícone do site (public/, a mesma pasta usada pelo playground)
 //   npm run build:site
 import { execSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -60,6 +61,8 @@ for (const t of Object.values(CONTENT)) {
   fs.writeFileSync(path.join(dir, 'index.html'), renderQuickStart(t, code, { editedDate }))
 }
 fs.cpSync(path.join(ROOT, 'site-src', 'assets'), path.join(SITE, 'assets'), { recursive: true })
+// public/ (favicon.svg) na raiz do site
+fs.cpSync(path.join(ROOT, 'public'), SITE, { recursive: true })
 // Domínio próprio no GitHub Pages; sem processamento Jekyll
 fs.writeFileSync(path.join(SITE, 'CNAME'), 'versaedit.dev\n')
 fs.writeFileSync(path.join(SITE, '.nojekyll'), '')
@@ -68,4 +71,4 @@ const pages = Object.values(CONTENT).flatMap((t) => [
   PHILOSOPHY[t.key].path,
   QUICKSTART[t.key].path,
 ])
-console.log(`\n✔ site/ pronto: ${pages.join(', ')}, /playground/, /assets/, CNAME`)
+console.log(`\n✔ site/ pronto: ${pages.join(', ')}, /playground/, /assets/, /favicon.svg, CNAME`)

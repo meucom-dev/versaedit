@@ -291,7 +291,9 @@ export function renderPage(t, { editedDate }) {
 ${LANGUAGES.map((l) => `<link rel="alternate" hreflang="${l.htmlLang}" href="https://versaedit.dev${l.path}">`).join('\n')}
 <link rel="alternate" hreflang="x-default" href="https://versaedit.dev/">
 <meta property="og:locale" content="${t.htmlLang.replace('-', '_')}">
-<link rel="icon" href="data:,">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>${CSS}</style>
 </head>
 <body>
@@ -456,7 +458,9 @@ export function renderPhilosophy(md, t, { editedDate }) {
 ${LANGUAGES.map((l) => `<link rel="alternate" hreflang="${l.htmlLang}" href="https://versaedit.dev${PHILOSOPHY[l.key].path}">`).join('\n')}
 <link rel="alternate" hreflang="x-default" href="https://versaedit.dev${PHILOSOPHY.en.path}">
 <meta property="og:locale" content="${t.htmlLang.replace('-', '_')}">
-<link rel="icon" href="data:,">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>${CSS}</style>
 </head>
 <body>
@@ -506,7 +510,9 @@ export function renderQuickStart(t, code, { editedDate }) {
 ${LANGUAGES.map((l) => `<link rel="alternate" hreflang="${l.htmlLang}" href="https://versaedit.dev${QUICKSTART[l.key].path}">`).join('\n')}
 <link rel="alternate" hreflang="x-default" href="https://versaedit.dev${QUICKSTART.en.path}">
 <meta property="og:locale" content="${t.htmlLang.replace('-', '_')}">
-<link rel="icon" href="data:,">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>${CSS}</style>
 </head>
 <body>

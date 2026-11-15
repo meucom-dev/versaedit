@@ -13,6 +13,8 @@ const TYPES = {
   '.json': 'application/json',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
+  // favicon.ico (o GitHub Pages também o serve como imagem)
+  '.ico': 'image/x-icon',
 }
 
 http

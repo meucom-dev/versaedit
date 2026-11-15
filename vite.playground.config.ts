@@ -7,6 +7,9 @@ import react from '@vitejs/plugin-react'
 // dos testes.
 export default defineConfig(({ mode }) => ({
   root: 'playground',
+  // public/ da raiz do projeto (favicon.svg): /favicon.svg no desenvolvimento e
+  // /playground/favicon.svg no site
+  publicDir: '../public',
   plugins: [react()],
   server: { port: 5180 },
   base: mode === 'site' ? '/playground/' : '/',
