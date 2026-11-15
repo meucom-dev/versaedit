@@ -76,6 +76,7 @@ O `initialContent` é carregado (e sanitizado) quando muda; o editor ignora o ec
 | `settingsPanel`                                      | `ReactNode \| (close) => ReactNode`                 | —                                 | Suas configurações, num painel aberto por uma engrenagem no fim da barra ([Painel de configurações](#painel-de-configurações)). |
 | `toolbarWidth`                                       | `number \| string`                                  | `width`                           | Largura da barra (com números, centralizada sobre o editor).                                                                    |
 | `frame`                                              | `{ width, color, radius } \| false`                 | `1px #d0d7de, 8px`                | Moldura da área de edição.                                                                                                      |
+| `objectMargin`                                       | `{ text, outer, top, bottom }`                      | `16, 0, 4, 12`                    | Espaço em torno de imagens e caixas de texto, por lado, em px ([Margem dos objetos](#margem-dos-objetos)).                      |
 | `accentColor`                                        | `string`                                            | `#2563eb`                         | Contorno de seleção, caixas de texto, alças.                                                                                    |
 | `fontFamily` / `headingFontFamily`                   | `string`                                            | fonte do sistema                  | Fonte do texto e dos títulos.                                                                                                   |
 | `fontFamilies` / `fontSizes`                         | listas                                              | padrões                           | Menu de fontes (`{ label, value }`) e tamanhos (pt).                                                                            |
@@ -148,6 +149,41 @@ largura fixa encolhe em telas estreitas em vez de criar rolagem horizontal.
 <VersaEdit />                          {/* largura do contêiner × 500 px */}
 <VersaEdit width={800} height={500} /> {/* 800 × 500 px, mais estreito em telas pequenas */}
 ```
+
+### Margem dos objetos
+
+Imagens e caixas de texto à esquerda, à direita ou centralizadas mantêm uma margem em relação ao
+texto. `objectMargin` a define por lado, em px:
+
+| Lado     | Onde                                                                                                                                                    | Padrão |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| `text`   | Entre o objeto e o texto: o lado do texto num objeto à esquerda ou à direita; em cima e embaixo num objeto centralizado ou numa caixa de texto no fluxo | `16`   |
+| `outer`  | O lado de fora de um objeto à esquerda ou à direita (`0` = alinhado à margem do texto); as laterais de uma caixa de texto no fluxo                      | `0`    |
+| `top`    | Em cima de um objeto à esquerda ou à direita                                                                                                            | `4`    |
+| `bottom` | Embaixo de um objeto à esquerda ou à direita                                                                                                            | `12`   |
+
+Os lados não informados ficam no padrão; valores negativos ou inválidos são ignorados, e valores
+acima de 200 ficam em 200. A margem não é gravada no HTML: dê ao contêiner publicado os mesmos
+valores com `objectMarginStyle()`, para os objetos ficarem onde estavam no editor.
+
+```tsx
+import { objectMarginStyle, VersaEdit } from 'versaedit'
+
+const margem = { text: 24, outer: 8 }
+
+<VersaEdit objectMargin={margem} />
+
+<div
+  className="versaedit-content"
+  style={objectMarginStyle(margem)}
+  dangerouslySetInnerHTML={{ __html: htmlSanitizado }}
+/>
+```
+
+`objectMarginStyle()` devolve as variáveis CSS `--ve-object-text`, `--ve-object-outer`,
+`--ve-object-top` e `--ve-object-bottom`; sem React, aplique-as ao elemento de edição e ao
+contêiner publicado. Mudar `objectMargin` durante a edição refaz o ponto em que objetos lado a
+lado precisam descer (`data-ve-stack`), sem mexer no histórico de desfazer.
 
 ### Painel de configurações
 

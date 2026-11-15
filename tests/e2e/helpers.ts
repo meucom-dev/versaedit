@@ -87,4 +87,13 @@ export async function selectAcross(page: Page, a: string, b: string) {
 }
 
 /** Valor serializado para comparar com o resultado de referência */
+/**
+ * Margem dos objetos anterior à prop objectMargin (40px em todos os lados): os
+ * cenários de geometria da coluna legível foram medidos com ela, e a fixam assim
+ * (no editor pela prop; no publicado pelas mesmas variáveis CSS)
+ */
+export const LEGACY_OBJECT_MARGIN = { text: 40, outer: 40, top: 40, bottom: 40 }
+export const LEGACY_OBJECT_MARGIN_STYLE =
+  '--ve-object-text:40px;--ve-object-outer:40px;--ve-object-top:40px;--ve-object-bottom:40px;'
+
 export const snap = (value: unknown) => JSON.stringify(value, null, 2) + '\n'

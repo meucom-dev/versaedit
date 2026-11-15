@@ -70,9 +70,28 @@ by the internal stabilization batches.
   control inside does not). Server rendering outputs only the closed gear. New exported type
   `SettingsPanel`. The playground moved its general settings into the gear; Show HTML keeps the
   samples, diagnostics, event log and equivalent JSX.
+- Configurable object margin (`objectMargin` prop): the space around images and text boxes, per
+  side, in px — `text` (between the object and the text: the text side of a left/right object,
+  above and below a centered object or a text box in the flow), `outer` (the outer side of a
+  left/right object; the sides of a text box in the flow), `top` and `bottom` (above and below a
+  left/right object). Omitted sides keep the default; negative or invalid values are ignored and
+  values above 200 are limited to 200. The editor and `versaedit-content.css` read the same CSS
+  variables (`--ve-object-text`, `--ve-object-outer`, `--ve-object-top`, `--ve-object-bottom`);
+  the new `objectMarginStyle()` returns them for the published container, and
+  `DEFAULT_OBJECT_MARGIN` is exported. The margin is not written into the HTML. Changing the prop
+  while editing recalculates where objects side by side move down (`data-ve-stack`) and calls
+  `onChange` only if that changed the HTML, without adding to the undo history.
 
 ### Changed
 
+- Default object margin: images and text boxes placed left or right now have 16 px on the text
+  side, 0 on the outer side (aligned with the text edge), 4 px above and 12 px below, as in Word,
+  Google Docs and WordPress (was 40 px on every side); centered objects and text boxes in the flow
+  have 16 px above and below (was 40 px). The saved HTML is unchanged, but saved and published
+  content now shows the smaller margin. To keep the previous look, pass
+  `objectMargin={{ text: 40, outer: 40, top: 40, bottom: 40 }}` to the editor and the same values
+  through `objectMarginStyle()` to the published container. A `data-ve-stack` limit saved with the
+  previous margin is recalculated on the next edit.
 - Default size: without `width`, the editor now takes the full width of its container (`'100%'`,
   was 640 px); without `height`, the editing area starts 500 px tall (was 480 px). Explicit `width`
   and `height` props work as before. The playground starts at 800 × 500 px, and Reset returns to

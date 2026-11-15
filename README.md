@@ -76,6 +76,7 @@ export function PostEditor({
 | `settingsPanel`                                      | `ReactNode \| (close) => ReactNode`                 | —                         | Your own settings, in a panel opened by a gear at the end of the toolbar ([Settings panel](#settings-panel)).         |
 | `toolbarWidth`                                       | `number \| string`                                  | `width`                   | Toolbar width (numbers center it over the editor).                                                                    |
 | `frame`                                              | `{ width, color, radius } \| false`                 | `1px #d0d7de, 8px`        | Border around the editing area.                                                                                       |
+| `objectMargin`                                       | `{ text, outer, top, bottom }`                      | `16, 0, 4, 12`            | Space around images and text boxes, per side, in px ([Object margin](#object-margin)).                                |
 | `accentColor`                                        | `string`                                            | `#2563eb`                 | Selection outlines, text boxes, handles.                                                                              |
 | `fontFamily` / `headingFontFamily`                   | `string`                                            | system font               | Text and heading fonts.                                                                                               |
 | `fontFamilies` / `fontSizes`                         | arrays                                              | defaults                  | Font menu (`{ label, value }`) and sizes (pt).                                                                        |
@@ -148,6 +149,41 @@ so a fixed width shrinks on narrow screens instead of causing horizontal scrolli
 <VersaEdit />                          {/* container width × 500 px */}
 <VersaEdit width={800} height={500} /> {/* 800 × 500 px, narrower on small screens */}
 ```
+
+### Object margin
+
+Images and text boxes placed left, right or centered keep a margin from the text. `objectMargin`
+sets it per side, in px:
+
+| Side     | Where                                                                                                                              | Default |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `text`   | Between the object and the text: the text side of a left/right object; above and below a centered object or a text box in the flow | `16`    |
+| `outer`  | The outer side of a left/right object (`0` = aligned with the text edge); the sides of a text box in the flow                      | `0`     |
+| `top`    | Above a left/right object                                                                                                          | `4`     |
+| `bottom` | Below a left/right object                                                                                                          | `12`    |
+
+Sides you leave out keep the default; negative or invalid values are ignored, and values above
+200 are limited to 200. The margin is not written into the HTML: give the published container the
+same values with `objectMarginStyle()`, so objects sit where they were in the editor.
+
+```tsx
+import { objectMarginStyle, VersaEdit } from 'versaedit'
+
+const margin = { text: 24, outer: 8 }
+
+<VersaEdit objectMargin={margin} />
+
+<div
+  className="versaedit-content"
+  style={objectMarginStyle(margin)}
+  dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
+/>
+```
+
+`objectMarginStyle()` returns the CSS variables `--ve-object-text`, `--ve-object-outer`,
+`--ve-object-top` and `--ve-object-bottom`; without React, set them on the editing element and on
+the published container. Changing `objectMargin` while editing recalculates where objects side by
+side must move down (`data-ve-stack`), without touching the undo history.
 
 ### Settings panel
 

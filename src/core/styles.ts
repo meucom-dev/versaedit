@@ -8,8 +8,22 @@
 //   --ve-accent         cor de destaque (seleção, caixas de texto, alças)
 //   --ve-heading-font   fonte dos títulos (padrão: a mesma do texto)
 
-import { DEFAULT_FONT } from './defaults'
+import { DEFAULT_FONT, DEFAULT_OBJECT_MARGIN as OM } from './defaults'
 import { stackRules } from './objects'
+
+// Margem dos objetos (imagens e caixas de texto), configurável por lado com as
+// variáveis --ve-object-* (prop objectMargin; objectMarginStyle() no site). O
+// editor e o CSS publicado usam as mesmas regras e os mesmos padrões.
+const M_TEXT = `var(--ve-object-text, ${OM.text}px)`
+const M_OUTER = `var(--ve-object-outer, ${OM.outer}px)`
+const M_TOP = `var(--ve-object-top, ${OM.top}px)`
+const M_BOTTOM = `var(--ve-object-bottom, ${OM.bottom}px)`
+/** À esquerda: topo | texto (direita) | baixo | fora (esquerda) */
+const MARGIN_LEFT_OBJECT = `${M_TOP} ${M_TEXT} ${M_BOTTOM} ${M_OUTER}`
+/** À direita: topo | fora (direita) | baixo | texto (esquerda) */
+const MARGIN_RIGHT_OBJECT = `${M_TOP} ${M_OUTER} ${M_BOTTOM} ${M_TEXT}`
+/** No fluxo (caixa de texto): texto em cima e embaixo, fora nas laterais */
+const MARGIN_FLOW = `${M_TEXT} ${M_OUTER}`
 
 const STYLE_ID = 'versaedit-styles'
 
@@ -65,13 +79,14 @@ ${s} code { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mon
 //   publicado, content-box no editor, e o fundo), imagem (o publicado encolhe na
 //   coluna) e a quebra de palavras longas (o contenteditable quebra; o site não).
 // - Colunas estreitas (celular): a caixa de texto de largura fixa encolhe para caber
-//   com as margens (102px = margens 2×40 + padding 2×10 + borda 2×1); as flutuantes
+//   com as margens (as laterais de fora, --ve-object-outer, mais 22px de padding
+//   2×10 e borda 2×1); as flutuantes
 //   seguem com o limite de 50%.
 const mirrorRules = (s: string) => `
 ${s} { font-family: var(--ve-font, ${DEFAULT_FONT}); font-size: ${TEXT.size}; line-height: ${TEXT.lineHeight}; color: ${TEXT.color}; background-color: ${TEXT.paper}; font-weight: normal; font-style: normal; font-variant: normal; letter-spacing: normal; word-spacing: normal; text-transform: none; text-indent: 0; text-align: start; overflow-wrap: break-word; }
 ${s} :where(*) { all: revert; }
 ${s} img { max-width: 100%; height: auto; }
-${s} .rich-textbox { box-sizing: content-box; background: ${accent(3)}; max-width: calc(100% - 102px); }
+${s} .rich-textbox { box-sizing: content-box; background: ${accent(3)}; max-width: calc(100% - 2 * ${M_OUTER} - 22px); }
 `
 
 export const EDITOR_CSS = `
@@ -153,17 +168,17 @@ ${textRules('.ve-content')}
 .ve-content img:hover { outline-color: ${accent(50)}; }
 .ve-content img.selected { outline-color: var(--ve-accent); outline-width: 3px; cursor: grab; }
 .ve-content img.selected:active { cursor: grabbing; }
-.ve-content img.pos-left { float: left; margin: 40px; max-width: 50%; }
-.ve-content img.pos-right { float: right; margin: 40px; max-width: 50%; }
-.ve-content img.pos-center { display: block; margin: 40px auto; max-width: 100%; clear: both; }
+.ve-content img.pos-left { float: left; margin: ${MARGIN_LEFT_OBJECT}; max-width: 50%; }
+.ve-content img.pos-right { float: right; margin: ${MARGIN_RIGHT_OBJECT}; max-width: 50%; }
+.ve-content img.pos-center { display: block; margin: ${M_TEXT} auto; max-width: 100%; clear: both; }
 .ve-content img.dragging, .ve-content .rich-textbox.dragging { opacity: 0.7; outline: 2px dashed var(--ve-accent); position: relative; z-index: 60; cursor: grabbing; }
 
 /* Caixas de texto */
-.ve-content .rich-textbox { border: 1px dashed var(--ve-accent); padding: 10px; margin: 40px; min-height: 40px; min-width: 100px; position: relative; cursor: text; user-select: text; overflow: auto; outline: 2px solid transparent; outline-offset: 2px; transition: outline 0.15s; background: ${accent(3)}; clear: both; }
+.ve-content .rich-textbox { border: 1px dashed var(--ve-accent); padding: 10px; margin: ${MARGIN_FLOW}; min-height: 40px; min-width: 100px; position: relative; cursor: text; user-select: text; overflow: auto; outline: 2px solid transparent; outline-offset: 2px; transition: outline 0.15s; background: ${accent(3)}; clear: both; }
 .ve-content .rich-textbox:hover { outline-color: ${accent(30)}; }
 .ve-content .rich-textbox.selected { outline-color: var(--ve-accent); outline-width: 3px; cursor: text; }
-.ve-content .rich-textbox.tb-float-left { float: left; margin: 40px; max-width: 50%; clear: none; }
-.ve-content .rich-textbox.tb-float-right { float: right; margin: 40px; max-width: 50%; clear: none; }
+.ve-content .rich-textbox.tb-float-left { float: left; margin: ${MARGIN_LEFT_OBJECT}; max-width: 50%; clear: none; }
+.ve-content .rich-textbox.tb-float-right { float: right; margin: ${MARGIN_RIGHT_OBJECT}; max-width: 50%; clear: none; }
 /* Caixa centralizada (menu da caixa › Centro), como a imagem pos-center */
 .ve-content .rich-textbox.tb-center { margin-left: auto; margin-right: auto; }
 /* Objeto que desce para baixo do anterior quando a coluna de texto entre eles ficaria
@@ -255,12 +270,12 @@ export const CONTENT_CSS = `
 .versaedit-content { --ve-accent: #2563eb; text-align: start; }
 .versaedit-content::after { content: ''; display: block; clear: both; }
 .versaedit-content img { display: block; max-width: 100%; height: auto; }
-.versaedit-content img.pos-left { float: left; margin: 40px; max-width: 50%; }
-.versaedit-content img.pos-right { float: right; margin: 40px; max-width: 50%; }
-.versaedit-content img.pos-center { margin: 40px auto; clear: both; }
-.versaedit-content .rich-textbox { border: 1px dashed var(--ve-accent); padding: 10px; margin: 40px; min-height: 40px; min-width: 100px; box-sizing: border-box; overflow: auto; clear: both; }
-.versaedit-content .rich-textbox.tb-float-left { float: left; max-width: 50%; clear: none; }
-.versaedit-content .rich-textbox.tb-float-right { float: right; max-width: 50%; clear: none; }
+.versaedit-content img.pos-left { float: left; margin: ${MARGIN_LEFT_OBJECT}; max-width: 50%; }
+.versaedit-content img.pos-right { float: right; margin: ${MARGIN_RIGHT_OBJECT}; max-width: 50%; }
+.versaedit-content img.pos-center { margin: ${M_TEXT} auto; clear: both; }
+.versaedit-content .rich-textbox { border: 1px dashed var(--ve-accent); padding: 10px; margin: ${MARGIN_FLOW}; min-height: 40px; min-width: 100px; box-sizing: border-box; overflow: auto; clear: both; }
+.versaedit-content .rich-textbox.tb-float-left { float: left; margin: ${MARGIN_LEFT_OBJECT}; max-width: 50%; clear: none; }
+.versaedit-content .rich-textbox.tb-float-right { float: right; margin: ${MARGIN_RIGHT_OBJECT}; max-width: 50%; clear: none; }
 .versaedit-content .rich-textbox.tb-center { margin-left: auto; margin-right: auto; }
 ${stackRules('.versaedit-content')}
 .versaedit-content .textbox-handle { display: none; }

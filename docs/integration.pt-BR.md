@@ -296,6 +296,12 @@ contêiner no `.versaedit-content`). Para isso, o `.versaedit-content` precisa r
 layout disponível, como um elemento de bloco, e não se dimensionar pelo próprio conteúdo (por
 exemplo, não como item flex que encolhe ao conteúdo nem como `inline-block`).
 
+**Margem dos objetos.** Se o editor usar `objectMargin`, dê ao contêiner os mesmos valores:
+`style={objectMarginStyle(margem)}` (veja
+[Margem dos objetos](../README.pt-BR.md#margem-dos-objetos)). Sem isso, o conteúdo publicado usa a
+margem padrão (16 px do lado do texto, 0 do lado de fora), a mesma de um editor sem a prop.
+_Verificado:_ `tests/e2e/object-margin.spec.ts`.
+
 **Mesma aparência da edição (Layout Mirror).** Acrescente `layoutMirror` ao editor e a classe
 `ve-mirror` ao contêiner: `<div className="versaedit-content ve-mirror">`. O texto fica isolado das
 regras de elemento do site nas duas pontas, e as linhas quebram nos mesmos pontos quando o contêiner

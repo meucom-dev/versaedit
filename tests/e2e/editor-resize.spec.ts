@@ -3,7 +3,7 @@
 // HTML, histórico, onChange, foco e seleção ficam como estavam; as alças de imagens e
 // caixas continuam funcionando; a reorganização dos objetos acompanha a largura.
 import { expect, test, type Page } from '@playwright/test'
-import { mount, PNG, selectText } from './helpers'
+import { LEGACY_OBJECT_MARGIN, mount, PNG, selectText } from './helpers'
 
 test.use({ viewport: { width: 1300, height: 1000 } })
 
@@ -254,6 +254,8 @@ test.describe('redimensionar a área de edição: objetos', () => {
       width: 900,
       height: 800,
       resizable: true,
+      // Geometria medida com a margem anterior (40px em todos os lados)
+      objectMargin: LEGACY_OBJECT_MARGIN,
     })
     // Uma edição grava o limite (data-ve-stack)
     await caretToEnd()

@@ -5,12 +5,14 @@ export { TOOLBAR_GROUPS, type ToolbarGroup } from './react/toolbar/Toolbar'
 export type { SettingsPanel } from './react/toolbar/SettingsMenu'
 export type { VersaEditDictationProps } from './react/VersaEditDictation'
 export type { VersaEditLabels, VersaEditLocale } from './core/i18n'
-export type { FontFamilyOption, FrameOptions } from './core/defaults'
+export type { FontFamilyOption, FrameOptions, ObjectMargin } from './core/defaults'
 export {
   DEFAULT_COLOR_PALETTE,
   DEFAULT_FONT_FAMILIES,
   DEFAULT_FONT_SIZES,
   DEFAULT_HIGHLIGHT_COLORS,
+  DEFAULT_OBJECT_MARGIN,
+  objectMarginStyle,
 } from './core/defaults'
 // Núcleo sem React, para quem quiser montar a própria interface
 export { VersaEditCore } from './core/editor'

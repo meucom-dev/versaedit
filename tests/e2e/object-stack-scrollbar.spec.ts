@@ -4,7 +4,7 @@
 // texto nunca ficar abaixo da coluna mínima. Arquivo próprio: o Chromium sem janela
 // esconde as barras (--hide-scrollbars), e essa opção vale para o arquivo inteiro.
 import { expect, test } from '@playwright/test'
-import { mount, PNG } from './helpers'
+import { LEGACY_OBJECT_MARGIN, mount, PNG } from './helpers'
 
 test.use({
   viewport: { width: 1300, height: 1000 },
@@ -23,7 +23,12 @@ test('editor com barra de rolagem: lado a lado só com a coluna mínima, em qual
   browserName,
 }) => {
   test.skip(browserName !== 'chromium', 'barra clássica: só o Chromium aceita o argumento')
-  await mount(page, { initialContent: CONTENT, width: 1060, height: 300 })
+  await mount(page, {
+    initialContent: CONTENT,
+    width: 1060,
+    height: 300,
+    objectMargin: LEGACY_OBJECT_MARGIN,
+  })
   await page.locator('#host .ve-content p').last().click()
   await page.keyboard.type('x')
   const rows = await page.evaluate(() => {
@@ -81,7 +86,13 @@ test('barra de rolagem que aparece ao reduzir a altura: coluna legível e HTML i
 }) => {
   test.skip(browserName !== 'chromium', 'barra clássica: só o Chromium aceita o argumento')
   await page.setViewportSize({ width: 1300, height: 1500 })
-  await mount(page, { initialContent: SHORT, width: 1060, height: 1300, resizable: true })
+  await mount(page, {
+    initialContent: SHORT,
+    width: 1060,
+    height: 1300,
+    resizable: true,
+    objectMargin: LEGACY_OBJECT_MARGIN,
+  })
   await page.locator('#host .ve-content p').last().click()
   await page.keyboard.press('End')
   await page.keyboard.type('x')

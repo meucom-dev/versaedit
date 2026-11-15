@@ -20,8 +20,10 @@ import {
   DEFAULT_HIGHLIGHT_COLORS,
   DEFAULT_WIDTH,
   googleFontsUrl,
+  objectMarginStyle,
   type FontFamilyOption,
   type FrameOptions,
+  type ObjectMargin,
 } from '../core/defaults'
 import {
   VersaEditCore,
@@ -176,6 +178,13 @@ export interface VersaEditProps {
   toolbarWidth?: number | string
   /** Moldura da área de edição; false remove */
   frame?: Partial<FrameOptions> | false
+  /**
+   * Margem em px em torno de imagens e caixas de texto, por lado: text (entre o
+   * objeto e o texto), outer (lado de fora de um objeto à esquerda ou à direita),
+   * top e bottom. Padrão: { text: 16, outer: 0, top: 4, bottom: 12 }. No conteúdo
+   * publicado, aplique objectMarginStyle(objectMargin) ao contêiner.
+   */
+  objectMargin?: ObjectMargin
   /** Cor de destaque: seleção, caixas de texto, alças */
   accentColor?: string
   /** Fonte do texto */
@@ -289,6 +298,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     settingsPanel,
     toolbarWidth: toolbarWidthProp,
     frame,
+    objectMargin,
     accentColor = DEFAULT_ACCENT,
     fontFamily = DEFAULT_FONT,
     headingFontFamily,
@@ -575,9 +585,20 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     [showDictation, recognition, dictationLang],
   )
 
+  const marginStyle = objectMarginStyle(objectMargin)
+  // Margem dos objetos mudou: refaz a coluna de texto entre objetos e a posição
+  // do menu e da alça (na montagem, o carregamento do conteúdo já faz isso)
+  const marginKey = JSON.stringify(marginStyle)
+  const appliedMargin = useRef(marginKey)
+  useEffect(() => {
+    if (appliedMargin.current === marginKey) return
+    appliedMargin.current = marginKey
+    coreRef.current?.refreshObjects()
+  }, [marginKey])
   const rootStyle = {
     '--ve-accent': accentColor,
     ...(headingFontFamily ? { '--ve-heading-font': headingFontFamily } : {}),
+    ...marginStyle,
   } as React.CSSProperties
 
   return (

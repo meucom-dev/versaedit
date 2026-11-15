@@ -611,6 +611,18 @@ export class VersaEditCore {
     this.updateToolbarPosition(target)
   }
 
+  /**
+   * Depois de mudar a margem dos objetos (variáveis --ve-object-*, prop
+   * objectMargin): refaz a decisão de descer objetos que deixariam a coluna de
+   * texto estreita demais (data-ve-stack), reposiciona o menu e a alça do objeto
+   * selecionado e avisa onChange se o HTML mudou. Não entra no histórico.
+   */
+  refreshObjects(): void {
+    keepReadableColumns(this.el)
+    this.refreshLayout()
+    this.emitChange()
+  }
+
   /** Remove ouvintes e temporizadores (ao desmontar o editor) */
   destroy(): void {
     this.observer?.disconnect()
@@ -1751,7 +1763,7 @@ export class VersaEditCore {
       el.style.transform = ox || oy ? `translate(${ox}px, ${oy}px)` : ''
     } else {
       // Reposiciona no ponto de queda — o texto passa a contornar o elemento
-      // com a margem de 40px do CSS; se o ponto for inválido, restaura a posição
+      // com a margem do CSS (--ve-object-*); se o ponto for inválido, restaura a posição
       // onde o elemento estava visualmente ao soltar (com o deslocamento do arrasto)
       const dropped = el.getBoundingClientRect()
       if (dropElementAtPoint(this.el, el, e.clientX, e.clientY)) {

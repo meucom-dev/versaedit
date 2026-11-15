@@ -4,7 +4,7 @@
 // acompanha o ponteiro e não esconde texto; arrastar para baixo solta no parágrafo
 // que está sob o ponteiro, sem deixar parágrafo vazio para trás.
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { mount, PNG, selectText } from './helpers'
+import { LEGACY_OBJECT_MARGIN, LEGACY_OBJECT_MARGIN_STYLE, mount, PNG, selectText } from './helpers'
 
 const TEXT =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. '
@@ -336,8 +336,17 @@ const pairIn = (page: Page, selector: string) =>
   }, selector)
 
 /** Imagem a 40% à esquerda e caixa a 30% à direita: coluna de ~100px numa área de 868px */
+// Geometria medida com a margem anterior (40px em todos os lados)
+const setupLegacy = (page: Page) =>
+  mount(page, {
+    initialContent: CONTENT,
+    width: 900,
+    height: 900,
+    objectMargin: LEGACY_OBJECT_MARGIN,
+  })
+
 async function narrowPair(page: Page) {
-  await setup(page)
+  await setupLegacy(page)
   await selectImage(page)
   await core(page, 'resizeSelectedImage(40)')
   await core(page, `floatImage('left')`)
@@ -370,15 +379,19 @@ test.describe('coluna legível: responsiva à largura do contêiner', () => {
   }) => {
     await narrowPair(page)
     const saved = await page.evaluate(() => window.__ref.current!.getHTML())
-    await page.evaluate((h) => window.__showPublished(h, { width: 1100 }), saved)
+    await page.evaluate(([h, s]) => window.__showPublished(h, { width: 1100, style: s }), [
+      saved,
+      LEGACY_OBJECT_MARGIN_STYLE,
+    ] as const)
     const wide = await pairIn(page, '#published')
     expect(wide.sideBySide).toBe(true)
     expect(wide.gap).toBeGreaterThanOrEqual(120)
     expect(wide.column).toBeGreaterThanOrEqual(120)
     for (const width of [700, 360]) {
-      await page.evaluate(([h, w]) => window.__showPublished(h, { width: w }), [
+      await page.evaluate(([h, w, s]) => window.__showPublished(h, { width: w, style: s }), [
         saved,
         width,
+        LEGACY_OBJECT_MARGIN_STYLE,
       ] as const)
       expect((await pairIn(page, '#published')).sideBySide).toBe(false)
     }
@@ -399,7 +412,12 @@ test.describe('coluna legível: responsiva à largura do contêiner', () => {
   test('salvar, reabrir, redimensionar e mover de novo', async ({ page }) => {
     await narrowPair(page)
     const saved = await page.evaluate(() => window.__ref.current!.getHTML())
-    await mount(page, { initialContent: saved, width: 900, height: 900 })
+    await mount(page, {
+      objectMargin: LEGACY_OBJECT_MARGIN,
+      initialContent: saved,
+      width: 900,
+      height: 900,
+    })
     // Reaberto: o atributo volta com o conteúdo e a posição é a mesma
     expect(await box(page).getAttribute('data-ve-stack')).toBe('960')
     expect((await pairIn(page, '#host .ve-content')).sideBySide).toBe(false)
@@ -420,7 +438,7 @@ test.describe('coluna legível: responsiva à largura do contêiner', () => {
   })
 
   test('a coluna mínima acompanha o tamanho da fonte do texto', async ({ page }) => {
-    await setup(page)
+    await setupLegacy(page)
     await selectImage(page)
     await core(page, 'resizeSelectedImage(40)')
     await core(page, `floatImage('left')`)
@@ -439,6 +457,7 @@ test.describe('coluna legível: responsiva à largura do contêiner', () => {
 
   test('o clear que o usuário tem no style do objeto não é apagado', async ({ page }) => {
     await mount(page, {
+      objectMargin: LEGACY_OBJECT_MARGIN,
       initialContent: CONTENT.replace(
         'style="width: 200px;"',
         'class="pos-left" style="width: 200px; clear: left;"',
@@ -458,7 +477,7 @@ test.describe('coluna legível: fonte mudada depois e contêiner das consultas',
   test('fonte do texto ao lado aumentada depois, sem mexer no objeto: o limite é refeito', async ({
     page,
   }) => {
-    await setup(page)
+    await setupLegacy(page)
     await selectImage(page)
     await core(page, 'resizeSelectedImage(40)')
     await core(page, `floatImage('left')`)
@@ -486,7 +505,10 @@ test.describe('coluna legível: fonte mudada depois e contêiner das consultas',
     await narrowPair(page)
     const saved = await page.evaluate(() => window.__ref.current!.getHTML())
     // Conteúdo de 1100px (lado a lado) dentro de um contêiner da página de 700px...
-    await page.evaluate((h) => window.__showPublished(h, { width: 1100 }), saved)
+    await page.evaluate(([h, s]) => window.__showPublished(h, { width: 1100, style: s }), [
+      saved,
+      LEGACY_OBJECT_MARGIN_STYLE,
+    ] as const)
     await page.evaluate(() => {
       const pub = document.getElementById('published')!
       const wrap = document.createElement('div')
@@ -505,6 +527,7 @@ test.describe('coluna legível: fonte mudada depois e contêiner das consultas',
   test('objeto dentro de uma caixa de texto não usa a largura da área', async ({ page }) => {
     const inside = `<div class="rich-textbox" style="width: 400px;"><span class="textbox-handle" contenteditable="false">⠿</span><img class="pos-left" src="data:image/png;base64,${PNG}" style="width: 40%;"><img class="pos-right" src="data:image/png;base64,${PNG}" style="width: 40%;">texto dentro da caixa</div>`
     await mount(page, {
+      objectMargin: LEGACY_OBJECT_MARGIN,
       initialContent: `<p>A ${TEXT}</p>${inside}<p>B ${TEXT}</p>`,
       width: 900,
       height: 900,
@@ -519,7 +542,7 @@ test.describe('API do núcleo: contrato da 0.5.0-beta.1', () => {
   test('alignSelectedTextbox continua alinhando o texto dentro da caixa, sem movê-la', async ({
     page,
   }) => {
-    await setup(page)
+    await setupLegacy(page)
     await selectBox(page)
     const before = await rel(box(page))
     await core(page, `alignSelectedTextbox('right')`)
@@ -531,7 +554,7 @@ test.describe('API do núcleo: contrato da 0.5.0-beta.1', () => {
   test('positionSelectedTextbox move a caixa e não mexe no alinhamento do texto', async ({
     page,
   }) => {
-    await setup(page)
+    await setupLegacy(page)
     await selectBox(page)
     await core(page, `positionSelectedTextbox('right')`)
     expect(await box(page).getAttribute('class')).toMatch(/tb-float-right/)

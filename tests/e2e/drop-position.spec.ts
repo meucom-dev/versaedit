@@ -1,6 +1,7 @@
 // Arrastar e soltar imagem/caixa de texto: o elemento fica onde foi solto,
 // com o texto contornando pelo lado livre e a margem mínima de 40px
 import { expect, test, type Locator, type Page } from '@playwright/test'
+import { DEFAULT_OBJECT_MARGIN } from '../../src/core/defaults'
 import { mount, PNG } from './helpers'
 
 const TEXT =
@@ -72,7 +73,10 @@ test('solta junto à borda: fica na borda com a margem do CSS, sem estilo a mais
   await dragTo(page, img, 0.03, 0.4)
   await expect(img).toHaveClass(/pos-left/)
   expect(await marginLeft(img)).toBe('')
-  expect(await img.evaluate((n) => getComputedStyle(n).marginLeft)).toBe('40px')
+  // A margem de fora do CSS (padrão: 0, alinhada à margem do texto)
+  expect(await img.evaluate((n) => getComputedStyle(n).marginLeft)).toBe(
+    `${DEFAULT_OBJECT_MARGIN.outer}px`,
+  )
 })
 
 test('botão de alinhamento desfaz o deslocamento do arrasto', async ({ page }) => {

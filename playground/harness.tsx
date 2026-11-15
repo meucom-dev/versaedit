@@ -180,7 +180,7 @@ window.__mount = async (props, options = {}) => {
     document.head.appendChild(style)
   }
   root = createRoot(document.getElementById('host')!)
-  root.render(
+  const view = (props: Partial<VersaEditProps>) => (
     <>
       {options.dictationOutside && (
         <div id="outside">
@@ -239,8 +239,15 @@ window.__mount = async (props, options = {}) => {
               : undefined
         }
       />
-    </>,
+    </>
   )
+  let current = props
+  root.render(view(current))
+  // Novas props sem desmontar (o React mantém o editor, como numa aplicação)
+  window.__setProps = (patch) => {
+    current = { ...current, ...patch }
+    root!.render(view(current))
+  }
   if (options.secondEditor !== undefined) {
     const host2 = document.createElement('div')
     host2.id = 'host2'
@@ -292,6 +299,7 @@ export interface PublishedOptions {
 }
 declare global {
   interface Window {
+    __setProps: (patch: Partial<VersaEditProps>) => void
     __showPublished: (html: string, options?: PublishedOptions) => void
   }
 }

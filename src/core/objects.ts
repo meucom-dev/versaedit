@@ -53,7 +53,7 @@ export function releaseGesture(area: Element, owner: GestureOwner): void {
 export const gestureOwner = (area: Element): GestureOwner | undefined => gestures.get(area)
 
 // ─── REPOSICIONAMENTO POR ARRASTO ───────────────────────────────
-// Limpa os deslocamentos manuais: o espaçamento volta aos 40px do CSS
+// Limpa os deslocamentos manuais: o espaçamento volta à margem do CSS (--ve-object-*)
 export function clearManualOffsets(el: HTMLElement) {
   el.style.transform = ''
   el.style.marginTop = ''
@@ -76,7 +76,7 @@ export function nudgeElement(el: HTMLElement, dx: number, dy: number) {
 }
 
 // Faz o elemento flutuar para o lado em que foi solto — assim o texto
-// sempre contorna o elemento com a margem de 40px definida no CSS
+// sempre contorna o elemento com a margem definida no CSS (--ve-object-*)
 export function setFloatSide(el: HTMLElement, side: 'left' | 'right') {
   if (el.tagName === 'IMG') {
     el.classList.remove('pos-left', 'pos-right', 'pos-center')
@@ -130,7 +130,7 @@ export function fitInEditor(el: HTMLElement, editor: HTMLElement) {
 
 // Depois de soltar: a flutuação leva o elemento até a borda; uma margem lateral
 // o devolve ao ponto onde foi solto, e o texto o contorna pelo lado livre (o
-// CSS só contorna de um lado). A margem nunca fica menor que a do CSS (40px)
+// CSS só contorna de um lado). A margem nunca fica menor que a do CSS (--ve-object-*)
 // nem empurra o elemento para fora da área.
 export function keepDropPosition(el: HTMLElement, editor: HTMLElement, dropped: DOMRect) {
   const style = window.getComputedStyle(el)

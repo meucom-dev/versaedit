@@ -139,14 +139,25 @@ const selectionProcessed = (page: Page) =>
     () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
   )
 
-// Clique real no bloco (o usuário clica antes de selecionar)
+// Clique real no bloco (o usuário clica antes de selecionar): na primeira letra do
+// texto, que fica livre mesmo com um objeto flutuando encostado na margem do texto
 async function clickBlock(page: Page, prefix: string) {
-  await page
+  const block = page
     .locator('#host .ve-content')
     .locator('p, h2, blockquote')
     .filter({ hasText: new RegExp('^' + prefix) })
     .first()
-    .click({ position: { x: 4, y: 4 } })
+  await block.scrollIntoViewIfNeeded()
+  const point = await block.evaluate((el) => {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+    const text = walker.nextNode() as Text
+    const range = document.createRange()
+    range.setStart(text, 0)
+    range.setEnd(text, 1)
+    const r = range.getBoundingClientRect()
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  })
+  await page.mouse.click(point.x, point.y)
   await selectionProcessed(page)
 }
 

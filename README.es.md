@@ -78,6 +78,7 @@ export function PostEditor({
 | `settingsPanel`                                      | `ReactNode \| (close) => ReactNode`                 | —                           | Su propia configuración, en un panel que abre un engranaje al final de la barra ([Panel de configuración](#panel-de-configuración)). |
 | `toolbarWidth`                                       | `number \| string`                                  | `width`                     | Ancho de la barra (los números la centran sobre el editor).                                                                          |
 | `frame`                                              | `{ width, color, radius } \| false`                 | `1px #d0d7de, 8px`          | Borde alrededor del área de edición.                                                                                                 |
+| `objectMargin`                                       | `{ text, outer, top, bottom }`                      | `16, 0, 4, 12`              | Espacio alrededor de imágenes y cuadros de texto, por lado, en px ([Margen de los objetos](#margen-de-los-objetos)).                 |
 | `accentColor`                                        | `string`                                            | `#2563eb`                   | Contornos de selección, cuadros de texto, controladores.                                                                             |
 | `fontFamily` / `headingFontFamily`                   | `string`                                            | fuente del sistema          | Fuentes del texto y de los títulos.                                                                                                  |
 | `fontFamilies` / `fontSizes`                         | arrays                                              | predeterminados             | Menú de fuentes (`{ label, value }`) y tamaños (pt).                                                                                 |
@@ -152,6 +153,42 @@ desplazamiento horizontal.
 <VersaEdit />                          {/* ancho del contenedor × 500 px */}
 <VersaEdit width={800} height={500} /> {/* 800 × 500 px, más estrecho en pantallas pequeñas */}
 ```
+
+### Margen de los objetos
+
+Las imágenes y los cuadros de texto a la izquierda, a la derecha o centrados mantienen un margen
+respecto al texto. `objectMargin` lo define por lado, en px:
+
+| Lado     | Dónde                                                                                                                                                              | Predeterminado |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- |
+| `text`   | Entre el objeto y el texto: el lado del texto en un objeto a la izquierda o a la derecha; arriba y abajo en un objeto centrado o en un cuadro de texto en el flujo | `16`           |
+| `outer`  | El lado exterior de un objeto a la izquierda o a la derecha (`0` = alineado con el margen del texto); los laterales de un cuadro de texto en el flujo              | `0`            |
+| `top`    | Arriba de un objeto a la izquierda o a la derecha                                                                                                                  | `4`            |
+| `bottom` | Debajo de un objeto a la izquierda o a la derecha                                                                                                                  | `12`           |
+
+Los lados que no indique quedan con el valor predeterminado; los valores negativos o inválidos se
+ignoran, y los mayores de 200 quedan en 200. El margen no se guarda en el HTML: dé al contenedor
+publicado los mismos valores con `objectMarginStyle()`, para que los objetos queden donde
+estaban en el editor.
+
+```tsx
+import { objectMarginStyle, VersaEdit } from 'versaedit'
+
+const margen = { text: 24, outer: 8 }
+
+<VersaEdit objectMargin={margen} />
+
+<div
+  className="versaedit-content"
+  style={objectMarginStyle(margen)}
+  dangerouslySetInnerHTML={{ __html: htmlSanitizado }}
+/>
+```
+
+`objectMarginStyle()` devuelve las variables CSS `--ve-object-text`, `--ve-object-outer`,
+`--ve-object-top` y `--ve-object-bottom`; sin React, aplíquelas al elemento de edición y al
+contenedor publicado. Cambiar `objectMargin` durante la edición rehace el punto en que los
+objetos lado a lado deben bajar (`data-ve-stack`), sin tocar el historial de deshacer.
 
 ### Panel de configuración
 
