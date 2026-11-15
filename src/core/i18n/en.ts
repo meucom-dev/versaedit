@@ -58,6 +58,7 @@ export const en = {
   frameResizeWidth: 'Resize editing area width',
   frameResizeHeight: 'Resize editing area height',
   frameResizeBoth: 'Resize editing area',
+  settings: 'Settings',
   sizeControls: 'Editing area size',
   sizeWidth: 'Width',
   sizeHeight: 'Height',

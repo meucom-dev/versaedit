@@ -2,7 +2,13 @@ import { StrictMode, useCallback, useRef, useState, useSyncExternalStore } from 
 import { createRoot } from 'react-dom/client'
 import { VersaEdit, VersaEditDictation, type VersaEditHandle, type VersaEditLocale } from '../src'
 import { CONTENT_CSS } from '../src/core/styles'
-import { DEFAULT_SETTINGS, PLAYGROUND_FONTS, PropsPanel, settingsToProps } from './PropsPanel'
+import {
+  DEFAULT_SETTINGS,
+  PLAYGROUND_FONTS,
+  PropsPanel,
+  SettingsControls,
+  settingsToProps,
+} from './PropsPanel'
 
 // Textos do próprio playground (o editor tem os seus em src/core/i18n)
 const TEXT = {
@@ -55,7 +61,7 @@ const codeStyle = {
 
 // Largura disponível para o editor (coluna de até 1000px com 16px de cada lado).
 // Uma largura fixa que não cabe na tela (celular) vira '100%'; no computador
-// o editor continua com os 900px de sempre.
+// o editor fica com a largura escolhida (padrão do playground: 800px).
 const onResize = (cb: () => void) => {
   window.addEventListener('resize', cb)
   return () => window.removeEventListener('resize', cb)
@@ -197,6 +203,10 @@ function App() {
         locale={locale}
         {...settingsToProps(settings)}
         width={editorWidth}
+        // Configurações gerais do editor na engrenagem da barra
+        settingsPanel={
+          <SettingsControls locale={locale} settings={settings} onSettings={setSettings} />
+        }
       />
       {/* Área de desenvolvimento, recolhida: HTML gerado, propriedades e teste do onSave */}
       <details style={{ marginTop: 24 }}>

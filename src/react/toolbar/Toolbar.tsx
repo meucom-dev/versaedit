@@ -31,6 +31,7 @@ import { HighlightPicker } from './HighlightPicker'
 import { LinkPopover } from './LinkPopover'
 import { TextboxControls } from './TextboxControls'
 import { ToolbarBtn, ToolbarSep } from './ToolbarButton'
+import { SettingsMenu, type SettingsPanel } from './SettingsMenu'
 import { useCloseOnSignal, useEscapeToClose } from './usePopup'
 
 const HEADING_BLOCKS: { label: keyof VersaEditLabels; tag: string }[] = [
@@ -98,6 +99,7 @@ export function Toolbar({
   closeLink,
   dictation,
   groups,
+  settingsPanel,
 }: {
   core: () => VersaEditCore | null
   labels: VersaEditLabels
@@ -119,6 +121,8 @@ export function Toolbar({
   dictation: { recognition: SpeechRecognitionConstructor; lang: string } | null
   /** Grupos ligados (os outros não aparecem) */
   groups: ReadonlySet<ToolbarGroup>
+  /** Painel da engrenagem (prop settingsPanel); sem ele, não há engrenagem */
+  settingsPanel?: SettingsPanel
 }) {
   const on = (group: ToolbarGroup) => groups.has(group)
   const toolbarRef = useRef<HTMLDivElement>(null)
@@ -176,7 +180,7 @@ export function Toolbar({
       (el) =>
         !(el as HTMLButtonElement).disabled &&
         !el.closest(
-          '.ve-palette, .ve-font-options, .ve-highlight-palette, .ve-link-popover, .ve-dictation-bubble',
+          '.ve-palette, .ve-font-options, .ve-highlight-palette, .ve-link-popover, .ve-dictation-bubble, .ve-settings-panel',
         ),
     )
 
@@ -213,8 +217,13 @@ export function Toolbar({
 
   // Foco por clique ou Tab também atualiza o controle ativo
   const handleFocus = (e: React.FocusEvent) => {
-    const index = navItems().indexOf(e.target as HTMLElement)
-    if (index >= 0) activeIndex.current = index
+    const items = navItems()
+    const index = items.indexOf(e.target as HTMLElement)
+    if (index < 0) return
+    activeIndex.current = index
+    // O item focado vira a parada do Tab na hora (sem esperar outra renderização):
+    // Shift+Tab num menu aberto pela barra volta ao botão que o abriu
+    items.forEach((el, i) => (el.tabIndex = i === index ? 0 : -1))
   }
 
   return (
@@ -462,6 +471,8 @@ export function Toolbar({
           ),
         ],
       ])}
+      {/* Engrenagem: último item, encostado à direita da última linha (sem traço antes) */}
+      {settingsPanel !== undefined && <SettingsMenu core={core} labels={L} panel={settingsPanel} />}
     </div>
   )
 }

@@ -6,6 +6,8 @@ Receitas para usar o VersaEdit numa aplicação real. Cada receita diz como foi 
 
 - [Sanitização: navegador e servidor](#sanitização-navegador-e-servidor)
 - [Salvar o conteúdo](#salvar-o-conteúdo)
+- [Manter o tamanho da área de edição](#manter-o-tamanho-da-área-de-edição)
+- [Painel de configurações: suas opções na barra](#painel-de-configurações-suas-opções-na-barra)
 - [Supabase](#supabase)
 - [Envio de imagens](#envio-de-imagens)
 - [Next.js](#nextjs)
@@ -125,6 +127,58 @@ mantenha `width`/`height` fixos e chame `editor.current!.setSize(salvo)` depois 
 chama `onResize`). O `onResize` é chamado uma vez com `'end'` a cada mudança feita pelas setas ou
 pelos campos de tamanho, e com `'start'`/`'move'`/`'end'` durante o arraste. _Verificado:_
 `tests/e2e/editor-resize.spec.ts` e `tests/e2e/editor-resize-api.spec.ts`.
+
+## Painel de configurações: suas opções na barra
+
+`settingsPanel` põe uma engrenagem no fim da barra que abre o seu próprio conteúdo (veja
+[Painel de configurações](../README.pt-BR.md#painel-de-configurações)). Um uso comum é deixar cada
+pessoa escolher preferências do editor que a sua aplicação guarda:
+
+```tsx
+type Prefs = { pasteSpacing: 'remove' | 'preserve'; height: number }
+
+function EditorDoPost({ prefs, salvarPrefs }: { prefs: Prefs; salvarPrefs: (p: Prefs) => void }) {
+  return (
+    <VersaEdit
+      // Sem width, o editor ocupa o contêiner; a altura vem das preferências
+      height={prefs.height}
+      pasteSpacing={prefs.pasteSpacing}
+      settingsPanel={(close) => (
+        <>
+          <label>
+            <input
+              type="checkbox"
+              checked={prefs.pasteSpacing === 'preserve'}
+              onChange={(e) =>
+                salvarPrefs({ ...prefs, pasteSpacing: e.target.checked ? 'preserve' : 'remove' })
+              }
+            />
+            Manter o espaçamento do Word ao colar
+          </label>
+          <label>
+            Altura{' '}
+            <select
+              value={prefs.height}
+              onChange={(e) => salvarPrefs({ ...prefs, height: Number(e.target.value) })}
+            >
+              <option value={500}>500 px</option>
+              <option value={700}>700 px</option>
+            </select>
+          </label>
+          <button type="button" onClick={close}>
+            Concluir
+          </button>
+        </>
+      )}
+    />
+  )
+}
+```
+
+O conteúdo do painel é React comum: o editor não o salva, não o lê e não o coloca no HTML. Use seus
+próprios rótulos e controles com nomes acessíveis; o painel é anunciado como um diálogo com o nome
+de `labels.settings`. _Verificado:_ `tests/e2e/settings-panel.spec.ts` (posição, fechamento,
+teclado, ARIA, tamanho padrão) e `tests/unit/ssr.test.ts` (renderização no servidor).
 
 ## Supabase
 

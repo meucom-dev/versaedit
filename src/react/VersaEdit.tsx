@@ -45,6 +45,7 @@ import { injectStyles } from '../core/styles'
 import { ObjectToolbar } from './floating/ObjectToolbar'
 import { ResizeHandle } from './floating/ResizeHandle'
 import { SizeControls } from './SizeControls'
+import type { SettingsPanel } from './toolbar/SettingsMenu'
 import { CloseMenusSignal } from './toolbar/usePopup'
 import { useBrowserSpeechRecognition } from './useBrowserSpeechRecognition'
 import { Toolbar, TOOLBAR_GROUPS, type ToolbarGroup, type ToolbarState } from './toolbar/Toolbar'
@@ -128,11 +129,12 @@ export interface VersaEditProps {
   /** Corta o conteúdo que passar da altura do editor */
   truncateOnOverflow?: boolean
   /**
-   * Largura total do bloco, moldura incluída: número em px (padrão 640) ou
-   * medida CSS, como '100%' (o editor acompanha a largura do container)
+   * Largura total do bloco, moldura incluída: número em px ou
+   * medida CSS, como '100%' (o editor acompanha a largura do contêiner).
+   * Padrão: '100%'
    */
   width?: number | string
-  /** Altura total do bloco em px, moldura incluída */
+  /** Altura total do bloco em px, moldura incluída (padrão 500) */
   height?: number
   /**
    * Alças para redimensionar a área de edição (padrão: false): à direita, embaixo
@@ -159,6 +161,14 @@ export interface VersaEditProps {
    * tamanho mudou. setSize e mudanças de width/height não chamam.
    */
   onResize?: (size: FrameSize, phase: FrameResizePhase) => void
+  /**
+   * Botão de engrenagem no fim da barra de ferramentas (encostado à direita da
+   * última linha) e o painel de configurações que ele abre. O conteúdo é da
+   * aplicação: um elemento ou uma função que recebe `close` para fechar o painel.
+   * Sem a prop, não há engrenagem. Esc, clique fora e o começo de um
+   * redimensionamento da área fecham o painel.
+   */
+  settingsPanel?: SettingsPanel
   /**
    * Largura da barra de ferramentas (padrão: a do bloco). Com números, a barra
    * fica centralizada sobre o bloco; com medida CSS, alinhada à esquerda.
@@ -276,6 +286,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     height = DEFAULT_HEIGHT,
     resizable = false,
     sizeControls = false,
+    settingsPanel,
     toolbarWidth: toolbarWidthProp,
     frame,
     accentColor = DEFAULT_ACCENT,
@@ -571,7 +582,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
 
   return (
     <div className="ve-root" style={rootStyle}>
-      {groups.size > 0 && (
+      {(groups.size > 0 || settingsPanel !== undefined) && (
         <CloseMenusSignal.Provider value={closeMenus}>
           <Toolbar
             core={getCore}
@@ -591,6 +602,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
             closeLink={closeLink}
             dictation={dictation}
             groups={groups}
+            settingsPanel={settingsPanel}
           />
         </CloseMenusSignal.Provider>
       )}

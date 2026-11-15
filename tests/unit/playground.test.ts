@@ -10,10 +10,10 @@ import {
 } from '../../playground/PropsPanel'
 
 describe('JSX equivalente do painel Propriedades', () => {
-  it('sem mudanças, largura e altura de sempre e as fontes do playground', () => {
+  it('sem mudanças, largura e altura padrão do playground (800 × 500) e as fontes do playground', () => {
     expect(settingsToProps(DEFAULT_SETTINGS)).toEqual({
-      width: 900,
-      height: 420,
+      width: 800,
+      height: 500,
       ...PLAYGROUND_FONTS,
     })
   })

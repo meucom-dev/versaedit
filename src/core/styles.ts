@@ -84,7 +84,7 @@ export const EDITOR_CSS = `
 .ve-icon { display: block; }
 
 /* Barra de ferramentas */
-.ve-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 8px; padding: 8px; box-sizing: border-box; background: #f5f5f5; border: 1px solid #ddd; border-radius: 6px; }
+.ve-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 8px; padding: 8px; box-sizing: border-box; max-width: 100%; background: #f5f5f5; border: 1px solid #ddd; border-radius: 6px; }
 .ve-btn { border: none; background: none; cursor: pointer; padding: 4px 6px; border-radius: 4px; color: #555; font: inherit; font-size: 13px; line-height: 1; min-width: 28px; min-height: 28px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
 .ve-btn:hover { background: #e8e8e8; }
 .ve-btn:focus-visible, .ve-select:focus-visible { outline: 2px solid var(--ve-accent); outline-offset: 1px; }
@@ -217,6 +217,14 @@ ${stackRules('.ve-content')}
 .ve-size-field { display: inline-flex; align-items: center; gap: 4px; }
 .ve-size-field input { width: 6.5em; min-height: 28px; box-sizing: border-box; padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; font: inherit; color: #333; background: #fff; }
 .ve-size-field input:focus-visible { outline: 2px solid var(--ve-accent); outline-offset: 1px; }
+
+/* Engrenagem (prop settingsPanel): último item da barra, à direita da última linha,
+   e o painel de configurações que ela abre, dentro da janela e com rolagem própria */
+.ve-settings-wrap { position: relative; margin-left: auto; display: inline-flex; }
+.ve-btn.ve-btn-active { background: ${accent(15)}; color: var(--ve-accent); }
+.ve-settings-panel { position: absolute; top: calc(100% + 6px); right: 0; z-index: 120; box-sizing: border-box; min-width: min(260px, calc(100vw - 16px)); max-width: min(360px, calc(100vw - 16px)); max-height: min(70vh, 640px); overflow: auto; padding: 10px 12px; background: #fff; color: #333; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.15); font-size: 13px; line-height: 1.4; text-align: start; }
+.ve-settings-panel:focus { outline: none; }
+.ve-settings-panel:focus-visible { outline: 2px solid var(--ve-accent); outline-offset: 2px; }
 
 /* Menus flutuantes de imagem e caixa de texto */
 .ve-float-toolbar { position: absolute; display: flex; flex-wrap: wrap; width: max-content; max-width: calc(100% - 22px); white-space: nowrap; gap: 4px; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 4px 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 100; }

@@ -30,6 +30,13 @@ export interface HarnessOptions {
   css?: 'inject' | 'import' | 'none'
   /** Liga o onError (sem ele, o editor usa alert) */
   captureErrors?: boolean
+  /**
+   * Painel da engrenagem (prop settingsPanel) de teste: 'node' (elemento) ou
+   * 'function' (recebe close), com um campo, uma caixa de seleção e um botão Fechar
+   */
+  settings?: 'node' | 'function'
+  /** Sem a largura e a altura da página de testes: os padrões da biblioteca */
+  librarySize?: boolean
   /** Liga o onConfirm com a resposta dada (sem ele, o editor usa confirm) */
   confirm?: 'yes' | 'no' | 'async-yes' | 'async-no'
   /** Segundo editor na página (#host2, fora de #host), com este conteúdo; ref em window.__ref2 */
@@ -59,6 +66,25 @@ export interface HarnessOutput {
   confirms: string[]
   /** onResize: fase e tamanho de cada chamada */
   resizes: { phase: string; width: number; height: number }[]
+}
+
+// Painel de configurações de teste (options.settings)
+function settingsDemo(close?: () => void) {
+  return (
+    <div data-testid="settings-demo">
+      <label>
+        Nome <input data-testid="settings-name" />
+      </label>
+      <label>
+        <input type="checkbox" data-testid="settings-check" /> Opção
+      </label>
+      {close && (
+        <button type="button" onClick={close}>
+          Fechar
+        </button>
+      )}
+    </div>
+  )
 }
 
 declare global {
@@ -169,8 +195,7 @@ window.__mount = async (props, options = {}) => {
         ref={ref}
         speechRecognition={speechRecognition}
         injectStyles={options.css === undefined || options.css === 'inject'}
-        width={900}
-        height={420}
+        {...(options.librarySize ? {} : { width: 900, height: 420 })}
         {...props}
         onChange={(html) => {
           out.html = html
@@ -197,6 +222,13 @@ window.__mount = async (props, options = {}) => {
             : undefined
         }
         onResize={(size, phase) => out.resizes.push({ phase, ...size })}
+        settingsPanel={
+          options.settings === 'node'
+            ? settingsDemo()
+            : options.settings === 'function'
+              ? (close: () => void) => settingsDemo(close)
+              : undefined
+        }
         onFocus={() => out.focus++}
         onBlur={() => out.blur++}
         onImageUpload={

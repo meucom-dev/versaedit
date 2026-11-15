@@ -60,6 +60,7 @@ export const es: VersaEditLabels = {
   frameResizeWidth: 'Redimensionar el ancho del área de edición',
   frameResizeHeight: 'Redimensionar el alto del área de edición',
   frameResizeBoth: 'Redimensionar el área de edición',
+  settings: 'Configuración',
   sizeControls: 'Tamaño del área de edición',
   sizeWidth: 'Ancho',
   sizeHeight: 'Alto',

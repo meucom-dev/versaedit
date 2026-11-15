@@ -60,41 +60,42 @@ export function PostEditor({
 
 ## Props
 
-| Prop                                                 | Tipo                                                | Valor predeterminado        | Descripción                                                                                                                     |
-| ---------------------------------------------------- | --------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `initialContent`                                     | `string`                                            | `''`                        | HTML que se carga. Los cambios externos recargan el editor (y reinician el deshacer).                                           |
-| `onChange`                                           | `(html) => void`                                    | —                           | Se llama cuando el HTML cambia de verdad.                                                                                       |
-| `onOverflowChange`                                   | `(boolean) => void`                                 | —                           | El contenido cabe / no cabe en la altura del editor.                                                                            |
-| `onResize`                                           | `(size, phase) => void`                             | —                           | La persona redimensionó el área de edición: `'start'`, `'move'`, `'end'` ([detalles](#área-de-edición-redimensionable)).        |
-| `onFocus` / `onBlur`                                 | `() => void`                                        | —                           | El foco entró en el editor / salió de él (los botones de la barra mantienen el foco).                                           |
-| `onError`                                            | `(VersaEditError) => void`                          | `alert()`                   | Errores y avisos con un `code` estable (ver abajo).                                                                             |
-| `onConfirm`                                          | `(VersaEditConfirm) => boolean \| Promise<boolean>` | `confirm()`                 | Confirmaciones (p. ej., reemplazar el contenido al abrir un archivo).                                                           |
-| `onSave`                                             | `(html) => void`                                    | descarga                    | El botón Guardar entrega el HTML en lugar de descargar un archivo `.html`.                                                      |
-| `onImageUpload`                                      | `(file) => Promise<url>`                            | base64                      | Sube las imágenes e inserta la URL devuelta (recomendado).                                                                      |
-| `width`                                              | `number \| string`                                  | `640`                       | Ancho total; un número son px, una cadena es CSS (`'100%'`).                                                                    |
-| `height`                                             | `number`                                            | `480`                       | Altura total en px.                                                                                                             |
-| `resizable`                                          | `boolean \| ResizableOptions`                       | `false`                     | Controladores para redimensionar el área de edición ([detalles](#área-de-edición-redimensionable)).                             |
-| `sizeControls`                                       | `boolean`                                           | `false`                     | Campos de ancho y alto (px) debajo del área de edición (con `resizable`).                                                       |
-| `toolbarWidth`                                       | `number \| string`                                  | `width`                     | Ancho de la barra (los números la centran sobre el editor).                                                                     |
-| `frame`                                              | `{ width, color, radius } \| false`                 | `1px #d0d7de, 8px`          | Borde alrededor del área de edición.                                                                                            |
-| `accentColor`                                        | `string`                                            | `#2563eb`                   | Contornos de selección, cuadros de texto, controladores.                                                                        |
-| `fontFamily` / `headingFontFamily`                   | `string`                                            | fuente del sistema          | Fuentes del texto y de los títulos.                                                                                             |
-| `fontFamilies` / `fontSizes`                         | arrays                                              | predeterminados             | Menú de fuentes (`{ label, value }`) y tamaños (pt).                                                                            |
-| `colorPalette` / `highlightColors`                   | `string[]`                                          | predeterminados             | Colores de texto/papel y del resaltador (`'transparent'` = ninguno).                                                            |
-| `loadGoogleFonts`                                    | `string[]`                                          | —                           | Familias que se cargan desde Google Fonts (desactivado por defecto).                                                            |
-| `toolbar`                                            | `ToolbarGroup[]`                                    | todos                       | Grupos de la barra que se muestran (ver abajo). `[]` oculta la barra.                                                           |
-| `showFileButtons`                                    | `boolean`                                           | `true`                      | Botones Guardar/Abrir archivo.                                                                                                  |
-| `showDictation` / `speechLang` / `speechRecognition` | —                                                   | `true` / locale / navegador | Dictado (ver abajo).                                                                                                            |
-| `pasteImages`                                        | `boolean`                                           | `true`                      | Conserva las imágenes al pegar (ver Seguridad).                                                                                 |
-| `pasteSpacing`                                       | `'remove' \| 'preserve'`                            | `'remove'`                  | Pegar desde Word: conserva espaciado, sangrías, líneas en blanco y listas ([detalles](#pegar-desde-word)).                      |
-| `allowExternalMedia`                                 | `boolean`                                           | `false`                     | Permite que `<audio>`/`<video>` del contenido cargado se carguen dentro del editor.                                             |
-| `scrollable`                                         | `boolean`                                           | `true`                      | El área de edición se desplaza cuando el contenido es más alto. `false`: lo que sobra se oculta, como un bloque de altura fija. |
-| `truncateOnOverflow`                                 | `boolean`                                           | `false`                     | Recorta el contenido que supera la altura del editor.                                                                           |
-| `singleLineBreaks`                                   | `boolean`                                           | `false`                     | Pegado: reduce las líneas en blanco consecutivas.                                                                               |
-| `injectStyles`                                       | `boolean`                                           | `true`                      | Inyecta el CSS del editor; use `false` e importe el archivo CSS en su lugar.                                                    |
-| `locale` / `labels`                                  | `'en' \| 'pt-BR' \| 'es'` / parcial                 | `'en'`                      | Idioma de la interfaz y textos reemplazados.                                                                                    |
-| `contentClassName` / `contentStyle` / `placeholder`  | —                                                   | —                           | Clase, estilo y texto de ejemplo del área de edición.                                                                           |
-| `layoutMirror`                                       | `boolean`                                           | `false`                     | Aísla el área de edición del CSS de la página, para que el contenido publicado se vea igual ([Layout Mirror](#layout-mirror)).  |
+| Prop                                                 | Tipo                                                | Valor predeterminado        | Descripción                                                                                                                          |
+| ---------------------------------------------------- | --------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `initialContent`                                     | `string`                                            | `''`                        | HTML que se carga. Los cambios externos recargan el editor (y reinician el deshacer).                                                |
+| `onChange`                                           | `(html) => void`                                    | —                           | Se llama cuando el HTML cambia de verdad.                                                                                            |
+| `onOverflowChange`                                   | `(boolean) => void`                                 | —                           | El contenido cabe / no cabe en la altura del editor.                                                                                 |
+| `onResize`                                           | `(size, phase) => void`                             | —                           | La persona redimensionó el área de edición: `'start'`, `'move'`, `'end'` ([detalles](#área-de-edición-redimensionable)).             |
+| `onFocus` / `onBlur`                                 | `() => void`                                        | —                           | El foco entró en el editor / salió de él (los botones de la barra mantienen el foco).                                                |
+| `onError`                                            | `(VersaEditError) => void`                          | `alert()`                   | Errores y avisos con un `code` estable (ver abajo).                                                                                  |
+| `onConfirm`                                          | `(VersaEditConfirm) => boolean \| Promise<boolean>` | `confirm()`                 | Confirmaciones (p. ej., reemplazar el contenido al abrir un archivo).                                                                |
+| `onSave`                                             | `(html) => void`                                    | descarga                    | El botón Guardar entrega el HTML en lugar de descargar un archivo `.html`.                                                           |
+| `onImageUpload`                                      | `(file) => Promise<url>`                            | base64                      | Sube las imágenes e inserta la URL devuelta (recomendado).                                                                           |
+| `width`                                              | `number \| string`                                  | `'100%'`                    | Ancho total; un número son px, una cadena es CSS. Nunca supera el contenedor ([Tamaño](#tamaño)).                                    |
+| `height`                                             | `number`                                            | `500`                       | Altura del área de edición en px (altura inicial con `resizable`).                                                                   |
+| `resizable`                                          | `boolean \| ResizableOptions`                       | `false`                     | Controladores para redimensionar el área de edición ([detalles](#área-de-edición-redimensionable)).                                  |
+| `sizeControls`                                       | `boolean`                                           | `false`                     | Campos de ancho y alto (px) debajo del área de edición (con `resizable`).                                                            |
+| `settingsPanel`                                      | `ReactNode \| (close) => ReactNode`                 | —                           | Su propia configuración, en un panel que abre un engranaje al final de la barra ([Panel de configuración](#panel-de-configuración)). |
+| `toolbarWidth`                                       | `number \| string`                                  | `width`                     | Ancho de la barra (los números la centran sobre el editor).                                                                          |
+| `frame`                                              | `{ width, color, radius } \| false`                 | `1px #d0d7de, 8px`          | Borde alrededor del área de edición.                                                                                                 |
+| `accentColor`                                        | `string`                                            | `#2563eb`                   | Contornos de selección, cuadros de texto, controladores.                                                                             |
+| `fontFamily` / `headingFontFamily`                   | `string`                                            | fuente del sistema          | Fuentes del texto y de los títulos.                                                                                                  |
+| `fontFamilies` / `fontSizes`                         | arrays                                              | predeterminados             | Menú de fuentes (`{ label, value }`) y tamaños (pt).                                                                                 |
+| `colorPalette` / `highlightColors`                   | `string[]`                                          | predeterminados             | Colores de texto/papel y del resaltador (`'transparent'` = ninguno).                                                                 |
+| `loadGoogleFonts`                                    | `string[]`                                          | —                           | Familias que se cargan desde Google Fonts (desactivado por defecto).                                                                 |
+| `toolbar`                                            | `ToolbarGroup[]`                                    | todos                       | Grupos de la barra que se muestran (ver abajo). `[]` oculta la barra (con `settingsPanel`, queda solo el engranaje).                 |
+| `showFileButtons`                                    | `boolean`                                           | `true`                      | Botones Guardar/Abrir archivo.                                                                                                       |
+| `showDictation` / `speechLang` / `speechRecognition` | —                                                   | `true` / locale / navegador | Dictado (ver abajo).                                                                                                                 |
+| `pasteImages`                                        | `boolean`                                           | `true`                      | Conserva las imágenes al pegar (ver Seguridad).                                                                                      |
+| `pasteSpacing`                                       | `'remove' \| 'preserve'`                            | `'remove'`                  | Pegar desde Word: conserva espaciado, sangrías, líneas en blanco y listas ([detalles](#pegar-desde-word)).                           |
+| `allowExternalMedia`                                 | `boolean`                                           | `false`                     | Permite que `<audio>`/`<video>` del contenido cargado se carguen dentro del editor.                                                  |
+| `scrollable`                                         | `boolean`                                           | `true`                      | El área de edición se desplaza cuando el contenido es más alto. `false`: lo que sobra se oculta, como un bloque de altura fija.      |
+| `truncateOnOverflow`                                 | `boolean`                                           | `false`                     | Recorta el contenido que supera la altura del editor.                                                                                |
+| `singleLineBreaks`                                   | `boolean`                                           | `false`                     | Pegado: reduce las líneas en blanco consecutivas.                                                                                    |
+| `injectStyles`                                       | `boolean`                                           | `true`                      | Inyecta el CSS del editor; use `false` e importe el archivo CSS en su lugar.                                                         |
+| `locale` / `labels`                                  | `'en' \| 'pt-BR' \| 'es'` / parcial                 | `'en'`                      | Idioma de la interfaz y textos reemplazados.                                                                                         |
+| `contentClassName` / `contentStyle` / `placeholder`  | —                                                   | —                           | Clase, estilo y texto de ejemplo del área de edición.                                                                                |
+| `layoutMirror`                                       | `boolean`                                           | `false`                     | Aísla el área de edición del CSS de la página, para que el contenido publicado se vea igual ([Layout Mirror](#layout-mirror)).       |
 
 **Grupos de la barra** (`TOOLBAR_GROUPS`, siempre en este orden): `dictation`, `file`, `history`,
 `font`, `block`, `format`, `highlight`, `color`, `align`, `list`, `indent`, `link`, `insert`,
@@ -139,6 +140,70 @@ ejemplo, no como elemento flex que se ajusta al contenido ni como `inline-block`
 El formato, como colores y tamaños de fuente, se guarda en atributos `style` en línea; una CSP que
 bloquee los atributos de estilo en línea (`style-src-attr`) no lo mostrará.
 
+### Tamaño
+
+Sin `width` ni `height`, el editor ocupa todo el ancho de su contenedor y el área de edición
+empieza con 500 px de alto. Para fijarlo, use las props: un número son px, una cadena es cualquier
+medida CSS (`'100%'`, `'40rem'`). El área de edición nunca es más ancha que su contenedor
+(`max-width: 100%`); así, un ancho fijo se reduce en pantallas estrechas en lugar de crear
+desplazamiento horizontal.
+
+```tsx
+<VersaEdit />                          {/* ancho del contenedor × 500 px */}
+<VersaEdit width={800} height={500} /> {/* 800 × 500 px, más estrecho en pantallas pequeñas */}
+```
+
+### Panel de configuración
+
+`settingsPanel` agrega un botón de engranaje al final de la barra de herramientas. Abre un panel
+con el contenido que proporciona su aplicación, como las opciones que sus usuarios pueden cambiar.
+El editor no guarda ni interpreta ese contenido: los controles cambian el estado de su aplicación,
+que vuelve al editor como props. Sin la prop no hay engranaje y nada cambia.
+
+```tsx
+function Editor() {
+  const [spacing, setSpacing] = useState<'remove' | 'preserve'>('remove')
+  return (
+    <VersaEdit
+      pasteSpacing={spacing}
+      settingsPanel={(close) => (
+        <>
+          <label>
+            <input
+              type="checkbox"
+              checked={spacing === 'preserve'}
+              onChange={(e) => setSpacing(e.target.checked ? 'preserve' : 'remove')}
+            />
+            Conservar el espaciado de Word al pegar
+          </label>
+          <button type="button" onClick={close}>
+            Listo
+          </button>
+        </>
+      )}
+    />
+  )
+}
+```
+
+- Contenido: cualquier nodo de React, o una función que recibe `close()`, que cierra el panel y
+  devuelve el foco al engranaje.
+- Posición: el engranaje es el último elemento de la barra, alineado a la derecha de su última
+  fila. Nunca agrega una fila: la barra se divide exactamente igual que sin él. Con
+  `toolbar={[]}`, la barra muestra solo el engranaje. El panel se abre debajo del engranaje,
+  alineado con su borde derecho, con 260 a 360 px de ancho (nunca más que la pantalla menos
+  16 px), y se desplaza cuando supera el 70% del alto de la pantalla. En pantallas estrechas se
+  mantiene dentro del área visible.
+- Teclado y lectores de pantalla: el engranaje es un botón de la barra (flechas, Inicio, Fin) con
+  el nombre de `labels.settings` ("Configuración"), `aria-haspopup="dialog"` y `aria-expanded`. El
+  panel es un diálogo no modal con el mismo nombre. Al abrirlo, el foco pasa al primer control;
+  Tab y Shift+Tab recorren los controles, y Shift+Tab en el primero vuelve al engranaje.
+- Cierre: el engranaje, Esc, un clic fuera, Tab después del último control, el inicio de un
+  redimensionamiento del área o la apertura de otro menú de la barra. El engranaje y Esc devuelven
+  el foco al engranaje. Un Esc ya gestionado por un control del panel (`event.preventDefault()`)
+  no lo cierra.
+- En el renderizado en el servidor solo sale el engranaje cerrado.
+
 ### Layout Mirror
 
 Sin él, el contenido publicado adopta la tipografía de su sitio (fuentes, tamaños, espaciados), que
@@ -158,7 +223,7 @@ import 'versaedit/versaedit-content.css'
 - El HTML guardado no cambia: el espejo es solo CSS y es opcional en ambos lados.
 - Las líneas se cortan en los mismos puntos cuando el contenedor publicado tiene el mismo ancho útil
   que el área de edición: `width` menos el marco (1 px por lado, por defecto) menos 32 px de
-  relleno (640 → 606 px). En columnas más estrechas el texto se reacomoda, y las imágenes y los
+  relleno (por ejemplo, 800 → 766 px). En columnas más estrechas el texto se reacomoda, y las imágenes y los
   cuadros de texto se reducen para caber.
 - Un `fontFamily` / `headingFontFamily` propio se pasa con variables CSS:
   `style={{ '--ve-font': 'Georgia, serif', '--ve-heading-font': 'Inter, sans-serif' }}`.

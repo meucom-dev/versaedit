@@ -15,8 +15,10 @@ export interface FrameOptions {
   radius: number
 }
 
-export const DEFAULT_WIDTH = 640
-export const DEFAULT_HEIGHT = 480
+// Largura: a do contêiner (medida CSS), para a área nunca passar dele em telas
+// estreitas; altura inicial em px. A aplicação pode fixar as duas (props width e height)
+export const DEFAULT_WIDTH: number | string = '100%'
+export const DEFAULT_HEIGHT = 500
 export const DEFAULT_ACCENT = '#2563eb'
 export const DEFAULT_FONT =
   'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'

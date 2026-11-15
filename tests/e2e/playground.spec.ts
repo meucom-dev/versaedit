@@ -1,5 +1,6 @@
-// Playground (playground/index.html): o painel "Propriedades", dentro da área
-// de desenvolvimento recolhida, muda o editor ao vivo
+// Playground (playground/index.html): as configurações gerais ficam na engrenagem
+// da barra (prop settingsPanel) e mudam o editor ao vivo; as ferramentas do
+// playground (exemplos, diagnóstico, eventos e JSX equivalente) ficam em Ver HTML
 import { expect, test, type Page } from '@playwright/test'
 import { PANEL_TEXT } from '../../playground/PropsPanel'
 import { en } from '../../src/core/i18n/en'
@@ -15,19 +16,30 @@ async function openPanel(page: Page) {
   await expect(page.locator('#root details').first()).not.toHaveAttribute('open')
   expect(await page.getByTestId('props-panel').evaluate((el) => el.checkVisibility())).toBe(false)
   await page.getByText('Show HTML', { exact: true }).click()
-  await page.getByText('Properties', { exact: true }).click()
+  await page.getByText(PANEL_TEXT.en.title, { exact: true }).click()
   await expect(page.getByTestId('events')).toBeVisible()
+}
+
+/** Painel da engrenagem do editor principal, aberto (abre se estiver fechado) */
+async function settings(page: Page, name = 'Settings') {
+  const panel = page.getByTestId('settings-panel')
+  if (!(await panel.isVisible())) {
+    await page.getByRole('toolbar').first().getByRole('button', { name }).click()
+  }
+  await expect(panel).toBeVisible()
+  return panel
 }
 
 test('grupos da barra, largura e JSX equivalente', async ({ page }) => {
   await openPanel(page)
   const toolbar = page.getByRole('toolbar').first()
   await expect(toolbar.getByRole('button', { name: 'Insert image' })).toBeVisible()
-  await page.getByLabel('insert', { exact: true }).uncheck()
+  const s = await settings(page)
+  await s.getByLabel('insert', { exact: true }).uncheck()
   await expect(toolbar.getByRole('button', { name: 'Insert image' })).toHaveCount(0)
   await expect(page.getByTestId('jsx')).toContainText('toolbar={["file"')
 
-  await page
+  await s
     .locator('label', { hasText: /^Width/ })
     .locator('select')
     .selectOption('100%')
@@ -38,15 +50,21 @@ test('grupos da barra, largura e JSX equivalente', async ({ page }) => {
   ])
   expect(root!.width).toBeGreaterThan(column!.width - 40)
 
-  await page.getByRole('button', { name: 'Reset' }).click()
+  await (await settings(page)).getByRole('button', { name: 'Reset' }).click()
   await expect(toolbar.getByRole('button', { name: 'Insert image' })).toBeVisible()
   await expect(page.getByTestId('jsx')).not.toContainText('toolbar=')
+  // Restaurar padrões: volta a 800 × 500 px (JSX e tamanho medido da área)
+  await expect(page.getByTestId('jsx')).toContainText('width={800}')
+  await expect(page.getByTestId('jsx')).toContainText('height={500}')
+  const size = await page.locator('.ve-frame').first().boundingBox()
+  expect(Math.round(size!.width)).toBe(800)
+  expect(Math.round(size!.height)).toBe(500)
 })
 
 test('layoutMirror: prévia publicada com ve-mirror, igual ao editor', async ({ page }) => {
   await openPanel(page)
   await expect(page.getByTestId('published-mirror')).toHaveCount(0)
-  await page.getByLabel('layoutMirror', { exact: true }).check()
+  await (await settings(page)).getByLabel('layoutMirror', { exact: true }).check()
   await expect(page.getByTestId('jsx')).toContainText('layoutMirror={true}')
   await expect(page.locator('.ve-content')).toHaveClass(/\bve-mirror\b/)
   await page.getByRole('button', { name: 'Load: Formatted text' }).click()
@@ -62,7 +80,7 @@ test('layoutMirror: prévia publicada com ve-mirror, igual ao editor', async ({ 
       return [h2.fontFamily, h2.fontSize, h2.marginTop, ul.getBoundingClientRect().height]
     }, root)
   expect(await look('[data-testid="published-mirror"]')).toEqual(await look('.ve-content'))
-  await page.getByLabel('layoutMirror', { exact: true }).uncheck()
+  await (await settings(page)).getByLabel('layoutMirror', { exact: true }).uncheck()
   await expect(page.getByTestId('published-mirror')).toHaveCount(0)
 })
 
@@ -127,10 +145,19 @@ test.describe('celular (375px)', () => {
     await noHorizontalScroll(page)
   })
 
-  test('painel Propriedades e segundo editor cabem na tela', async ({ page }) => {
+  test('engrenagem, ferramentas e segundo editor cabem na tela', async ({ page }) => {
     await page.goto('/')
+    // Painel da engrenagem inteiro na largura da tela
+    const s = await settings(page)
+    const box = (await s.locator('xpath=..').boundingBox())!
+    expect(box.x).toBeGreaterThanOrEqual(0)
+    expect(box.x + box.width).toBeLessThanOrEqual(375)
+    await noHorizontalScroll(page)
+    // Fechado com Esc (aberto, ele cobre o que está embaixo na tela estreita)
+    await page.keyboard.press('Escape')
+    await expect(s).toHaveCount(0)
     await page.getByText('Show HTML', { exact: true }).click()
-    await page.getByText('Properties', { exact: true }).click()
+    await page.getByText(PANEL_TEXT.en.title, { exact: true }).click()
     await expect(page.getByTestId('events')).toBeVisible()
     await noHorizontalScroll(page)
     // Eventos e JSX um embaixo do outro
@@ -188,7 +215,8 @@ test('seletor de idioma: editor, painel e textos do playground em en, pt-BR e es
       ),
     )
     await expect(page.getByText(PANEL_TEXT[locale].title, { exact: true })).toBeVisible()
-    await expect(page.getByLabel(PANEL_TEXT[locale].frameRadius)).toBeVisible()
+    const s = await settings(page, L[locale].settings)
+    await expect(s.getByLabel(PANEL_TEXT[locale].frameRadius)).toBeVisible()
     await expect(page.getByTestId('jsx')).toContainText(
       locale === 'en' ? '<VersaEdit\n  ref={editorRef}\n  width' : `locale="${locale}"`,
     )
@@ -289,29 +317,30 @@ test('trocar o idioma não muda o conteúdo em edição; o exemplo muda só ao c
 
 test('campo Altura: o editor só muda quando o valor é confirmado', async ({ page }) => {
   await openPanel(page)
-  const field = page.getByRole('spinbutton', { name: 'Height', exact: true })
+  const field = (await settings(page)).getByRole('spinbutton', { name: 'Height', exact: true })
   const jsx = page.getByTestId('jsx')
   const select = () => page.keyboard.press('ControlOrMeta+a')
-  await expect(jsx).toContainText('height={420}')
-  // Digitar: nada é aplicado antes de confirmar (nem o "5" de "500")
+  await expect(jsx).toContainText('height={500}')
+  // Digitar: nada é aplicado antes de confirmar (nem o "6" de "600")
   await field.click()
   await select()
-  await page.keyboard.type('500')
-  expect(await field.inputValue()).toBe('500')
-  await expect(jsx).toContainText('height={420}')
+  await page.keyboard.type('600')
+  expect(await field.inputValue()).toBe('600')
+  await expect(jsx).toContainText('height={500}')
   // Enter confirma
   await page.keyboard.press('Enter')
-  await expect(jsx).toContainText('height={500}')
+  await expect(jsx).toContainText('height={600}')
   // Esc cancela o que foi digitado
   await select()
   await page.keyboard.type('7')
   await page.keyboard.press('Escape')
-  expect(await field.inputValue()).toBe('500')
-  await expect(jsx).toContainText('height={500}')
+  expect(await field.inputValue()).toBe('600')
+  await expect(jsx).toContainText('height={600}')
   // Abaixo do mínimo: confirma no mínimo (aqui, saindo do campo)
   await select()
   await page.keyboard.type('5')
-  await page.locator('h1').click()
+  // Sair do campo (Tab): confirma; o painel continua aberto
+  await page.keyboard.press('Tab')
   await expect(jsx).toContainText('height={150}')
   expect(await field.inputValue()).toBe('150')
   // Acima do máximo: confirma no máximo
@@ -337,10 +366,8 @@ test('campo Altura: o editor só muda quando o valor é confirmado', async ({ pa
 test('painel: redimensionamento com campos, alças, limites e onResize no registro', async ({
   page,
 }) => {
-  await page.goto('/')
-  await page.getByText('Show HTML').click()
-  await page.getByTestId('props-panel').locator('summary').click()
-  const panel = page.getByTestId('resize-settings')
+  await openPanel(page)
+  const panel = (await settings(page)).getByTestId('resize-settings')
   await panel.getByLabel('resizable').check()
   await panel.getByLabel('sizeControls').check()
   await panel.getByLabel('nw', { exact: true }).check()
@@ -362,11 +389,10 @@ test('painel: redimensionamento com campos, alças, limites e onResize no regist
 })
 
 test('painel: Layout Mirror acompanha a largura escolhida pelos campos', async ({ page }) => {
-  await page.goto('/')
-  await page.getByText('Show HTML').click()
-  await page.getByTestId('props-panel').locator('summary').click()
-  await page.getByTestId('props-panel').getByLabel('layoutMirror').check()
-  const panel = page.getByTestId('resize-settings')
+  await openPanel(page)
+  const s = await settings(page)
+  await s.getByLabel('layoutMirror').check()
+  const panel = s.getByTestId('resize-settings')
   await panel.getByLabel('resizable').check()
   await panel.getByLabel('sizeControls').check()
   const width = page.locator('.ve-root').first().locator('.ve-size-controls').getByLabel('Width')
@@ -378,4 +404,48 @@ test('painel: Layout Mirror acompanha a largura escolhida pelos campos', async (
       page.getByTestId('published-mirror').evaluate((el) => el.getBoundingClientRect().width),
     )
     .toBe(666)
+})
+
+// Engrenagem do playground: as configurações gerais ficam só nela (sem duplicação
+// em Ver HTML) e o JSX equivalente acompanha na hora
+test('configurações gerais na engrenagem, sem duplicação; JSX acompanha', async ({ page }) => {
+  await openPanel(page)
+  const tools = page.getByTestId('props-panel')
+  for (const label of ['insert', 'layoutMirror', 'resizable', 'pasteSpacing']) {
+    await expect(tools.getByLabel(label, { exact: true })).toHaveCount(0)
+  }
+  await expect(tools.getByRole('button', { name: 'Reset' })).toHaveCount(0)
+  // Ferramentas que ficam em Ver HTML
+  await expect(tools.getByRole('button', { name: 'Load: Table' })).toBeVisible()
+  await expect(tools.getByLabel('onError (log instead of alert)')).toBeVisible()
+  // pasteSpacing na engrenagem; o JSX muda sem fechar o painel
+  const s = await settings(page)
+  await s.getByLabel('pasteSpacing').selectOption('preserve')
+  await expect(page.getByTestId('jsx')).toContainText('pasteSpacing="preserve"')
+  await expect(s).toBeVisible()
+  // Todos os grupos desligados: a barra continua com a engrenagem, para religar
+  for (const g of [
+    'file',
+    'history',
+    'font',
+    'block',
+    'format',
+    'highlight',
+    'color',
+    'align',
+    'list',
+    'indent',
+    'link',
+    'insert',
+    'textbox',
+    'clear',
+  ]) {
+    await s.getByLabel(g, { exact: true }).uncheck()
+  }
+  const toolbar = page.getByRole('toolbar').first()
+  // Na barra, só a engrenagem (o painel aberto fica dentro dela)
+  await expect(toolbar.locator(':scope > *')).toHaveCount(1)
+  await expect(toolbar.locator(':scope > .ve-settings-wrap')).toHaveCount(1)
+  await s.getByLabel('format', { exact: true }).check()
+  await expect(toolbar.getByRole('button', { name: /^Bold/ })).toBeVisible()
 })

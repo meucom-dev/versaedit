@@ -159,11 +159,17 @@ const PROPS = {
     [
       'width',
       'number | string',
-      '640',
-      'Total width: a number is px, a string is any CSS length.',
+      "'100%'",
+      'Total width: a number is px, a string is any CSS length. Never wider than the container.',
       'width="100%"',
     ],
-    ['height', 'number', '480', 'Total height in px (toolbar and frame included).', 'height={360}'],
+    [
+      'height',
+      'number',
+      '500',
+      'Height of the editing area in px (frame included, toolbar not).',
+      'height={360}',
+    ],
     [
       'locale',
       "'en' | 'pt-BR' | 'es'",
@@ -260,11 +266,17 @@ const PROPS = {
     [
       'width',
       'number | string',
-      '640',
-      'Largura total: número em px; texto em qualquer medida CSS.',
+      "'100%'",
+      'Largura total: número em px; texto em qualquer medida CSS. Nunca passa do contêiner.',
       'width="100%"',
     ],
-    ['height', 'number', '480', 'Altura total em px (barra e moldura incluídas).', 'height={360}'],
+    [
+      'height',
+      'number',
+      '500',
+      'Altura da área de edição em px (com a moldura, sem a barra).',
+      'height={360}',
+    ],
     [
       'locale',
       "'en' | 'pt-BR' | 'es'",
@@ -361,11 +373,17 @@ const PROPS = {
     [
       'width',
       'number | string',
-      '640',
-      'Ancho total: un número son px; un texto, cualquier medida CSS.',
+      "'100%'",
+      'Ancho total: un número son px; un texto, cualquier medida CSS. Nunca supera el contenedor.',
       'width="100%"',
     ],
-    ['height', 'number', '480', 'Alto total en px (barra y marco incluidos).', 'height={360}'],
+    [
+      'height',
+      'number',
+      '500',
+      'Alto del área de edición en px (con el marco, sin la barra).',
+      'height={360}',
+    ],
     [
       'locale',
       "'en' | 'pt-BR' | 'es'",

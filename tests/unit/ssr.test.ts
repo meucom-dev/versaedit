@@ -54,6 +54,26 @@ describe('renderização no servidor', () => {
     expect(warns).not.toHaveBeenCalled()
   })
 
+  it('VersaEdit com settingsPanel: a engrenagem no HTML do servidor, painel fechado', () => {
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const warns = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const html = renderToString(
+      createElement(VersaEdit, {
+        initialContent: '<p>olá</p>',
+        locale: 'pt-BR',
+        toolbar: [],
+        settingsPanel: (close: () => void) =>
+          createElement('button', { type: 'button', onClick: close }, 'Fechar'),
+      }),
+    )
+    expect(html).toContain('aria-label="Configurações"')
+    expect(html).toContain('aria-haspopup="dialog"')
+    expect(html).toContain('aria-expanded="false"')
+    expect(html).not.toContain('role="dialog"')
+    expect(errors).not.toHaveBeenCalled()
+    expect(warns).not.toHaveBeenCalled()
+  })
+
   it('VersaEditDictation não renderiza nada sem reconhecimento de voz', () => {
     const html = renderToString(createElement(VersaEditDictation, { editor: { current: null } }))
     expect(html).toBe('')

@@ -57,9 +57,26 @@ by the internal stabilization batches.
   Checked with HTML copied from the Word clipboard and compared with the positions measured by
   Word at the same width, font and size (list text starts match exactly). Remaining differences
   are listed in the README (Known limitations).
+- Settings panel (optional, `settingsPanel` prop): a gear button at the end of the toolbar opens a
+  panel with content supplied by the application (a React node, or a function that receives
+  `close()`). The editor does not store or interpret that content. The gear is aligned to the right
+  of the toolbar's last row and never adds a row; with `toolbar={[]}` only the gear is shown. The
+  panel opens below the gear, 260–360 px wide (limited to the screen), scrolls when taller than 70%
+  of the screen and stays inside the viewport. It is a non-modal dialog named by the new
+  `labels.settings` text (en "Settings", pt-BR "Configurações", es "Configuración"), opened by a
+  toolbar button with `aria-haspopup="dialog"` and `aria-expanded`: focus moves to its first
+  control, Shift+Tab from there returns to the gear, and Esc, a click outside, Tab past the last
+  control, starting a resize or opening another toolbar menu closes it (Esc already handled by a
+  control inside does not). Server rendering outputs only the closed gear. New exported type
+  `SettingsPanel`. The playground moved its general settings into the gear; Show HTML keeps the
+  samples, diagnostics, event log and equivalent JSX.
 
 ### Changed
 
+- Default size: without `width`, the editor now takes the full width of its container (`'100%'`,
+  was 640 px); without `height`, the editing area starts 500 px tall (was 480 px). Explicit `width`
+  and `height` props work as before. The playground starts at 800 × 500 px, and Reset returns to
+  it.
 - Loading content (`initialContent`, `setHTML`, opening a file) keeps valid paragraph spacing
   instead of removing it: `margin-top`, `margin-bottom`, `margin-left`, `text-indent` and
   `line-height` (number or length) on paragraphs, headings, list items, `div` and `blockquote`,
@@ -80,6 +97,9 @@ by the internal stabilization batches.
 
 ### Fixed
 
+- A fixed `width` wider than the container no longer makes the toolbar overflow it: the toolbar,
+  like the editing area, is limited to the container width (`max-width: 100%`), so narrow screens
+  have no horizontal scrolling.
 - Moving an image or text box down: the drop point was searched after the object was taken out of
   the flow, so the text below moved up first and the object landed further down than where it was
   dropped (often mid-line of the next paragraph). The object's place is now kept by an empty

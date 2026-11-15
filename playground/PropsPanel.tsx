@@ -27,6 +27,8 @@ export interface Settings {
   singleLineBreaks: boolean
   layoutMirror: boolean
   useOnError: boolean
+  /** Colagem do Word: espaçamento e listas (prop pasteSpacing) */
+  pasteSpacing: 'remove' | 'preserve'
   /** Redimensionamento da área (prop resizable e campos de tamanho) */
   resizable: boolean
   sizeControls: boolean
@@ -46,8 +48,8 @@ const GROUPS = TOOLBAR_GROUPS.filter((g) => g !== 'dictation')
 
 export const DEFAULT_SETTINGS: Settings = {
   toolbar: [...GROUPS],
-  width: 900,
-  height: 420,
+  width: 800,
+  height: 500,
   accentColor: '#2563eb',
   frameWidth: 1,
   frameColor: '#d0d7de',
@@ -59,6 +61,7 @@ export const DEFAULT_SETTINGS: Settings = {
   singleLineBreaks: false,
   layoutMirror: false,
   useOnError: false,
+  pasteSpacing: 'remove',
   resizable: false,
   sizeControls: false,
   handles: [...DEFAULT_FRAME_HANDLES],
@@ -125,6 +128,7 @@ export function settingsToProps(s: Settings): Partial<VersaEditProps> {
   )
     props.frame = { width: s.frameWidth, color: s.frameColor, radius: s.frameRadius }
   for (const key of BOOLEANS) if (s[key] !== d[key]) props[key] = s[key]
+  if (s.pasteSpacing !== d.pasteSpacing) props.pasteSpacing = s.pasteSpacing
   if (s.resizable) {
     const options: ResizableOptions = {}
     const defaultHandles =
@@ -269,7 +273,8 @@ export function samplesFor(locale: VersaEditLocale): { id: string; html: string 
 
 export const PANEL_TEXT = {
   en: {
-    title: 'Properties',
+    title: 'Playground tools',
+    diagnostics: 'Diagnostics',
     toolbar: 'Toolbar groups',
     size: 'Size',
     width: 'Width',
@@ -300,7 +305,8 @@ export const PANEL_TEXT = {
     },
   },
   'pt-BR': {
-    title: 'Propriedades',
+    title: 'Ferramentas do playground',
+    diagnostics: 'Diagnóstico',
     toolbar: 'Grupos da barra',
     size: 'Tamanho',
     width: 'Largura',
@@ -331,7 +337,8 @@ export const PANEL_TEXT = {
     },
   },
   es: {
-    title: 'Propiedades',
+    title: 'Herramientas del playground',
+    diagnostics: 'Diagnóstico',
     toolbar: 'Grupos de la barra',
     size: 'Tamaño',
     width: 'Ancho',
@@ -422,15 +429,18 @@ function NumberField({
 const fieldset = { border: '1px solid #ddd', borderRadius: 6, margin: '8px 0', padding: 8 } as const
 const row = { display: 'flex', flexWrap: 'wrap', gap: '4px 16px', alignItems: 'center' } as const
 
-interface PanelProps {
+// Conteúdo da engrenagem do editor (prop settingsPanel): as configurações gerais
+// do VersaEdit. Cada controle existe só aqui; o JSX equivalente (em Ver HTML)
+// acompanha na hora, porque lê as mesmas configurações.
+export function SettingsControls({
+  locale,
+  settings: s,
+  onSettings,
+}: {
   locale: VersaEditLocale
   settings: Settings
   onSettings: (s: Settings) => void
-  onLoadSample: (html: string) => void
-  events: string[]
-}
-
-export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, events }: PanelProps) {
+}) {
   const T = PANEL_TEXT[locale]
   const set = <K extends keyof Settings>(key: K, value: Settings[K]) =>
     onSettings({ ...s, [key]: value })
@@ -441,9 +451,7 @@ export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, even
     )
 
   return (
-    <details style={{ margin: '12px 0' }} data-testid="props-panel">
-      <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{T.title}</summary>
-
+    <div data-testid="settings-panel">
       <fieldset style={fieldset}>
         <legend>{T.toolbar}</legend>
         <div style={row}>
@@ -471,6 +479,7 @@ export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, even
                 set('width', e.target.value.endsWith('%') ? e.target.value : Number(e.target.value))
               }
             >
+              <option value="800">800</option>
               <option value="900">900</option>
               <option value="640">640</option>
               <option value="100%">100%</option>
@@ -545,12 +554,14 @@ export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, even
             </label>
           ))}
           <label>
-            <input
-              type="checkbox"
-              checked={s.useOnError}
-              onChange={(e) => set('useOnError', e.target.checked)}
-            />{' '}
-            {T.useOnError}
+            pasteSpacing{' '}
+            <select
+              value={s.pasteSpacing}
+              onChange={(e) => set('pasteSpacing', e.target.value as Settings['pasteSpacing'])}
+            >
+              <option value="remove">remove</option>
+              <option value="preserve">preserve</option>
+            </select>
           </label>
         </div>
       </fieldset>
@@ -616,6 +627,30 @@ export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, even
         </div>
       </fieldset>
 
+      <button type="button" onClick={() => onSettings(DEFAULT_SETTINGS)}>
+        {T.reset}
+      </button>
+    </div>
+  )
+}
+
+interface PanelProps {
+  locale: VersaEditLocale
+  settings: Settings
+  onSettings: (s: Settings) => void
+  onLoadSample: (html: string) => void
+  events: string[]
+}
+
+// Ferramentas do playground (em Ver HTML): conteúdo de exemplo, diagnóstico de
+// erros, registro de eventos e JSX equivalente às configurações da engrenagem
+export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, events }: PanelProps) {
+  const T = PANEL_TEXT[locale]
+
+  return (
+    <details style={{ margin: '12px 0' }} data-testid="props-panel">
+      <summary style={{ cursor: 'pointer', fontWeight: 600 }}>{T.title}</summary>
+
       <fieldset style={fieldset}>
         <legend>{T.content}</legend>
         <div style={row}>
@@ -625,6 +660,18 @@ export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, even
             </button>
           ))}
         </div>
+      </fieldset>
+
+      <fieldset style={fieldset}>
+        <legend>{T.diagnostics}</legend>
+        <label>
+          <input
+            type="checkbox"
+            checked={s.useOnError}
+            onChange={(e) => onSettings({ ...s, useOnError: e.target.checked })}
+          />{' '}
+          {T.useOnError}
+        </label>
       </fieldset>
 
       <div
@@ -663,9 +710,6 @@ export function PropsPanel({ locale, settings: s, onSettings, onLoadSample, even
           </pre>
         </div>
       </div>
-      <button type="button" onClick={() => onSettings(DEFAULT_SETTINGS)}>
-        {T.reset}
-      </button>
     </details>
   )
 }

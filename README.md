@@ -69,10 +69,11 @@ export function PostEditor({
 | `onConfirm`                                          | `(VersaEditConfirm) => boolean \| Promise<boolean>` | `confirm()`               | Confirmations (e.g. replace content when opening a file).                                                             |
 | `onSave`                                             | `(html) => void`                                    | download                  | Save button gives you the HTML instead of downloading a `.html` file.                                                 |
 | `onImageUpload`                                      | `(file) => Promise<url>`                            | base64                    | Upload images and insert the returned URL (recommended).                                                              |
-| `width`                                              | `number \| string`                                  | `640`                     | Total width; a number is px, a string is CSS (`'100%'`).                                                              |
-| `height`                                             | `number`                                            | `480`                     | Total height in px.                                                                                                   |
+| `width`                                              | `number \| string`                                  | `'100%'`                  | Total width; a number is px, a string is CSS. Never wider than the container ([Size](#size)).                         |
+| `height`                                             | `number`                                            | `500`                     | Height of the editing area in px (initial height with `resizable`).                                                   |
 | `resizable`                                          | `boolean \| ResizableOptions`                       | `false`                   | Let people resize the editing area by dragging its edges ([Resizable editing area](#resizable-editing-area)).         |
 | `sizeControls`                                       | `boolean`                                           | `false`                   | Width and height fields (px) below the editing area (with `resizable`).                                               |
+| `settingsPanel`                                      | `ReactNode \| (close) => ReactNode`                 | —                         | Your own settings, in a panel opened by a gear at the end of the toolbar ([Settings panel](#settings-panel)).         |
 | `toolbarWidth`                                       | `number \| string`                                  | `width`                   | Toolbar width (numbers center it over the editor).                                                                    |
 | `frame`                                              | `{ width, color, radius } \| false`                 | `1px #d0d7de, 8px`        | Border around the editing area.                                                                                       |
 | `accentColor`                                        | `string`                                            | `#2563eb`                 | Selection outlines, text boxes, handles.                                                                              |
@@ -80,7 +81,7 @@ export function PostEditor({
 | `fontFamilies` / `fontSizes`                         | arrays                                              | defaults                  | Font menu (`{ label, value }`) and sizes (pt).                                                                        |
 | `colorPalette` / `highlightColors`                   | `string[]`                                          | defaults                  | Text/paper colors and highlighter colors (`'transparent'` = none).                                                    |
 | `loadGoogleFonts`                                    | `string[]`                                          | —                         | Families to load from Google Fonts (off by default).                                                                  |
-| `toolbar`                                            | `ToolbarGroup[]`                                    | all                       | Toolbar groups to show (see below). `[]` hides the toolbar.                                                           |
+| `toolbar`                                            | `ToolbarGroup[]`                                    | all                       | Toolbar groups to show (see below). `[]` hides the toolbar (with `settingsPanel`, only the gear stays).               |
 | `showFileButtons`                                    | `boolean`                                           | `true`                    | Save/Open file buttons.                                                                                               |
 | `showDictation` / `speechLang` / `speechRecognition` | —                                                   | `true` / locale / browser | Dictation (see below).                                                                                                |
 | `pasteImages`                                        | `boolean`                                           | `true`                    | Keep images when pasting (see Security).                                                                              |
@@ -136,6 +137,67 @@ item or `inline-block`).
 Formatting such as colors and font sizes is stored in inline `style` attributes; a CSP that blocks
 inline style attributes (`style-src-attr`) will not render it.
 
+### Size
+
+Without `width` and `height`, the editor takes the full width of its container and the editing
+area starts 500 px tall. Set either prop to fix it: a number is px, a string is any CSS width
+(`'100%'`, `'40rem'`). The editing area never gets wider than its container (`max-width: 100%`),
+so a fixed width shrinks on narrow screens instead of causing horizontal scrolling.
+
+```tsx
+<VersaEdit />                          {/* container width × 500 px */}
+<VersaEdit width={800} height={500} /> {/* 800 × 500 px, narrower on small screens */}
+```
+
+### Settings panel
+
+`settingsPanel` adds a gear button at the end of the toolbar. It opens a panel with content
+supplied by your application, such as the options your users may change. The editor does not
+store or interpret that content: its controls change your own state, which you pass back as
+props. Without the prop there is no gear and nothing changes.
+
+```tsx
+function Editor() {
+  const [spacing, setSpacing] = useState<'remove' | 'preserve'>('remove')
+  return (
+    <VersaEdit
+      pasteSpacing={spacing}
+      settingsPanel={(close) => (
+        <>
+          <label>
+            <input
+              type="checkbox"
+              checked={spacing === 'preserve'}
+              onChange={(e) => setSpacing(e.target.checked ? 'preserve' : 'remove')}
+            />
+            Keep Word spacing when pasting
+          </label>
+          <button type="button" onClick={close}>
+            Done
+          </button>
+        </>
+      )}
+    />
+  )
+}
+```
+
+- Content: any React node, or a function that receives `close()`, which closes the panel and
+  returns focus to the gear.
+- Position: the gear is the last item of the toolbar, aligned to the right of its last row. It
+  never adds a row: the toolbar wraps exactly as it would without it. With `toolbar={[]}`, the
+  toolbar shows only the gear. The panel opens below the gear, aligned to its right edge, 260 to
+  360 px wide (never wider than the screen minus 16 px), and scrolls when taller than 70% of the
+  screen. On narrow screens it is kept inside the viewport.
+- Keyboard and screen readers: the gear is a toolbar button (arrow keys, Home, End) named by
+  `labels.settings` ("Settings"), with `aria-haspopup="dialog"` and `aria-expanded`. The panel is
+  a non-modal dialog with the same name. Opening it moves focus to its first control; Tab and
+  Shift+Tab move through its controls, and Shift+Tab on the first one returns to the gear.
+- Closing: the gear, Esc, a click outside, Tab past the last control, starting to resize the
+  editing area, or opening another toolbar menu. The gear and Esc return focus to the gear. Esc
+  already handled by a control inside the panel (`event.preventDefault()`) does not close it.
+- Server rendering outputs only the closed gear.
+
 ### Layout Mirror
 
 Without it, published content takes your site's typography (fonts, sizes, spacing), which is
@@ -155,7 +217,7 @@ import 'versaedit/versaedit-content.css'
 - The saved HTML does not change: the mirror is CSS only, and it is optional on both sides.
 - Lines break at the same points when the published container has the same usable width as the
   editing area: `width` minus the frame (1 px on each side by default) minus 32 px of padding
-  (640 → 606 px). In narrower columns the text reflows, and images and text boxes shrink to fit.
+  (e.g. 800 → 766 px). In narrower columns the text reflows, and images and text boxes shrink to fit.
 - A custom `fontFamily` / `headingFontFamily` is passed with CSS variables:
   `style={{ '--ve-font': 'Georgia, serif', '--ve-heading-font': 'Inter, sans-serif' }}`.
 - Your site's element rules (`p {}`, `h2 {}`, `ul {}`…) do not reach mirrored content. Rules

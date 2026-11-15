@@ -6,6 +6,8 @@ Recipes for using VersaEdit in a real application. Each recipe says how it was v
 
 - [Sanitization: browser and server](#sanitization-browser-and-server)
 - [Saving content](#saving-content)
+- [Keeping the editing area size](#keeping-the-editing-area-size)
+- [Settings panel: your options in the toolbar](#settings-panel-your-options-in-the-toolbar)
 - [Supabase](#supabase)
 - [Image upload](#image-upload)
 - [Next.js](#nextjs)
@@ -125,6 +127,58 @@ Passing the saved size as `width` and `height` also makes it the content limit o
 `onResize`). `onResize` is called once with `'end'` for each change made by the arrow keys or the
 size fields, and `'start'`/`'move'`/`'end'` while dragging. _Verified:_
 `tests/e2e/editor-resize.spec.ts` and `tests/e2e/editor-resize-api.spec.ts`.
+
+## Settings panel: your options in the toolbar
+
+`settingsPanel` puts a gear at the end of the toolbar that opens your own content (see
+[Settings panel](../README.md#settings-panel)). A common use is letting each person choose editor
+preferences that your application stores:
+
+```tsx
+type Prefs = { pasteSpacing: 'remove' | 'preserve'; height: number }
+
+function PostEditor({ prefs, savePrefs }: { prefs: Prefs; savePrefs: (p: Prefs) => void }) {
+  return (
+    <VersaEdit
+      // Without width, the editor fills its container; the height comes from the preferences
+      height={prefs.height}
+      pasteSpacing={prefs.pasteSpacing}
+      settingsPanel={(close) => (
+        <>
+          <label>
+            <input
+              type="checkbox"
+              checked={prefs.pasteSpacing === 'preserve'}
+              onChange={(e) =>
+                savePrefs({ ...prefs, pasteSpacing: e.target.checked ? 'preserve' : 'remove' })
+              }
+            />
+            Keep Word spacing when pasting
+          </label>
+          <label>
+            Height{' '}
+            <select
+              value={prefs.height}
+              onChange={(e) => savePrefs({ ...prefs, height: Number(e.target.value) })}
+            >
+              <option value={500}>500 px</option>
+              <option value={700}>700 px</option>
+            </select>
+          </label>
+          <button type="button" onClick={close}>
+            Done
+          </button>
+        </>
+      )}
+    />
+  )
+}
+```
+
+The panel content is ordinary React: the editor does not save it, does not read it and does not put
+it in the HTML. Use your own labels and controls with accessible names; the panel is announced as a
+dialog named after `labels.settings`. _Verified:_ `tests/e2e/settings-panel.spec.ts` (position,
+closing, keyboard, ARIA, default size) and `tests/unit/ssr.test.ts` (server rendering).
 
 ## Supabase
 
