@@ -56,7 +56,8 @@ for (const width of [375, 414]) {
       await menu.getByRole('button', { name: '50%' }).tap()
       await expect(img).toHaveAttribute('style', /width: 50%/)
       // Teclado: foco no botão de flutuar à direita e Enter
-      const right = menu.locator('button').nth(5)
+      // (pelo nome: a ordem Esquerda · Centro · Direita é a mesma da caixa de texto)
+      const right = menu.getByRole('button', { name: /Right/ })
       await right.focus()
       await expect(right).toBeFocused()
       await page.keyboard.press('Enter')

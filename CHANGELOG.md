@@ -26,8 +26,42 @@ by the internal stabilization batches.
   (editor and published CSS rules are the same as before, only new `.ve-mirror` rules were added).
   The playground shows the published preview when `layoutMirror` is on (Properties panel).
 
+### Changed
+
+- Text boxes and images now behave the same way in the editing area. The floating menu has the
+  same order for both (Left · Center · Right), and for a text box these buttons now move the box
+  like an image: Left/Right float it with the text flowing around it (`tb-float-left` /
+  `tb-float-right`), Center centers it on its own line (new `tb-center` class, also in
+  `versaedit-content.css`). Before, they only changed the alignment of the text inside the box.
+  The core API is unchanged: `core.alignSelectedTextbox` still sets `text-align` inside the box;
+  the new `core.positionSelectedTextbox` moves the box. A floated text box no longer forces itself below an earlier floated image (`clear: none`,
+  like images).
+- The resize handle of an object floated to the right is on its bottom-left corner (the side that
+  moves); dragging an image's handle keeps its proportions (Shift: free); a text box keeps its
+  content visible — the dragged height is a minimum (`min-height`) and the box grows with its text.
+
 ### Fixed
 
+- Moving an image or text box down: the drop point was searched after the object was taken out of
+  the flow, so the text below moved up first and the object landed further down than where it was
+  dropped (often mid-line of the next paragraph). The object's place is now kept by an empty
+  placeholder of the same size while the drop point is found. The paragraph that only held the
+  moved image is removed instead of staying behind empty and zero-height.
+- Text box sizes: 25–100% now count the whole box, border and padding included, like images (a
+  50% box was 22px wider than a 50% image); dragging the handle 1px no longer makes the box jump
+  22px wider and taller; dragging it narrower no longer hides the text behind a scrollbar.
+- 100% (and the handle) could push an image or text box past the editing area, where it was cut;
+  with its side margins it now stops at the edge. Centered objects grow on both sides, so their
+  handle now follows the pointer.
+- Two floated objects side by side (image or text box, either side) could leave the text a column
+  a few pixels wide, breaking words syllable by syllable. When the column left between them would
+  be narrower than 7.5em of the text beside them (120px at 16px), the later object moves below the
+  earlier one. The decision depends on the container width, so the saved HTML keeps the width
+  below which the object moves down (`data-ve-stack`, recalculated after every move, resize,
+  alignment or deletion), and the editor and `versaedit-content.css` apply `clear: both` with a
+  container query at the width each one actually has (editor, site, phone). A container with such
+  objects gets `container-type: inline-size`; its width must come from the layout (a block), not
+  from its content.
 - Text box inserted into an empty editor (or after the last paragraph) was the only block around:
   clicking the first line put the caret inside the box, there was nowhere to type before or after
   it, and the box alone had nowhere to be dragged vertically. A new box at either end of the

@@ -379,10 +379,13 @@ test.describe('toque', () => {
     await touch('touchEnd')
     await expect(img).toHaveClass(/pos-right/)
 
+    // Flutuando à direita, a alça fica no canto inferior esquerdo (o lado que se
+    // move): puxar para a esquerda aumenta a imagem
     const handle = (await page.locator('#host .ve-resize-handle').boundingBox())!
+    await expect(page.locator('#host .ve-resize-handle')).toHaveAttribute('data-corner', 'left')
     const w0 = await img.evaluate((el: HTMLElement) => el.offsetWidth)
     await touch('touchStart', handle.x + 7, handle.y + 7)
-    await touch('touchMove', handle.x + 47, handle.y + 37)
+    await touch('touchMove', handle.x - 33, handle.y + 37)
     await touch('touchEnd')
     expect(await img.evaluate((el: HTMLElement) => el.offsetWidth)).toBeGreaterThan(w0)
   })

@@ -111,6 +111,7 @@ const EDITOR_CLASSES = new Set([
   'rich-textbox',
   'tb-float-left',
   'tb-float-right',
+  'tb-center',
   'textbox-handle',
 ])
 
@@ -121,6 +122,8 @@ const LAYOUT_PROPERTIES = [
   'width',
   'max-width',
   'height',
+  'min-height',
+  'box-sizing',
   'transform',
   'margin-top',
   'margin-right',
@@ -176,6 +179,9 @@ export function sanitizeHtml(html: string): string {
     el.removeAttribute('data-paper')
     // Marcador interno da mídia suspensa (core/media.ts): nunca aceito de fora
     el.removeAttribute('data-ve-media')
+    // Largura em que o objeto desce (core/objects.ts): só os valores que o editor grava
+    const stack = el.getAttribute('data-ve-stack')
+    if (stack !== null && !/^(always|\d{3,4})$/.test(stack)) el.removeAttribute('data-ve-stack')
     el.removeAttribute('color')
     el.removeAttribute('bgcolor')
     el.removeAttribute('face')

@@ -44,14 +44,20 @@ import {
   emptyLine,
   createPointerTracker,
   dropElementAtPoint,
+  fitInEditor,
   keepDropPosition,
+  keepReadableColumns,
+  maxObjectWidth,
+  resizeFactor,
   getManualOffset,
   moveElementInFlow,
   nudgeElement,
   resizeHandlePosition,
   setFloatSide,
   setImagePosition,
+  setTextboxPosition,
   toolbarPosition,
+  type HandleCorner,
   type PointerListener,
   type TbBorderStyle,
 } from './objects'
@@ -86,7 +92,8 @@ export interface Point {
 export interface ObjectState {
   type: 'image' | 'textbox'
   toolbar: Point
-  handle: Point | null
+  /** Alça de redimensionar: posição e canto (à esquerda no objeto flutuando à direita) */
+  handle: (Point & { corner?: HandleCorner }) | null
   /** O objeto saiu da parte visível da área de edição (rolagem): menu e alça somem */
   hidden?: boolean
   /** Retângulo do objeto em relação à área de edição (para o menu não sair dela) */
@@ -289,7 +296,7 @@ export class VersaEditCore {
   private selectedTextbox: HTMLDivElement | null = null
   private objType: SelectionType = null
   private toolbarPos: Point = { top: 0, left: 0 }
-  private handlePos: Point | null = null
+  private handlePos: (Point & { corner?: HandleCorner }) | null = null
   private objHidden = false
   private objBox: ObjectState['box'] = undefined
 
@@ -299,7 +306,7 @@ export class VersaEditCore {
   private dragType: 'image' | 'textbox' | null = null
   private isResizing = false
   private resizeEl: HTMLElement | null = null
-  private resizeStart = { x: 0, y: 0, w: 0, h: 0 }
+  private resizeStart = { x: 0, y: 0, w: 0, h: 0, factor: 1, maxW: 0, ratio: 0 }
   private ignoreNextClick = false
   // Esc foi a última tecla: o próximo Tab sai do editor em vez de inserir espaços
   private tabLeaves = false
@@ -1412,22 +1419,52 @@ export class VersaEditCore {
       this.selectedTextbox.remove()
       this.selectedTextbox = null
       this.setObjType(null)
+      keepReadableColumns(this.el)
       this.emitChange()
     }
   }
 
   resizeSelectedTextbox = (pct: number): void => {
-    if (!this.selectedTextbox) return
+    const tb = this.selectedTextbox
+    if (!tb) return
     const w = `${pct}%`
-    this.selectedTextbox.style.maxWidth = w
-    this.selectedTextbox.style.width = w
-    this.updateResizeHandlePosition(this.selectedTextbox)
+    // Como na imagem, a porcentagem é a caixa inteira (borda e espaço interno
+    // incluídos): 50% da caixa = 50% da imagem
+    tb.style.boxSizing = 'border-box'
+    tb.style.maxWidth = w
+    tb.style.width = w
+    this.settleObject(tb)
+    this.updateObjectToolbar(tb)
+    this.updateResizeHandlePosition(tb)
     this.emitChange()
   }
 
+  /**
+   * Alinhamento do texto dentro da caixa selecionada (text-align), sem mover a
+   * caixa. Contrato da 0.5.0-beta.1, mantido; para mover a caixa, como a imagem,
+   * use positionSelectedTextbox.
+   */
   alignSelectedTextbox = (align: 'left' | 'center' | 'right'): void => {
     if (!this.selectedTextbox) return
     this.selectedTextbox.style.textAlign = align
+    this.emitChange()
+  }
+
+  /**
+   * Posição da caixa de texto, como a da imagem: à esquerda ou à direita ela
+   * flutua e o texto a contorna; ao centro fica centralizada na linha. O texto de
+   * dentro da caixa mantém o próprio alinhamento (alignSelectedTextbox).
+   */
+  positionSelectedTextbox = (align: 'left' | 'center' | 'right'): void => {
+    const tb = this.selectedTextbox
+    if (!tb) return
+    // Alinhamento explícito: limpa o deslocamento horizontal manual
+    tb.style.marginLeft = ''
+    tb.style.marginRight = ''
+    setTextboxPosition(tb, align)
+    this.settleObject(tb)
+    this.updateObjectToolbar(tb)
+    this.updateResizeHandlePosition(tb)
     this.emitChange()
   }
 
@@ -1523,6 +1560,7 @@ export class VersaEditCore {
     this.selectedImg = null
     this.setObjType(null)
     this.setSelectionRange(caret)
+    keepReadableColumns(this.el)
     this.emitChange()
   }
 
@@ -1531,6 +1569,8 @@ export class VersaEditCore {
     const w = `${pct}%`
     this.selectedImg.style.width = w
     this.selectedImg.style.maxWidth = w
+    this.settleObject(this.selectedImg)
+    this.updateObjectToolbar(this.selectedImg)
     this.updateResizeHandlePosition(this.selectedImg)
     this.emitChange()
   }
@@ -1544,6 +1584,8 @@ export class VersaEditCore {
     const posClass =
       direction === 'left' ? 'pos-left' : direction === 'right' ? 'pos-right' : 'pos-center'
     setImagePosition(img, posClass)
+    this.settleObject(img)
+    this.updateObjectToolbar(img)
     this.updateResizeHandlePosition(img)
     this.emitChange()
   }
@@ -1590,6 +1632,7 @@ export class VersaEditCore {
       const dropped = el.getBoundingClientRect()
       if (dropElementAtPoint(this.el, el, e.clientX, e.clientY)) {
         keepDropPosition(el, this.el, dropped)
+        keepReadableColumns(this.el)
       } else {
         el.style.transform = ''
       }
@@ -1608,26 +1651,52 @@ export class VersaEditCore {
     this.emitChange()
   }
 
-  // ─── REDIMENSIONAMENTO LIVRE (alça no canto inferior direito) ───
+  // ─── REDIMENSIONAMENTO PELA ALÇA ─────────────────────────────────
+  // A alça acompanha o ponteiro: a largura muda conforme o canto que se move
+  // (resizeFactor) e para na largura em que o objeto ainda cabe na área.
+  // Imagem: a altura segue a proporção (com Shift, livre). Caixa de texto: a
+  // altura arrastada é a mínima — o texto nunca fica escondido; ela cresce
+  // quando o texto pede mais.
   private handleResizeMove: PointerListener = (e) => {
     const el = this.resizeEl
     if (!this.isResizing || !el) return
-    const dx = e.clientX - this.resizeStart.x
-    const dy = e.clientY - this.resizeStart.y
-    const newW = Math.max(60, this.resizeStart.w + dx)
-    const newH = Math.max(40, this.resizeStart.h + dy)
-    // Redimensionamento livre: largura e altura seguem o movimento do mouse
+    const s = this.resizeStart
+    const dx = (e.clientX - s.x) * s.factor
+    const dy = e.clientY - s.y
+    const newW = Math.round(Math.min(s.maxW, Math.max(60, s.w + dx)))
     el.style.width = `${newW}px`
     el.style.maxWidth = `${newW}px`
-    el.style.height = `${newH}px`
+    if (el.tagName === 'IMG') {
+      const free = e.shiftKey && s.ratio > 0
+      el.style.height = `${Math.round(free ? Math.max(20, s.h + dy) : newW * s.ratio)}px`
+    } else {
+      // Medidas da caixa inteira (borda e espaço interno incluídos), como no início
+      el.style.boxSizing = 'border-box'
+      el.style.height = ''
+      el.style.minHeight = `${Math.round(Math.max(40, s.h + dy))}px`
+    }
     this.updateResizeHandlePosition(el)
     this.updateObjectToolbar(el)
   }
 
+  // Depois de mudar posição ou tamanho: o objeto cabe na área e o texto ao lado
+  // dele continua numa coluna legível (objects.ts)
+  private settleObject(el: HTMLElement): void {
+    fitInEditor(el, this.el)
+    keepReadableColumns(this.el)
+  }
+
   private handleResizeEnd: PointerListener = () => {
+    const el = this.resizeEl
     this.isResizing = false
     this.resizeEl = null
     this.pointer.stop()
+    // Ao soltar (não durante o gesto, para o objeto não pular enquanto se arrasta)
+    if (el) {
+      keepReadableColumns(this.el)
+      this.updateObjectToolbar(el)
+      this.updateResizeHandlePosition(el)
+    }
     this.emitChange()
   }
 
@@ -1639,7 +1708,19 @@ export class VersaEditCore {
     if (!el) return
     this.isResizing = true
     this.resizeEl = el
-    this.resizeStart = { x: clientX, y: clientY, w: el.offsetWidth, h: el.offsetHeight }
+    // Medidas atuais da caixa inteira (offsetWidth/Height): a caixa de texto passa a
+    // ser medida assim (border-box) e não dá salto no primeiro movimento
+    const w = el.offsetWidth
+    const h = el.offsetHeight
+    this.resizeStart = {
+      x: clientX,
+      y: clientY,
+      w,
+      h,
+      factor: resizeFactor(el),
+      maxW: Math.max(w, maxObjectWidth(el, this.el)),
+      ratio: w > 0 ? h / w : 0,
+    }
     this.pointer.start(pointerId, this.handleResizeMove, this.handleResizeEnd)
   }
 

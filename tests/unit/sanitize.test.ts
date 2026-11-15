@@ -257,3 +257,17 @@ describe('escapeHtml e safeCssColor', () => {
     expect(safeCssColor('nao-e-cor')).toBe('')
   })
 })
+
+describe('sanitizeHtml — data-ve-stack (largura em que o objeto desce)', () => {
+  it('mantém os valores que o editor grava', () => {
+    const html = '<p><img class="pos-left" src="https://x.example/a.png" data-ve-stack="960"></p>'
+    expect(sanitizeHtml(html)).toContain('data-ve-stack="960"')
+    expect(sanitizeHtml(html.replace('960', 'always'))).toContain('data-ve-stack="always"')
+  })
+  it('remove valores estranhos', () => {
+    for (const v of ['x', '9', '"]{}', '12345', '960px']) {
+      const html = `<p><img class="pos-left" src="https://x.example/a.png" data-ve-stack='${v}'></p>`
+      expect(sanitizeHtml(html)).not.toContain('data-ve-stack')
+    }
+  })
+})

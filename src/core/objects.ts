@@ -64,9 +64,50 @@ export function setFloatSide(el: HTMLElement, side: 'left' | 'right') {
     el.classList.remove('pos-left', 'pos-right', 'pos-center')
     el.classList.add(side === 'left' ? 'pos-left' : 'pos-right')
   } else {
-    el.classList.remove('tb-float-left', 'tb-float-right')
-    el.classList.add(side === 'left' ? 'tb-float-left' : 'tb-float-right')
+    setTextboxPosition(el, side)
   }
+}
+
+// Posição da caixa de texto, como a da imagem: à esquerda ou à direita ela flutua e o
+// texto a contorna; ao centro fica sozinha na linha, centralizada (tb-center)
+export function setTextboxPosition(el: HTMLElement, side: 'left' | 'right' | 'center') {
+  el.classList.remove('tb-float-left', 'tb-float-right', 'tb-center')
+  el.classList.add(
+    side === 'left' ? 'tb-float-left' : side === 'right' ? 'tb-float-right' : 'tb-center',
+  )
+}
+
+// Objeto centralizado (margens laterais automáticas)
+export const isCentered = (el: HTMLElement) =>
+  el.classList.contains('pos-center') || el.classList.contains('tb-center')
+
+// Largura útil da área de edição (sem o padding)
+export function innerWidth(editor: HTMLElement): number {
+  const pad = window.getComputedStyle(editor)
+  return editor.clientWidth - parseFloat(pad.paddingLeft) - parseFloat(pad.paddingRight)
+}
+
+// Margens laterais que o objeto ocupa fora da própria caixa (o centralizado não tem:
+// as margens automáticas encolhem até zero)
+export function sideMargins(el: HTMLElement): number {
+  if (isCentered(el)) return 0
+  const cs = window.getComputedStyle(el)
+  return (parseFloat(cs.marginLeft) || 0) + (parseFloat(cs.marginRight) || 0)
+}
+
+// Maior largura (borda incluída) com que o objeto cabe na área com as margens dele
+export const maxObjectWidth = (el: HTMLElement, editor: HTMLElement) =>
+  Math.max(60, innerWidth(editor) - sideMargins(el))
+
+// O objeto nunca passa da área de edição: com a largura pedida (25–100%) mais as
+// margens laterais além da área, o limite vira 100% menos as margens. Sem excesso,
+// nada muda no HTML
+export function fitInEditor(el: HTMLElement, editor: HTMLElement) {
+  // Limite posto antes (outro alinhamento, outras margens): volta à largura pedida
+  if (el.style.maxWidth.startsWith('calc(100% -')) el.style.maxWidth = el.style.width
+  const margins = sideMargins(el)
+  const outer = el.getBoundingClientRect().width + margins
+  if (outer > innerWidth(editor) + 0.5) el.style.maxWidth = `calc(100% - ${Math.round(margins)}px)`
 }
 
 // Depois de soltar: a flutuação leva o elemento até a borda; uma margem lateral
@@ -118,52 +159,100 @@ export function dropElementAtPoint(
   x: number,
   y: number,
 ): boolean {
-  // Retira temporariamente o elemento do fluxo para que o hit-test encontre
-  // o texto que estava sob a imagem, sem deixar o espaço antigo reservado.
-  const previousDisplay = el.style.display
-  el.style.visibility = 'hidden'
-  el.style.display = 'none'
-  let range: Range | null = null
-  let pointTarget: Element | null = null
-  let fallbackBefore: Node | null = null
-  let useFallback = false
+  // O ponto de queda é procurado no texto como ele estava na tela durante o arrasto:
+  // um espaço reservado do mesmo tamanho (e mesma flutuação e margens) fica no lugar
+  // do objeto. Sem ele, o texto abaixo subia antes da procura e o objeto arrastado
+  // para baixo caía mais adiante do que o ponto solto.
+  const oldParent = el.parentElement
+  const holder = placeholderFor(el)
+  el.replaceWith(holder)
   try {
-    range = getCaretRangeFromPoint(x, y)
-    pointTarget = document.elementFromPoint(x, y)
-
-    const editorRect = editor.getBoundingClientRect()
-    const pointIsInsideEditor =
-      x >= editorRect.left && x <= editorRect.right && y >= editorRect.top && y <= editorRect.bottom
-
-    if (
-      pointIsInsideEditor &&
-      (!range || !editor.contains(range.startContainer) || el.contains(range.startContainer))
-    ) {
-      useFallback = true
-      let targetBlock: Element | null =
-        pointTarget && editor.contains(pointTarget) ? pointTarget : null
-
-      while (targetBlock?.parentElement && targetBlock.parentElement !== editor) {
-        targetBlock = targetBlock.parentElement
-      }
-
-      if (!targetBlock || targetBlock === editor || targetBlock === el) {
-        const blocks = Array.from(editor.children).filter(
-          (child): child is HTMLElement => child instanceof HTMLElement && child !== el,
+    const moved = dropAtPoint(editor, el, holder, x, y)
+    if (moved) {
+      // O parágrafo que só tinha o objeto (ex.: <p><img></p>) não fica para trás
+      // vazio e sem altura; um <p><br></p> (linha em branco do usuário) fica
+      if (
+        oldParent &&
+        oldParent !== editor &&
+        oldParent.tagName === 'P' &&
+        oldParent !== el.parentElement &&
+        oldParent.isConnected &&
+        [...oldParent.childNodes].every(
+          (n) => n === holder || (n.nodeType === Node.TEXT_NODE && !n.textContent!.trim()),
         )
-        targetBlock =
-          blocks.find((block) => y <= block.getBoundingClientRect().bottom) ??
-          (blocks.length ? blocks[blocks.length - 1] : null)
-      }
-
-      if (targetBlock && targetBlock !== editor && targetBlock !== el) {
-        const rect = targetBlock.getBoundingClientRect()
-        fallbackBefore = y < rect.top + rect.height / 2 ? targetBlock : targetBlock.nextSibling
+      ) {
+        holder.remove()
+        oldParent.remove()
       }
     }
+    return moved
   } finally {
-    el.style.display = previousDisplay
-    el.style.visibility = ''
+    if (el.isConnected) holder.remove()
+    else holder.replaceWith(el)
+  }
+}
+
+// Espaço vazio com a geometria do objeto, invisível ao clique e ao cursor
+function placeholderFor(el: HTMLElement): HTMLElement {
+  const cs = window.getComputedStyle(el)
+  const holder = document.createElement(cs.display === 'block' ? 'div' : 'span')
+  const s = holder.style
+  s.display = cs.display === 'inline' ? 'inline-block' : cs.display
+  s.float = cs.float
+  s.clear = cs.clear
+  s.boxSizing = 'border-box'
+  s.width = `${el.offsetWidth}px`
+  s.height = `${el.offsetHeight}px`
+  s.margin = cs.margin
+  s.verticalAlign = cs.verticalAlign
+  s.pointerEvents = 'none'
+  s.userSelect = 'none'
+  holder.setAttribute('contenteditable', 'false')
+  holder.setAttribute('aria-hidden', 'true')
+  return holder
+}
+
+function dropAtPoint(
+  editor: HTMLElement,
+  el: HTMLElement,
+  holder: HTMLElement,
+  x: number,
+  y: number,
+): boolean {
+  const range = getCaretRangeFromPoint(x, y)
+  const pointTarget = document.elementFromPoint(x, y)
+  let fallbackBefore: Node | null = null
+  let useFallback = false
+
+  const editorRect = editor.getBoundingClientRect()
+  const pointIsInsideEditor =
+    x >= editorRect.left && x <= editorRect.right && y >= editorRect.top && y <= editorRect.bottom
+
+  if (
+    pointIsInsideEditor &&
+    (!range || !editor.contains(range.startContainer) || holder.contains(range.startContainer))
+  ) {
+    useFallback = true
+    let targetBlock: Element | null =
+      pointTarget && editor.contains(pointTarget) ? pointTarget : null
+
+    while (targetBlock?.parentElement && targetBlock.parentElement !== editor) {
+      targetBlock = targetBlock.parentElement
+    }
+
+    if (!targetBlock || targetBlock === editor || targetBlock === holder) {
+      const blocks = Array.from(editor.children).filter(
+        (child): child is HTMLElement => child instanceof HTMLElement && child !== holder,
+      )
+      targetBlock =
+        blocks.find((block) => y <= block.getBoundingClientRect().bottom) ??
+        (blocks.length ? blocks[blocks.length - 1] : null)
+    }
+
+    if (targetBlock && targetBlock !== editor && targetBlock !== holder) {
+      const rect = targetBlock.getBoundingClientRect()
+      fallbackBefore = y < rect.top + rect.height / 2 ? targetBlock : targetBlock.nextSibling
+    }
   }
 
   if (useFallback) {
@@ -171,14 +260,14 @@ export function dropElementAtPoint(
   } else {
     if (!range || !editor.contains(range.startContainer)) return false
     const container = range.startContainer
-    if (container === el || el.contains(container)) return false
+    if (container === holder || holder.contains(container)) return false
     // Caixa de texto (bloco): entra entre os blocos — antes ou depois do bloco sob o
     // ponto —, nunca dentro de um parágrafo. Uma <div> dentro de <p> é HTML
     // inválido: ao reabrir o arquivo o navegador partia o parágrafo em dois.
     if (el.classList.contains('rich-textbox')) {
       let block: Node = container
       while (block.parentNode && block.parentNode !== editor) block = block.parentNode
-      if (block.parentNode === editor && block !== el) {
+      if (block.parentNode === editor && block !== holder) {
         const rect =
           block instanceof Element
             ? block.getBoundingClientRect()
@@ -194,20 +283,148 @@ export function dropElementAtPoint(
     if (container.nodeType === Node.TEXT_NODE && container.parentNode) {
       const textNode = container as Text
       const after = textNode.splitText(range.startOffset)
-      if (after.previousSibling !== el) container.parentNode.insertBefore(el, after)
+      container.parentNode.insertBefore(el, after)
     } else if (container.nodeType === Node.ELEMENT_NODE) {
       const parent = container as HTMLElement
+      // Solto sobre o próprio lugar: fica onde estava (no lugar do espaço reservado)
       const refNode = parent.childNodes[range.startOffset] ?? null
-      if (refNode !== el) parent.insertBefore(el, refNode)
+      parent.insertBefore(el, refNode)
     } else {
       return false
     }
   }
 
   clearManualOffsets(el)
-  const editorRect = editor.getBoundingClientRect()
   setFloatSide(el, x < editorRect.left + editorRect.width / 2 ? 'left' : 'right')
   return true
+}
+
+// ─── COLUNA DE TEXTO LEGÍVEL ENTRE OBJETOS ───────────────────────
+// Dois objetos flutuantes na mesma faixa (imagem ou caixa, de lados opostos ou do
+// mesmo lado) deixam para o texto só o que sobra da largura. Abaixo de uma coluna
+// mínima o texto ficava espremido, com palavras partidas sílaba a sílaba; nesse
+// caso o objeto seguinte desce para baixo do anterior.
+// A coluna depende da largura do contêiner (o editor agora, o site depois, o
+// celular), então o HTML não grava a decisão (um clear fixo), e sim a largura
+// abaixo da qual o objeto desce: data-ve-stack="<px>" (múltiplos de STACK_STEP).
+// O CSS do editor e o publicado aplicam o clear por consulta de contêiner, na
+// largura real de cada lugar; "always" quando nenhuma largura dá coluna legível.
+// A coluna mínima acompanha o tamanho da fonte do texto ao lado (em), não um
+// valor fixo em px. Refeito a cada mudança de posição ou tamanho; o clear que o
+// usuário tenha no style nunca é tocado.
+export const MIN_TEXT_COLUMN_EM = 7.5
+export const STACK_STEP = 40
+export const STACK_MIN = 200
+export const STACK_MAX = 2400
+const STACK_ATTR = 'data-ve-stack'
+const FLOATING =
+  'img.pos-left, img.pos-right, .rich-textbox.tb-float-left, .rich-textbox.tb-float-right'
+
+// Comprimento de CSS como função da largura W do contêiner (px, %, calc(100% - Npx))
+function lengthAt(value: string, fallback: (w: number) => number): (w: number) => number {
+  const v = value.trim()
+  let m = /^(-?[\d.]+)px$/.exec(v)
+  if (m) {
+    const px = parseFloat(m[1])
+    return () => px
+  }
+  m = /^(-?[\d.]+)%$/.exec(v)
+  if (m) {
+    const pct = parseFloat(m[1]) / 100
+    return (w) => w * pct
+  }
+  m = /^calc\(\s*100%\s*-\s*([\d.]+)px\s*\)$/.exec(v)
+  if (m) {
+    const px = parseFloat(m[1])
+    return (w) => w - px
+  }
+  return fallback
+}
+
+// Largura externa (margens incluídas) do objeto num contêiner de largura W: a
+// largura pedida (% acompanha W, px fica), limitada por min/max-width
+function outerWidthAt(el: HTMLElement): (w: number) => number {
+  const cs = window.getComputedStyle(el)
+  const measured = el.getBoundingClientRect().width
+  const borderBox = el.tagName === 'IMG' || cs.boxSizing === 'border-box'
+  const extra = borderBox
+    ? 0
+    : (parseFloat(cs.paddingLeft) || 0) +
+      (parseFloat(cs.paddingRight) || 0) +
+      (parseFloat(cs.borderLeftWidth) || 0) +
+      (parseFloat(cs.borderRightWidth) || 0)
+  const asked = lengthAt(el.style.width, () => measured - extra)
+  const max = lengthAt(cs.maxWidth, () => Infinity)
+  const min = lengthAt(cs.minWidth, () => 0)
+  const margins = (parseFloat(cs.marginLeft) || 0) + (parseFloat(cs.marginRight) || 0)
+  return (w) => Math.max(min(w), Math.min(asked(w), max(w))) + extra + margins
+}
+
+// Menor largura de contêiner (em STACK_STEP) a partir da qual a coluna entre os dois
+// objetos é legível; null quando qualquer largura serve, "always" quando nenhuma
+function stackBelow(a: HTMLElement, b: HTMLElement, minColumn: number): string | null {
+  const wa = outerWidthAt(a)
+  const wb = outerWidthAt(b)
+  const narrow = (w: number) => w - wa(w) - wb(w) < minColumn
+  if (narrow(STACK_MAX)) return 'always'
+  let threshold = 0
+  for (let w = STACK_MAX; w > 0; w -= 4) {
+    if (narrow(w)) {
+      threshold = w + 4
+      break
+    }
+  }
+  if (threshold <= STACK_MIN - STACK_STEP) return null
+  return String(Math.max(STACK_MIN, Math.ceil(threshold / STACK_STEP) * STACK_STEP))
+}
+
+const fontPx = (el: Element) => parseFloat(window.getComputedStyle(el).fontSize) || 16
+
+export function keepReadableColumns(editor: HTMLElement) {
+  editor.querySelectorAll(`[${STACK_ATTR}]`).forEach((el) => el.removeAttribute(STACK_ATTR))
+  const floats = [...editor.querySelectorAll<HTMLElement>(FLOATING)]
+  if (floats.length < 2) return
+  const band = (el: HTMLElement) => {
+    const r = el.getBoundingClientRect()
+    const cs = window.getComputedStyle(el)
+    return {
+      top: r.top - (parseFloat(cs.marginTop) || 0),
+      bottom: r.bottom + (parseFloat(cs.marginBottom) || 0),
+    }
+  }
+  floats.forEach((el, i) => {
+    const b = band(el)
+    const text = el.parentElement && el.parentElement !== editor ? el.parentElement : editor
+    const minColumn = MIN_TEXT_COLUMN_EM * Math.max(fontPx(editor), fontPx(text))
+    for (const prev of floats.slice(0, i)) {
+      const a = band(prev)
+      // Na mesma faixa, ou empurrado para logo abaixo do anterior por não caber ao
+      // lado dele nesta largura (num contêiner mais largo ficariam lado a lado)
+      const sameBand = a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5
+      const pushed = Math.abs(b.top - a.bottom) < 1
+      if (!sameBand && !pushed) continue
+      const below = stackBelow(prev, el, minColumn)
+      if (below) {
+        el.setAttribute(STACK_ATTR, below)
+        return
+      }
+    }
+  })
+}
+
+// Regras do clear por largura do contêiner, para o CSS do editor e o publicado
+export function stackRules(scope: string): string {
+  // Só nos flutuantes, e com a especificidade do clear: none deles (vêm depois)
+  const target = (v: string) =>
+    `${scope} [${STACK_ATTR}="${v}"]:is(.pos-left, .pos-right, .tb-float-left, .tb-float-right)`
+  const lines = [
+    `${scope}:has([${STACK_ATTR}]) { container-type: inline-size; }`,
+    `${target('always')} { clear: both; }`,
+  ]
+  for (let w = STACK_MIN; w <= STACK_MAX; w += STACK_STEP) {
+    lines.push(`@container (width < ${w}px) { ${target(String(w))} { clear: both; } }`)
+  }
+  return lines.join('\n')
 }
 
 // ─── IMAGE POSITION ──────────────────────────────────────────────
@@ -229,12 +446,29 @@ export function toolbarPosition(
   return { top: rect.top - editorRect.top - 40, left: rect.left - editorRect.left }
 }
 
-// Posição da alça de redimensionamento: canto inferior direito do elemento
+// Canto da alça: o inferior direito; no objeto flutuando à direita, o inferior
+// esquerdo — o lado direito dele fica preso à borda, e é o esquerdo que se move
+export type HandleCorner = 'right' | 'left'
+export const handleCorner = (el: HTMLElement): HandleCorner =>
+  window.getComputedStyle(el).float === 'right' ? 'left' : 'right'
+
+// Quanto a largura muda por pixel de movimento da alça, para ela seguir o ponteiro:
+// 1 com a alça à direita; -1 com a alça à esquerda (flutuando à direita); 2 no
+// centralizado (cresce para os dois lados)
+export const resizeFactor = (el: HTMLElement): number =>
+  handleCorner(el) === 'left' ? -1 : isCentered(el) ? 2 : 1
+
+// Posição da alça de redimensionamento, no canto que se move
 export function resizeHandlePosition(
   el: HTMLElement,
   editor: HTMLElement,
-): { top: number; left: number } {
+): { top: number; left: number; corner: HandleCorner } {
   const rect = el.getBoundingClientRect()
   const editorRect = editor.getBoundingClientRect()
-  return { top: rect.bottom - editorRect.top - 7, left: rect.right - editorRect.left - 7 }
+  const corner = handleCorner(el)
+  return {
+    top: rect.bottom - editorRect.top - 7,
+    left: (corner === 'left' ? rect.left : rect.right) - editorRect.left - 7,
+    corner,
+  }
 }

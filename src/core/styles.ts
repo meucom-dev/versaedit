@@ -9,6 +9,7 @@
 //   --ve-heading-font   fonte dos títulos (padrão: a mesma do texto)
 
 import { DEFAULT_FONT } from './defaults'
+import { stackRules } from './objects'
 
 const STYLE_ID = 'versaedit-styles'
 
@@ -161,8 +162,13 @@ ${textRules('.ve-content')}
 .ve-content .rich-textbox { border: 1px dashed var(--ve-accent); padding: 10px; margin: 40px; min-height: 40px; min-width: 100px; position: relative; cursor: text; user-select: text; overflow: auto; outline: 2px solid transparent; outline-offset: 2px; transition: outline 0.15s; background: ${accent(3)}; clear: both; }
 .ve-content .rich-textbox:hover { outline-color: ${accent(30)}; }
 .ve-content .rich-textbox.selected { outline-color: var(--ve-accent); outline-width: 3px; cursor: text; }
-.ve-content .rich-textbox.tb-float-left { float: left; margin: 40px; max-width: 50%; }
-.ve-content .rich-textbox.tb-float-right { float: right; margin: 40px; max-width: 50%; }
+.ve-content .rich-textbox.tb-float-left { float: left; margin: 40px; max-width: 50%; clear: none; }
+.ve-content .rich-textbox.tb-float-right { float: right; margin: 40px; max-width: 50%; clear: none; }
+/* Caixa centralizada (menu da caixa › Centro), como a imagem pos-center */
+.ve-content .rich-textbox.tb-center { margin-left: auto; margin-right: auto; }
+/* Objeto que desce para baixo do anterior quando a coluna de texto entre eles ficaria
+   estreita demais nesta largura (core/objects.ts, keepReadableColumns) */
+${stackRules('.ve-content')}
 .ve-content .textbox-handle { touch-action: none; ${HANDLE_BOX} cursor: grab; color: var(--ve-accent); background: ${accent(15)}; border-color: ${accent(40)}; border-radius: 4px; user-select: none; -webkit-user-drag: none; }
 .ve-content .textbox-handle:active { cursor: grabbing; }
 
@@ -199,8 +205,10 @@ export const CONTENT_CSS = `
 .versaedit-content img.pos-right { float: right; margin: 40px; max-width: 50%; }
 .versaedit-content img.pos-center { margin: 40px auto; clear: both; }
 .versaedit-content .rich-textbox { border: 1px dashed var(--ve-accent); padding: 10px; margin: 40px; min-height: 40px; min-width: 100px; box-sizing: border-box; overflow: auto; clear: both; }
-.versaedit-content .rich-textbox.tb-float-left { float: left; max-width: 50%; }
-.versaedit-content .rich-textbox.tb-float-right { float: right; max-width: 50%; }
+.versaedit-content .rich-textbox.tb-float-left { float: left; max-width: 50%; clear: none; }
+.versaedit-content .rich-textbox.tb-float-right { float: right; max-width: 50%; clear: none; }
+.versaedit-content .rich-textbox.tb-center { margin-left: auto; margin-right: auto; }
+${stackRules('.versaedit-content')}
 .versaedit-content .textbox-handle { display: none; }
 .versaedit-content table { border-collapse: collapse; max-width: 100%; margin: 4px 0; }
 .versaedit-content th, .versaedit-content td { border: 1px solid #c8ccd0; padding: 4px 8px; vertical-align: top; }

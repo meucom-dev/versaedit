@@ -62,6 +62,10 @@ export const ObjectToolbar = forwardRef<
   const resize = (pct: number) =>
     isImage ? core()?.resizeSelectedImage(pct) : core()?.resizeSelectedTextbox(pct)
   const remove = () => (isImage ? core()?.deleteSelectedImage() : core()?.deleteSelectedTextbox())
+  const align = (side: 'left' | 'center' | 'right') =>
+    isImage
+      ? core()?.floatImage(side === 'center' ? 'none' : side)
+      : core()?.positionSelectedTextbox(side)
 
   return (
     <div
@@ -81,43 +85,17 @@ export const ObjectToolbar = forwardRef<
         </button>
       ))}
       <div className="ve-float-sep" />
-      {isImage ? (
-        <>
-          <button type="button" onClick={() => core()?.floatImage('left')} title={L.alignLeft}>
-            ⬅ {L.left}
-          </button>
-          <button type="button" onClick={() => core()?.floatImage('right')} title={L.alignRight}>
-            {L.right} ➡
-          </button>
-          <button type="button" onClick={() => core()?.floatImage('none')} title={L.alignCenter}>
-            ⬛ {L.center}
-          </button>
-        </>
-      ) : (
-        <>
-          <button
-            type="button"
-            onClick={() => core()?.alignSelectedTextbox('left')}
-            title={L.alignLeft}
-          >
-            ⬅ {L.left}
-          </button>
-          <button
-            type="button"
-            onClick={() => core()?.alignSelectedTextbox('center')}
-            title={L.alignCenter}
-          >
-            ☰ {L.center}
-          </button>
-          <button
-            type="button"
-            onClick={() => core()?.alignSelectedTextbox('right')}
-            title={L.alignRight}
-          >
-            {L.right} ➡
-          </button>
-        </>
-      )}
+      {/* Mesma ordem e mesmo efeito para imagem e caixa de texto: o objeto vai
+          para a esquerda (texto à direita), para o centro ou para a direita */}
+      <button type="button" onClick={() => align('left')} title={L.alignLeft}>
+        ⬅ {L.left}
+      </button>
+      <button type="button" onClick={() => align('center')} title={L.alignCenter}>
+        ⬛ {L.center}
+      </button>
+      <button type="button" onClick={() => align('right')} title={L.alignRight}>
+        {L.right} ➡
+      </button>
       <div className="ve-float-sep" />
       <button
         type="button"
