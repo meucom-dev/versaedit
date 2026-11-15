@@ -220,11 +220,11 @@ function Editor() {
 
 - Content: any React node, or a function that receives `close()`, which closes the panel and
   returns focus to the gear.
-- Position: the gear is the last item of the toolbar, aligned to the right of its last row. It
-  never adds a row: the toolbar wraps exactly as it would without it. With `toolbar={[]}`, the
-  toolbar shows only the gear. The panel opens below the gear, aligned to its right edge, 260 to
-  360 px wide (never wider than the screen minus 16 px), and scrolls when taller than 70% of the
-  screen. On narrow screens it is kept inside the viewport.
+- Position: the gear is the last item of the toolbar, aligned to the right of its last row. It joins
+  that row when there is room for it; otherwise it starts a row of its own, still on the right. With
+  `toolbar={[]}`, the toolbar shows only the gear. The panel opens below the gear, aligned to its
+  right edge, 260 to 360 px wide (never wider than the screen minus 16 px), and scrolls when taller
+  than 70% of the screen. On narrow screens it is kept inside the viewport.
 - Keyboard and screen readers: the gear is a toolbar button (arrow keys, Home, End) named by
   `labels.settings` ("Settings"), with `aria-haspopup="dialog"` and `aria-expanded`. The panel is
   a non-modal dialog with the same name. Opening it moves focus to its first control; Tab and

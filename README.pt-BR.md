@@ -220,11 +220,11 @@ function Editor() {
 
 - Conteúdo: qualquer nó React, ou uma função que recebe `close()`, que fecha o painel e devolve o
   foco à engrenagem.
-- Posição: a engrenagem é o último item da barra, alinhada à direita da última linha. Ela nunca
-  cria uma linha: a barra quebra exatamente como sem ela. Com `toolbar={[]}`, a barra mostra só a
-  engrenagem. O painel abre abaixo da engrenagem, alinhado à borda direita dela, com 260 a 360 px
-  de largura (nunca mais que a tela menos 16 px), e rola quando passa de 70% da altura da tela. Em
-  telas estreitas, fica dentro da área visível.
+- Posição: a engrenagem é o último item da barra, alinhada à direita da última linha. Ela entra
+  nessa linha quando há espaço; senão, fica numa linha própria, também à direita. Com
+  `toolbar={[]}`, a barra mostra só a engrenagem. O painel abre abaixo da engrenagem, alinhado à
+  borda direita dela, com 260 a 360 px de largura (nunca mais que a tela menos 16 px), e rola quando
+  passa de 70% da altura da tela. Em telas estreitas, fica dentro da área visível.
 - Teclado e leitores de tela: a engrenagem é um botão da barra (setas, Home, End) com o nome de
   `labels.settings` ("Configurações"), `aria-haspopup="dialog"` e `aria-expanded`. O painel é um
   diálogo não modal com o mesmo nome. Ao abrir, o foco vai para o primeiro controle; Tab e

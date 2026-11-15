@@ -47,6 +47,9 @@ test.describe('posição: último item, à direita da última linha', () => {
         return {
           last: bar.lastElementChild === wrap,
           rows: tops.length,
+          gearWidth: g.width,
+          gap: parseFloat(cs.columnGap) || 0,
+          aloneOnLastRow: items.filter((r) => Math.round(r.top) === Math.round(g.top)).length === 1,
           onLastRow:
             Math.round(g.top) === tops.at(-1) ||
             g.top >= Math.max(...items.slice(0, -1).map((r) => r.top)) - 1,
@@ -56,17 +59,34 @@ test.describe('posição: último item, à direita da última linha', () => {
       expect(info.last).toBe(true)
       expect(info.onLastRow).toBe(true)
       expect(Math.abs(info.rightGap)).toBeLessThan(1)
-      // A engrenagem não cria linha: o mesmo número de linhas que sem ela
+      // Sem a engrenagem: linhas da barra e espaço livre no fim da última linha.
+      // A engrenagem entra na última linha quando cabe nela; senão, fica sozinha
+      // numa linha própria (as fontes de cada sistema mudam a largura dos itens)
       await mount(page, { initialContent: TEXT, width })
-      const without = await page.evaluate(
-        () =>
-          new Set(
-            [...document.querySelector('#host .ve-toolbar')!.children].map((el) =>
-              Math.round(el.getBoundingClientRect().top),
-            ),
-          ).size,
-      )
-      expect(info.rows).toBe(without)
+      const without = await page.evaluate(() => {
+        const bar = document.querySelector<HTMLElement>('#host .ve-toolbar')!
+        const cs = getComputedStyle(bar)
+        const inner =
+          bar.getBoundingClientRect().right -
+          parseFloat(cs.paddingRight) -
+          parseFloat(cs.borderRightWidth)
+        const items = [...bar.children].map((el) => el.getBoundingClientRect())
+        const tops = [...new Set(items.map((r) => Math.round(r.top)))]
+        const lastTop = Math.max(...tops)
+        const lastRight = Math.max(
+          ...items.filter((r) => Math.round(r.top) === lastTop).map((r) => r.right),
+        )
+        return { rows: tops.length, free: inner - lastRight }
+      })
+      if (without.free >= info.gearWidth + info.gap) {
+        expect(info.rows, 'cabe na última linha: nenhuma linha a mais').toBe(without.rows)
+        expect(info.aloneOnLastRow).toBe(false)
+      } else {
+        expect(info.rows, 'última linha cheia: uma linha só para a engrenagem').toBe(
+          without.rows + 1,
+        )
+        expect(info.aloneOnLastRow).toBe(true)
+      }
       await mount(page, { initialContent: TEXT, width }, { settings: 'node' })
       // Aberto: painel inteiro dentro da janela, sem rolagem lateral
       await gear(page).click()
@@ -86,6 +106,72 @@ test.describe('posição: último item, à direita da última linha', () => {
     await mount(page, { initialContent: TEXT, toolbar: [] }, { settings: 'node' })
     await expect(page.locator('#host .ve-toolbar > *')).toHaveCount(1)
     await expect(gear(page)).toBeVisible()
+  })
+  test('várias larguras: na última linha quando cabe; senão, numa linha própria à direita', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1300, height: 900 })
+    const WIDTHS = Array.from({ length: 36 }, (_, i) => 420 + i * 20)
+    // Barra na largura do contêiner (#host), medida em cada largura
+    const measure = (withGear: boolean) =>
+      page.evaluate(
+        ([ws, gear]) =>
+          ws.map((w) => {
+            document.getElementById('host')!.style.width = `${w}px`
+            const bar = document.querySelector<HTMLElement>('#host .ve-toolbar')!
+            const cs = getComputedStyle(bar)
+            const inner =
+              bar.getBoundingClientRect().right -
+              parseFloat(cs.paddingRight) -
+              parseFloat(cs.borderRightWidth)
+            const items = [...bar.children].map((el) => el.getBoundingClientRect())
+            const tops = [...new Set(items.map((r) => Math.round(r.top)))]
+            const lastTop = Math.max(...tops)
+            const onLast = items.filter((r) => Math.round(r.top) === lastTop)
+            if (!gear)
+              return { rows: tops.length, free: inner - Math.max(...onLast.map((r) => r.right)) }
+            const g = bar.querySelector('.ve-settings-wrap')!.getBoundingClientRect()
+            return {
+              rows: tops.length,
+              gearOnLast: Math.round(g.top) === lastTop,
+              alone: onLast.length === 1,
+              rightGap: Math.abs(inner - g.right),
+              gearWidth: g.width,
+              gap: parseFloat(cs.columnGap) || 0,
+            }
+          }),
+        [WIDTHS, withGear] as const,
+      )
+    await mount(page, { initialContent: TEXT, width: '100%' })
+    const without = await measure(false)
+    await mount(page, { initialContent: TEXT, width: '100%' }, { settings: 'node' })
+    const withGear = await measure(true)
+    const cases = { fits: 0, ownRow: 0 }
+    WIDTHS.forEach((w, i) => {
+      const a = without[i] as { rows: number; free: number }
+      const b = withGear[i] as {
+        rows: number
+        gearOnLast: boolean
+        alone: boolean
+        rightGap: number
+        gearWidth: number
+        gap: number
+      }
+      expect(b.gearOnLast, `${w}px: engrenagem na última linha`).toBe(true)
+      expect(b.rightGap, `${w}px: encostada à direita`).toBeLessThan(1)
+      if (a.free >= b.gearWidth + b.gap) {
+        cases.fits++
+        expect(b.rows, `${w}px: cabe, sem linha a mais`).toBe(a.rows)
+        expect(b.alone, `${w}px: divide a linha com outros itens`).toBe(false)
+      } else {
+        cases.ownRow++
+        expect(b.rows, `${w}px: linha cheia, uma linha a mais`).toBe(a.rows + 1)
+        expect(b.alone, `${w}px: sozinha na linha nova`).toBe(true)
+      }
+    })
+    // As larguras cobrem os dois casos
+    expect(cases.fits).toBeGreaterThan(0)
+    expect(cases.ownRow).toBeGreaterThan(0)
   })
 })
 

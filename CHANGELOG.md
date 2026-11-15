@@ -60,16 +60,16 @@ by the internal stabilization batches.
 - Settings panel (optional, `settingsPanel` prop): a gear button at the end of the toolbar opens a
   panel with content supplied by the application (a React node, or a function that receives
   `close()`). The editor does not store or interpret that content. The gear is aligned to the right
-  of the toolbar's last row and never adds a row; with `toolbar={[]}` only the gear is shown. The
-  panel opens below the gear, 260–360 px wide (limited to the screen), scrolls when taller than 70%
-  of the screen and stays inside the viewport. It is a non-modal dialog named by the new
-  `labels.settings` text (en "Settings", pt-BR "Configurações", es "Configuración"), opened by a
-  toolbar button with `aria-haspopup="dialog"` and `aria-expanded`: focus moves to its first
-  control, Shift+Tab from there returns to the gear, and Esc, a click outside, Tab past the last
-  control, starting a resize or opening another toolbar menu closes it (Esc already handled by a
-  control inside does not). Server rendering outputs only the closed gear. New exported type
-  `SettingsPanel`. The playground moved its general settings into the gear; Show HTML keeps the
-  samples, diagnostics, event log and equivalent JSX.
+  of the toolbar's last row, joining it when there is room and otherwise starting a row of its own;
+  with `toolbar={[]}` only the gear is shown. The panel opens below the gear, 260–360 px wide
+  (limited to the screen), scrolls when taller than 70% of the screen and stays inside the viewport.
+  It is a non-modal dialog named by the new `labels.settings` text (en "Settings", pt-BR
+  "Configurações", es "Configuración"), opened by a toolbar button with `aria-haspopup="dialog"` and
+  `aria-expanded`: focus moves to its first control, Shift+Tab from there returns to the gear, and
+  Esc, a click outside, Tab past the last control, starting a resize or opening another toolbar menu
+  closes it (Esc already handled by a control inside does not). Server rendering outputs only the
+  closed gear. New exported type `SettingsPanel`. The playground moved its general settings into the
+  gear; Show HTML keeps the samples, diagnostics, event log and equivalent JSX.
 - Configurable object margin (`objectMargin` prop): the space around images and text boxes, per
   side, in px — `text` (between the object and the text: the text side of a left/right object,
   above and below a centered object or a text box in the flow), `outer` (the outer side of a

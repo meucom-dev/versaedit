@@ -225,12 +225,12 @@ function Editor() {
 
 - Contenido: cualquier nodo de React, o una función que recibe `close()`, que cierra el panel y
   devuelve el foco al engranaje.
-- Posición: el engranaje es el último elemento de la barra, alineado a la derecha de su última
-  fila. Nunca agrega una fila: la barra se divide exactamente igual que sin él. Con
+- Posición: el engranaje es el último elemento de la barra, alineado a la derecha de su última fila.
+  Entra en esa fila cuando hay espacio; si no, queda en una fila propia, también a la derecha. Con
   `toolbar={[]}`, la barra muestra solo el engranaje. El panel se abre debajo del engranaje,
-  alineado con su borde derecho, con 260 a 360 px de ancho (nunca más que la pantalla menos
-  16 px), y se desplaza cuando supera el 70% del alto de la pantalla. En pantallas estrechas se
-  mantiene dentro del área visible.
+  alineado con su borde derecho, con 260 a 360 px de ancho (nunca más que la pantalla menos 16 px),
+  y se desplaza cuando supera el 70% del alto de la pantalla. En pantallas estrechas se mantiene
+  dentro del área visible.
 - Teclado y lectores de pantalla: el engranaje es un botón de la barra (flechas, Inicio, Fin) con
   el nombre de `labels.settings` ("Configuración"), `aria-haspopup="dialog"` y `aria-expanded`. El
   panel es un diálogo no modal con el mismo nombre. Al abrirlo, el foco pasa al primer control;
