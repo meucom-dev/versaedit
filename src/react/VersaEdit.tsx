@@ -105,6 +105,14 @@ export interface VersaEditProps {
    */
   pasteImages?: boolean
   /**
+   * Espaçamento ao colar de documentos do Microsoft Word: 'remove' (padrão, o
+   * texto segue o espaçamento do site) ou 'preserve' (espaço antes e depois dos
+   * parágrafos, recuos, entrelinha e linhas em branco do documento, gravados no
+   * HTML). Só vale para a colagem: o espaçamento de um documento salvo é sempre
+   * mantido ao reabri-lo.
+   */
+  pasteSpacing?: 'remove' | 'preserve'
+  /**
    * A área de edição rola quando o conteúdo passa da altura (padrão: true).
    * Com false, o que passa fica escondido, como num bloco de altura fixa
    * (veja onOverflowChange e truncateOnOverflow).
@@ -260,6 +268,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
     placeholder,
     singleLineBreaks = false,
     pasteImages = true,
+    pasteSpacing = 'remove',
     scrollable = true,
     allowExternalMedia = false,
     truncateOnOverflow = false,
@@ -427,6 +436,7 @@ const VersaEdit = forwardRef<VersaEditHandle, VersaEditProps>(function VersaEdit
       truncateOnOverflow,
       singleLineBreaks,
       pasteImages,
+      pasteSpacing,
       allowExternalMedia,
       shortcuts: { link: groups.has('link'), format: groups.has('format') },
       fontFamilies,

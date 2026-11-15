@@ -1,0 +1,194 @@
+{
+  "usableWidthPt": 451.29998779296875,
+  "paragraphs": [
+    {
+      "index": 1,
+      "y": 72,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 1,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Titulo de teste centralizado"
+    },
+    {
+      "index": 2,
+      "y": 112.5,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 1,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": ""
+    },
+    {
+      "index": 3,
+      "y": 138,
+      "leftIndent": 0,
+      "firstLineIndent": 35.4,
+      "lines": 4,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Texto de exemplo para medir a entrelinha e o espacamento entre paragrafos, com frases de tamanho medio que ocupam mais de uma linha na largura util da pagina. Texto de exemplo para medir a entrelinha e o espacamento entre paragrafos, com frases de tamanho medio que ocupam mais de uma linha na largura util da pagina."
+    },
+    {
+      "index": 4,
+      "y": 213,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 2,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Texto de exemplo para medir a entrelinha e o espacamento entre paragrafos, com frases de tamanho medio que ocupam mais de uma linha na largura util da pagina."
+    },
+    {
+      "index": 5,
+      "y": 255,
+      "leftIndent": 36,
+      "firstLineIndent": 0,
+      "lines": 3,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Texto de exemplo para medir a entrelinha e o espacamento entre paragrafos, com frases de tamanho medio que ocupam mais de uma linha na largura util da pagina."
+    },
+    {
+      "index": 6,
+      "y": 317.25,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 2,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Texto de exemplo para medir a entrelinha e o espacamento entre paragrafos, com frases de tamanho medio que ocupam mais de uma linha na largura util da pagina."
+    },
+    {
+      "index": 7,
+      "y": 364.5,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 2,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Texto de exemplo para medir a entrelinha e o espacamento entre paragrafos, com frases de tamanho medio que ocupam mais de uma linha na largura util da pagina."
+    },
+    {
+      "index": 8,
+      "y": 407.25,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 2,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Texto de exemplo para medir a entrelinha e o espacamento entre paragrafos, com frases de tamanho medio que ocupam mais de uma linha na largura util da pagina."
+    },
+    {
+      "index": 9,
+      "y": 459,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 2,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Texto de exemplo para medir a entrelinha e o espacamento entre paragrafos, com frases de tamanho medio que ocupam mais de uma linha na largura util da pagina."
+    },
+    {
+      "index": 10,
+      "y": 525.75,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 1,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": ""
+    },
+    {
+      "index": 11,
+      "y": 542.25,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 1,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Subtitulo com o estilo Titulo 2"
+    },
+    {
+      "index": 12,
+      "y": 568.5,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 2,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Texto de exemplo para medir a entrelinha e o espacamento entre paragrafos, com frases de tamanho medio que ocupam mais de uma linha na largura util da pagina."
+    },
+    {
+      "index": 13,
+      "y": 610.5,
+      "leftIndent": 36,
+      "firstLineIndent": 0,
+      "lines": 1,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Primeiro paragrafo de lista sem marcador"
+    },
+    {
+      "index": 14,
+      "y": 627,
+      "leftIndent": 36,
+      "firstLineIndent": 0,
+      "lines": 1,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Segundo paragrafo de lista sem marcador"
+    },
+    {
+      "index": 15,
+      "y": 644.25,
+      "leftIndent": 36,
+      "firstLineIndent": 0,
+      "lines": 1,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Terceiro paragrafo de lista sem marcador"
+    },
+    {
+      "index": 16,
+      "y": 669,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 2,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Texto de exemplo para medir a entrelinha e o espacamento entre paragrafos, com frases de tamanho medio que ocupam mais de uma linha na largura util da pagina."
+    },
+    {
+      "index": 17,
+      "y": 708,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 1,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Paragrafo final."
+    }
+  ],
+  "generator": "Word 16.0",
+  "note": "Medido pelo Microsoft Word no documento sintético de onde o HTML da área de transferência foi copiado: posição vertical (pt), recuo esquerdo e da primeira linha (pt), linhas, tipo, nível e marcador de lista de cada parágrafo."
+}

@@ -84,6 +84,7 @@ O `initialContent` é carregado (e sanitizado) quando muda; o editor ignora o ec
 | `showFileButtons`                                    | `boolean`                                           | `true`                            | Botões Salvar/Abrir arquivo.                                                                                                 |
 | `showDictation` / `speechLang` / `speechRecognition` | —                                                   | `true` / do locale / do navegador | Ditado (abaixo).                                                                                                             |
 | `pasteImages`                                        | `boolean`                                           | `true`                            | Mantém imagens na colagem (ver Segurança).                                                                                   |
+| `pasteSpacing`                                       | `'remove' \| 'preserve'`                            | `'remove'`                        | Colar do Word: mantém espaçamento, recuos, linhas em branco e listas ([detalhes](#colar-do-word)).                           |
 | `allowExternalMedia`                                 | `boolean`                                           | `false`                           | Deixa `<audio>`/`<video>` do conteúdo carregarem dentro do editor.                                                           |
 | `scrollable`                                         | `boolean`                                           | `true`                            | A área de edição rola quando o conteúdo passa da altura. `false`: o que passa fica escondido, como num bloco de altura fixa. |
 | `truncateOnOverflow`                                 | `boolean`                                           | `false`                           | Corta o que passar da altura do editor.                                                                                      |
@@ -210,6 +211,35 @@ elas redimensionam a área de edição com o mouse, o dedo ou as setas (com a al
   qualquer moldura, e `core.setContentLimit({ width, height })` mantém o limite de conteúdo no
   tamanho configurado.
 
+### Colar do Word
+
+Por padrão (`pasteSpacing="remove"`), o texto colado do Microsoft Word segue o espaçamento do site:
+espaço entre parágrafos, entrelinha, recuos e linhas em branco são descartados, como sempre. Com
+`pasteSpacing="preserve"`, o VersaEdit mantém o layout do Word no HTML:
+
+```tsx
+<VersaEdit pasteSpacing="preserve" />
+```
+
+- Espaço antes e depois dos parágrafos, recuo esquerdo e da primeira linha e entrelinha são lidos
+  dos estilos do Word (inclusive as regras de classe que o Word envia, como `MsoNormal`) e gravados
+  como estilo inline em pt, dentro de limites seguros: espaçamento de 0 a 72 pt, recuo esquerdo de
+  0 a 144 pt, recuo da primeira linha de −72 a 144 pt. Linhas em branco (parágrafos vazios) ficam.
+- As listas do Word viram listas `ul`/`ol` de verdade: níveis; marcadores, números, letras e
+  romanos; numeração continuada depois de um parágrafo (`<ol start="4">`) ou reiniciada; listas
+  mistas (itens vindos de uma página da web mais parágrafos do Word da mesma lista); e o recuo de
+  cada nível, como estilo inline da lista. O marcador desenhado pelo Word sai; o texto do item fica
+  como está.
+- Entrelinha: o "Múltiplo" do Word (1,15, 1,5…) é aplicado sobre a linha simples do navegador para
+  a fonte, medida na colagem. O Word e os navegadores tiram a linha simples de métricas diferentes
+  da mesma fonte (de cerca de −8% a +6%; Aptos −7,7%), então um documento longo se desloca cerca de
+  uma linha a cada treze. "Exatamente" e "Pelo menos" mantêm o valor.
+- Documentos salvos mantêm esse espaçamento ao serem reabertos, qualquer que seja `pasteSpacing`:
+  a opção só decide o que acontece na colagem. É CSS inline comum, mostrado igual no site, com ou
+  sem o [Layout Mirror](#layout-mirror). "Limpar formatação" o remove dos parágrafos selecionados.
+- Só o HTML do Microsoft Word é afetado; colar de páginas da web e de outras origens funciona como
+  antes. Veja em [Limitações conhecidas](#limitações-conhecidas) o que ainda difere do Word.
+
 ## Exemplos e guias
 
 - [Guia de integração](docs/integration.pt-BR.md): sanitização no servidor, salvar, Supabase (chave
@@ -288,7 +318,15 @@ lado a lado, como antes; nada mais muda.
   do sistema e os menus do Safari ainda não foram verificados à mão.
 - Depois do marca-texto ou de uma cor personalizada, o negrito é gravado como
   `<span style="font-weight: bold">` em vez de `<b>` (funciona igual).
-- A colagem do Microsoft Word ainda não foi validada com documentos reais.
+- Colagem do Microsoft Word (`pasteSpacing="preserve"`), comparada com o Word na mesma largura,
+  fonte e tamanho: a entrelinha difere pela métrica da fonte (ver [Colar do Word](#colar-do-word));
+  um parágrafo pode quebrar em uma linha a mais ou a menos; a linha horizontal ocupa cerca de 17 pt
+  a mais no Word; as células de tabela recebem o espaço interno do site (ou do editor); parágrafos e
+  itens que o Word espaça automaticamente (conteúdo vindo de uma página da web,
+  `mso-margin-*-alt: auto`) perdem esses 14 pt; a numeração em vários níveis como 1.1 e 1.2 aparece
+  como lista aninhada numerada 1, 2; os marcadores gráficos do Word viram o disco e o círculo do
+  navegador; e o texto colado usa uma única fonte da lista de fontes do editor (a primeira
+  encontrada no documento). A colagem não é coberta por testes automáticos no Firefox.
 - Só exporta HTML (sem JSON nem Markdown).
 - WebKit (Safari), com `truncateOnOverflow` e a área de edição redimensionada: os espaços
   digitados depois do limite de conteúdo podem ser gravados com uma mistura diferente de espaços e

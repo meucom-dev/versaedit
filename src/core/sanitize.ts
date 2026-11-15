@@ -1,6 +1,14 @@
 import DOMPurify from 'dompurify'
 import { cssFontSizeToPoints } from './fonts'
 import { indentMargin, isIndentBlockquote } from './indent'
+import {
+  LIST_STYLE_TYPES,
+  normalizeListBox,
+  normalizeLineHeight,
+  normalizeSpacing,
+  SPACING_BLOCKS,
+  SPACING_PROPERTIES,
+} from './spacing'
 
 // ─── SEGURANÇA ────────────────────────────────────────────────────
 // Primeira camada de toda entrada de HTML (carregar, abrir arquivo, colar):
@@ -172,6 +180,42 @@ export function sanitizeHtml(html: string): string {
         ? indentMargin(el)
         : null
     const indentBlockquote = indent !== null && isIndentBlockquote(el as HTMLElement)
+    // Espaçamento de blocos de texto (espaço antes e depois, recuos, entrelinha),
+    // aceito sempre que válido, qualquer que seja a opção de colagem: um documento
+    // salvo com espaçamento não o perde ao ser reaberto. O recuo do editor (40px
+    // por nível) continua com a regra própria acima
+    const textBlock =
+      el instanceof HTMLElement &&
+      !keepLayout &&
+      SPACING_BLOCKS.has(el.tagName) &&
+      !indentBlockquote
+    const blockFontPt = fontSizePt ?? 12
+    const blockSpacing = textBlock
+      ? SPACING_PROPERTIES.flatMap((property) => {
+          if (property === 'margin-left' && indent) return []
+          const raw = inlineStyle!.getPropertyValue(property)
+          const value = raw ? normalizeSpacing(property, raw, blockFontPt) : null
+          // Recuo zero é o padrão: não precisa ficar no HTML
+          const zeroIndent =
+            value === '0pt' && (property === 'margin-left' || property === 'text-indent')
+          return value && !zeroIndent ? [[property, value] as const] : []
+        })
+      : []
+    // Tipo de marcador de listas (listas do Word reconstruídas na colagem)
+    const isList = !!inlineStyle && (el.tagName === 'OL' || el.tagName === 'UL')
+    const listStyle = isList ? inlineStyle!.listStyleType : ''
+    // Recuo e margens de listas (listas do Word reconstruídas na colagem)
+    const listBox = isList
+      ? (['margin-top', 'margin-bottom', 'padding-left'] as const).flatMap((property) => {
+          const raw = inlineStyle!.getPropertyValue(property)
+          const value = raw ? normalizeListBox(property, raw) : null
+          return value ? [[property, value] as const] : []
+        })
+      : []
+    const blockLineHeight =
+      textBlock && inlineStyle!.lineHeight
+        ? normalizeLineHeight(inlineStyle!.lineHeight, blockFontPt)
+        : null
     // style e class são esvaziados no lugar (não removidos e recriados), para
     // que os atributos mantenham a posição; os vazios saem no fim
     if (inlineStyle && el.hasAttribute('style')) inlineStyle.cssText = ''
@@ -217,7 +261,12 @@ export function sanitizeHtml(html: string): string {
       if (['left', 'center', 'right', 'justify'].includes(textAlign)) {
         el.style.textAlign = textAlign
       }
-      if (Number.isFinite(lineHeight) && lineHeight >= 0.8 && lineHeight <= 3) {
+      // Espaçamento antes da entrelinha: a mesma ordem da colagem (reabrir não muda o HTML)
+      if (LIST_STYLE_TYPES.has(listStyle)) el.style.listStyleType = listStyle
+      for (const [property, value] of listBox) el.style.setProperty(property, value)
+      for (const [property, value] of blockSpacing) el.style.setProperty(property, value)
+      if (blockLineHeight) el.style.lineHeight = blockLineHeight
+      else if (Number.isFinite(lineHeight) && lineHeight >= 0.8 && lineHeight <= 3) {
         el.style.lineHeight = String(lineHeight)
       }
       for (const [property, value] of layout) {

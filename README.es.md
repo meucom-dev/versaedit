@@ -86,6 +86,7 @@ export function PostEditor({
 | `showFileButtons`                                    | `boolean`                                           | `true`                      | Botones Guardar/Abrir archivo.                                                                                                  |
 | `showDictation` / `speechLang` / `speechRecognition` | —                                                   | `true` / locale / navegador | Dictado (ver abajo).                                                                                                            |
 | `pasteImages`                                        | `boolean`                                           | `true`                      | Conserva las imágenes al pegar (ver Seguridad).                                                                                 |
+| `pasteSpacing`                                       | `'remove' \| 'preserve'`                            | `'remove'`                  | Pegar desde Word: conserva espaciado, sangrías, líneas en blanco y listas ([detalles](#pegar-desde-word)).                      |
 | `allowExternalMedia`                                 | `boolean`                                           | `false`                     | Permite que `<audio>`/`<video>` del contenido cargado se carguen dentro del editor.                                             |
 | `scrollable`                                         | `boolean`                                           | `true`                      | El área de edición se desplaza cuando el contenido es más alto. `false`: lo que sobra se oculta, como un bloque de altura fija. |
 | `truncateOnOverflow`                                 | `boolean`                                           | `false`                     | Recorta el contenido que supera la altura del editor.                                                                           |
@@ -212,6 +213,37 @@ controlador enfocado; Shift: 1 px). `sizeControls` agrega campos de ancho y alto
   controladores a cualquier marco, y `core.setContentLimit({ width, height })` mantiene el límite de
   contenido en el tamaño configurado.
 
+### Pegar desde Word
+
+Por defecto (`pasteSpacing="remove"`), el texto pegado desde Microsoft Word sigue el espaciado del
+sitio: el espacio entre párrafos, el interlineado, las sangrías y las líneas en blanco se
+descartan, como siempre. Con `pasteSpacing="preserve"`, VersaEdit conserva el diseño de Word en el
+HTML:
+
+```tsx
+<VersaEdit pasteSpacing="preserve" />
+```
+
+- El espacio antes y después de los párrafos, las sangrías izquierda y de primera línea y el
+  interlineado se leen de los estilos de Word (incluidas las reglas de clase que Word envía, como
+  `MsoNormal`) y se guardan como estilo en línea en pt, dentro de límites seguros: espaciado de 0 a
+  72 pt, sangría izquierda de 0 a 144 pt, sangría de primera línea de −72 a 144 pt. Las líneas en
+  blanco (párrafos vacíos) se conservan.
+- Las listas de Word se convierten en listas `ul`/`ol` reales: niveles; viñetas, números, letras y
+  romanos; numeración continuada tras un párrafo (`<ol start="4">`) o reiniciada; listas mixtas
+  (elementos que vinieron de una página web más párrafos de Word de la misma lista); y la sangría de
+  cada nivel, como estilo en línea de la lista. La viñeta dibujada por Word se quita; el texto del
+  elemento queda como está.
+- Interlineado: el "Múltiple" de Word (1,15, 1,5…) se aplica sobre la línea sencilla del navegador
+  para la fuente, medida al pegar. Word y los navegadores toman la línea sencilla de métricas
+  distintas de la misma fuente (de cerca de −8% a +6%; Aptos −7,7%), así que un documento largo se
+  desplaza cerca de una línea cada trece. "Exacto" y "Mínimo" conservan su valor.
+- Los documentos guardados conservan este espaciado al reabrirse, sea cual sea `pasteSpacing`: la
+  opción solo decide lo que ocurre al pegar. Es CSS en línea común, mostrado igual en el sitio, con o
+  sin [Layout Mirror](#layout-mirror). "Borrar formato" lo quita de los párrafos seleccionados.
+- Solo afecta al HTML de Microsoft Word; pegar desde páginas web y otros orígenes funciona como
+  antes. Vea en [Limitaciones conocidas](#limitaciones-conocidas) lo que aún difiere de Word.
+
 ## Ejemplos y guías
 
 - [Guía de integración](docs/integration.md) (en inglés): saneamiento en el servidor, guardado,
@@ -294,7 +326,16 @@ quedan uno al lado del otro, como antes; nada más cambia.
   han verificado manualmente.
 - Después del resaltador o de un color personalizado, la negrita se guarda como
   `<span style="font-weight: bold">` en lugar de `<b>` (funciona igual).
-- El pegado desde Microsoft Word aún no se ha validado con documentos reales.
+- Pegado desde Microsoft Word (`pasteSpacing="preserve"`), comparado con Word con el mismo ancho,
+  fuente y tamaño: el interlineado difiere por la métrica de la fuente (ver
+  [Pegar desde Word](#pegar-desde-word)); un párrafo puede ocupar una línea más o menos; la línea
+  horizontal ocupa cerca de 17 pt más en Word; las celdas de tabla reciben el relleno del sitio (o
+  del editor); los párrafos y elementos que Word espacia automáticamente (contenido que vino de una
+  página web, `mso-margin-*-alt: auto`) pierden esos 14 pt; la numeración de varios niveles como
+  1.1 y 1.2 aparece como lista anidada numerada 1, 2; las viñetas gráficas de Word pasan a ser el
+  disco y el círculo del navegador; y el texto pegado usa una sola fuente de la lista de fuentes del
+  editor (la primera encontrada en el documento). El pegado no está cubierto por pruebas
+  automáticas en Firefox.
 - Solo exporta HTML (sin JSON ni Markdown).
 - WebKit (Safari), con `truncateOnOverflow` y el área de edición redimensionada: los espacios
   escritos después del límite de contenido pueden guardarse con una mezcla distinta de espacios y

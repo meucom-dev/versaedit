@@ -67,6 +67,16 @@ passes through unchanged (only re-parsed), and the 42 XSS vectors come out witho
 handlers or `javascript:`/`data:` links. Keep `style` and `class` attributes: formatting, image
 positions and text boxes depend on them.
 
+**Pasted from Word with `pasteSpacing="preserve"`.** The content carries paragraph spacing,
+indents and line spacing as inline styles in pt (`margin-top`, `margin-bottom`, `margin-left`,
+`text-indent`, `line-height`), and Word lists as `ul`/`ol` with `start`, `type`,
+`list-style-type`, `padding-left` and margins. The recipe above keeps all of it (it keeps the
+`style` attribute and the list attributes); a stricter sanitizer must allow these properties, or
+the layout from Word is lost on save. The editor accepts them on load with the same limits,
+whatever `pasteSpacing` says. _Verified:_ `tests/unit/word-spacing.test.ts`,
+`tests/unit/word-lists.test.ts` and `tests/unit/word-clipboard.test.ts` (HTML copied from the
+Word clipboard).
+
 ## Saving content
 
 Read the HTML from `onChange` (every change) or from the ref (`getHTML()`, when saving):

@@ -1,0 +1,84 @@
+{
+  "usableWidthPt": 425.1999816894531,
+  "paragraphs": [
+    {
+      "index": 1,
+      "y": 70.5,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 1,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Lista vinda da web:"
+    },
+    {
+      "index": 2,
+      "y": 99,
+      "leftIndent": 36,
+      "firstLineIndent": -18,
+      "lines": 1,
+      "listType": 4,
+      "level": 1,
+      "marker": "",
+      "text": "Primeiro item web: texto do primeiro item."
+    },
+    {
+      "index": 3,
+      "y": 112.5,
+      "leftIndent": 36,
+      "firstLineIndent": -18,
+      "lines": 1,
+      "listType": 4,
+      "level": 1,
+      "marker": "",
+      "text": "Segundo item web: texto do segundo item."
+    },
+    {
+      "index": 4,
+      "y": 140.25,
+      "leftIndent": 36,
+      "firstLineIndent": 0,
+      "lines": 1,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Paragrafo recuado dentro da lista."
+    },
+    {
+      "index": 5,
+      "y": 168,
+      "leftIndent": 36,
+      "firstLineIndent": -18,
+      "lines": 1,
+      "listType": 4,
+      "level": 1,
+      "marker": "",
+      "text": "Item continuado no Word."
+    },
+    {
+      "index": 6,
+      "y": 181.5,
+      "leftIndent": 36,
+      "firstLineIndent": -18,
+      "lines": 1,
+      "listType": 4,
+      "level": 1,
+      "marker": "",
+      "text": "Outro item continuado no Word."
+    },
+    {
+      "index": 7,
+      "y": 210,
+      "leftIndent": 0,
+      "firstLineIndent": 0,
+      "lines": 1,
+      "listType": 0,
+      "level": 1,
+      "marker": "",
+      "text": "Fim."
+    }
+  ],
+  "generator": "Word 16.0",
+  "note": "Medido pelo Microsoft Word no documento sintético de onde o HTML da área de transferência foi copiado: posição vertical (pt), recuo esquerdo e da primeira linha (pt), linhas, tipo, nível e marcador de lista de cada parágrafo."
+}

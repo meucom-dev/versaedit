@@ -33,7 +33,8 @@ import { closestFontSizeOption, matchFontFamily } from './fonts'
 import { withCallBoundary } from './boundary'
 import { createEditorHistory } from './history'
 import { resolveLabels, type VersaEditLabels, type VersaEditLocale } from './i18n'
-import { markIndentBlockquotes } from './indent'
+import { indentMargin, markIndentBlockquotes } from './indent'
+import { clearSpacing, measureNormalLineHeight, SPACING_BLOCKS } from './spacing'
 import {
   editorContentExceedsHeight,
   measureEditorContentHeight,
@@ -129,6 +130,8 @@ export interface CoreOptions {
   accentColor: string
   /** Colagem: mantém imagens (endereço validado). Ver a prop pasteImages */
   pasteImages: boolean
+  /** Colagem do Word: 'remove' (padrão) ou 'preserve' o espaçamento. Ver a prop pasteSpacing */
+  pasteSpacing: 'remove' | 'preserve'
   /** Deixa áudio e vídeo externos carregarem dentro do editor. Ver a prop */
   allowExternalMedia: boolean
   /** Atalhos ligados: Ctrl+K (link) e Ctrl+B/I/U (formatação) */
@@ -213,6 +216,7 @@ const DEFAULT_OPTIONS: CoreOptions = {
   labels: resolveLabels('en'),
   accentColor: '#2563eb',
   pasteImages: true,
+  pasteSpacing: 'remove',
   allowExternalMedia: false,
   shortcuts: { link: true, format: true },
 }
@@ -1073,7 +1077,24 @@ export class VersaEditCore {
   }
 
   clearFormatting = (): void => {
+    this.clearBlockSpacing()
     this.execCommand('removeFormat')
+  }
+
+  // Limpar formatação também tira o espaçamento (espaço antes e depois, recuo da
+  // primeira linha, entrelinha) dos blocos selecionados, ou do bloco do cursor.
+  // O recuo do editor (botões de recuo, 40px por nível) fica.
+  private clearBlockSpacing(): void {
+    const range = this.getCurrentRange()
+    if (!range || !isRangeWithinEditor(this.el, range)) return
+    const blocks = Array.from(this.el.querySelectorAll<HTMLElement>('[style]')).filter(
+      (el) =>
+        SPACING_BLOCKS.has(el.tagName) &&
+        // Caixas de texto: as margens são a posição em que foram soltas
+        !el.classList.contains('rich-textbox') &&
+        range.intersectsNode(el),
+    )
+    for (const block of blocks) clearSpacing(block, indentMargin(block) !== null)
   }
 
   // ─── INSERÇÕES ───────────────────────────────────────────────────
@@ -2062,7 +2083,11 @@ export class VersaEditCore {
       clipboardText,
       this.opts.singleLineBreaks,
       this.opts.fontFamilies,
-      { images: this.opts.pasteImages },
+      {
+        images: this.opts.pasteImages,
+        spacing: this.opts.pasteSpacing,
+        measureLineHeight: measureNormalLineHeight,
+      },
     )
 
     // Deixa colagens que não sejam texto (como imagem copiada) seguirem o

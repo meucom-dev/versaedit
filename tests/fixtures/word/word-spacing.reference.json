@@ -1,0 +1,128 @@
+{
+  "generator": "Word 16.0",
+  "usableWidthPt": 451.29998779296875,
+  "font": "Aptos",
+  "fontSizePt": 12,
+  "paragraphs": [
+    {
+      "index": 1,
+      "y": 72,
+      "lines": 1,
+      "page": 1,
+      "text": "Titulo de teste centrali"
+    },
+    {
+      "index": 2,
+      "y": 113.25,
+      "lines": 1,
+      "page": 1,
+      "text": ""
+    },
+    {
+      "index": 3,
+      "y": 138,
+      "lines": 4,
+      "page": 1,
+      "text": "Texto de exemplo para me"
+    },
+    {
+      "index": 4,
+      "y": 213.75,
+      "lines": 2,
+      "page": 1,
+      "text": "Texto de exemplo para me"
+    },
+    {
+      "index": 5,
+      "y": 255.75,
+      "lines": 3,
+      "page": 1,
+      "text": "Texto de exemplo para me"
+    },
+    {
+      "index": 6,
+      "y": 318.75,
+      "lines": 2,
+      "page": 1,
+      "text": "Texto de exemplo para me"
+    },
+    {
+      "index": 7,
+      "y": 366,
+      "lines": 2,
+      "page": 1,
+      "text": "Texto de exemplo para me"
+    },
+    {
+      "index": 8,
+      "y": 408.75,
+      "lines": 2,
+      "page": 1,
+      "text": "Texto de exemplo para me"
+    },
+    {
+      "index": 9,
+      "y": 460.5,
+      "lines": 2,
+      "page": 1,
+      "text": "Texto de exemplo para me"
+    },
+    {
+      "index": 10,
+      "y": 527.25,
+      "lines": 1,
+      "page": 1,
+      "text": ""
+    },
+    {
+      "index": 11,
+      "y": 543.75,
+      "lines": 1,
+      "page": 1,
+      "text": "Subtitulo com o estilo T"
+    },
+    {
+      "index": 12,
+      "y": 570,
+      "lines": 2,
+      "page": 1,
+      "text": "Texto de exemplo para me"
+    },
+    {
+      "index": 13,
+      "y": 612,
+      "lines": 1,
+      "page": 1,
+      "text": "Primeiro paragrafo de li"
+    },
+    {
+      "index": 14,
+      "y": 629.25,
+      "lines": 1,
+      "page": 1,
+      "text": "Segundo paragrafo de lis"
+    },
+    {
+      "index": 15,
+      "y": 646.5,
+      "lines": 1,
+      "page": 1,
+      "text": "Terceiro paragrafo de li"
+    },
+    {
+      "index": 16,
+      "y": 671.25,
+      "lines": 2,
+      "page": 1,
+      "text": "Texto de exemplo para me"
+    },
+    {
+      "index": 17,
+      "y": 711,
+      "lines": 1,
+      "page": 1,
+      "text": "Paragrafo final."
+    }
+  ],
+  "note": "Gerado pelo Microsoft Word (script de automação, texto sintético): HTML salvo como página da Web e posição vertical (pt, a partir do topo da página) e número de linhas de cada parágrafo, medidos pelo próprio Word."
+}

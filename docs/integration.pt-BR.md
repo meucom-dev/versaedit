@@ -67,6 +67,16 @@ sem mudança (só reinterpretado pelo parser), e os 42 vetores de XSS saem sem s
 links `javascript:`/`data:`. Mantenha os atributos `style` e `class`: formatação, posição de imagens e
 caixas de texto dependem deles.
 
+**Colado do Word com `pasteSpacing="preserve"`.** O conteúdo traz o espaço entre parágrafos, os
+recuos e a entrelinha como estilo inline em pt (`margin-top`, `margin-bottom`, `margin-left`,
+`text-indent`, `line-height`), e as listas do Word como `ul`/`ol` com `start`, `type`,
+`list-style-type`, `padding-left` e margens. A receita acima mantém tudo isso (ela mantém o atributo
+`style` e os atributos de lista); um sanitizador mais restrito precisa permitir essas propriedades,
+senão o layout do Word se perde ao salvar. O editor as aceita ao carregar, com os mesmos limites,
+qualquer que seja `pasteSpacing`. _Verificado:_ `tests/unit/word-spacing.test.ts`,
+`tests/unit/word-lists.test.ts` e `tests/unit/word-clipboard.test.ts` (HTML copiado da área de
+transferência do Word).
+
 ## Salvar o conteúdo
 
 Leia o HTML pelo `onChange` (a cada mudança) ou pela ref (`getHTML()`, na hora de salvar):

@@ -40,9 +40,32 @@ by the internal stabilization batches.
   `core.setContentLimit()`. Opening a menu and then resizing closes the menu through an internal
   signal (no event is sent to the page). The playground has a Resizing section (handles, limits,
   fields, `onResize` in the event log, Layout Mirror following the chosen width).
+- Pasting from Microsoft Word keeps its layout with the new `pasteSpacing="preserve"` prop (the
+  default `'remove'` pastes as before). Space before and after paragraphs, left and first-line
+  indents and line spacing are resolved from Word's styles, including the class rules it sends
+  (`MsoNormal`, contextual spacing of list paragraphs), read as text with only simple selectors
+  and allowed properties, and written as inline styles in pt within limits (spacing 0–72 pt, left
+  indent 0–144 pt, first-line indent −72 to 144 pt). Word's blank lines are kept. Word lists
+  (`mso-list` paragraphs) become real `ul`/`ol` lists with their levels, bullets, numbers,
+  letters and Roman numerals (`type` plus `list-style-type`, which survives Layout Mirror),
+  continued (`start`) or restarted numbering, mixed lists (Word `ul`/`li` plus `mso-list`
+  paragraphs of the same list) and each level's indent (`padding-left` and no own margins on the
+  list, as in Word); only Word's drawn bullet is removed. Line spacing "Multiple" is applied to the
+  browser's single line height for the font, measured when pasting (Word and browsers use
+  different metrics of the same font: about −8% to +6%, Aptos −7.7%); "Exactly" and "At least"
+  keep their value. "Clear formatting" also removes this spacing from the selected paragraphs.
+  Checked with HTML copied from the Word clipboard and compared with the positions measured by
+  Word at the same width, font and size (list text starts match exactly). Remaining differences
+  are listed in the README (Known limitations).
 
 ### Changed
 
+- Loading content (`initialContent`, `setHTML`, opening a file) keeps valid paragraph spacing
+  instead of removing it: `margin-top`, `margin-bottom`, `margin-left`, `text-indent` and
+  `line-height` (number or length) on paragraphs, headings, list items, `div` and `blockquote`,
+  normalized to pt within the same limits as pasting from Word, and `list-style-type`,
+  `padding-left` and vertical margins on lists. HTML loaded with such inline styles (previously
+  stripped) now shows them; documents saved by earlier versions never had them and are unchanged.
 - Text boxes and images now behave the same way in the editing area. The floating menu has the
   same order for both (Left · Center · Right), and for a text box these buttons now move the box
   like an image: Left/Right float it with the text flowing around it (`tb-float-left` /

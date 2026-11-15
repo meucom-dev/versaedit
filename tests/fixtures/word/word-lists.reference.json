@@ -1,0 +1,216 @@
+{
+  "generator": "Word 16.0",
+  "paragraphs": [
+    {
+      "index": 1,
+      "text": "Lista com marcadores:",
+      "listType": 0,
+      "level": 1,
+      "marker": ""
+    },
+    {
+      "index": 2,
+      "text": "Primeiro marcador",
+      "listType": 4,
+      "level": 1,
+      "marker": ""
+    },
+    {
+      "index": 3,
+      "text": "Segundo marcador com negrito",
+      "listType": 4,
+      "level": 1,
+      "marker": ""
+    },
+    {
+      "index": 4,
+      "text": "Subitem um",
+      "listType": 4,
+      "level": 2,
+      "marker": "o"
+    },
+    {
+      "index": 5,
+      "text": "Subitem dois",
+      "listType": 4,
+      "level": 2,
+      "marker": "o"
+    },
+    {
+      "index": 6,
+      "text": "Terceiro marcador",
+      "listType": 4,
+      "level": 1,
+      "marker": ""
+    },
+    {
+      "index": 7,
+      "text": "Texto entre listas.",
+      "listType": 0,
+      "level": 1,
+      "marker": ""
+    },
+    {
+      "index": 8,
+      "text": "Numero um",
+      "listType": 3,
+      "level": 1,
+      "marker": "1."
+    },
+    {
+      "index": 9,
+      "text": "Numero dois",
+      "listType": 3,
+      "level": 1,
+      "marker": "2."
+    },
+    {
+      "index": 10,
+      "text": "Numero tres",
+      "listType": 3,
+      "level": 1,
+      "marker": "3."
+    },
+    {
+      "index": 11,
+      "text": "Interrupcao da numeracao.",
+      "listType": 0,
+      "level": 1,
+      "marker": ""
+    },
+    {
+      "index": 12,
+      "text": "Numero quatro continuado",
+      "listType": 3,
+      "level": 1,
+      "marker": "4."
+    },
+    {
+      "index": 13,
+      "text": "Numero cinco continuado",
+      "listType": 3,
+      "level": 1,
+      "marker": "5."
+    },
+    {
+      "index": 14,
+      "text": "Outro texto.",
+      "listType": 0,
+      "level": 1,
+      "marker": ""
+    },
+    {
+      "index": 15,
+      "text": "Reinicio um",
+      "listType": 3,
+      "level": 1,
+      "marker": "1."
+    },
+    {
+      "index": 16,
+      "text": "Reinicio dois",
+      "listType": 3,
+      "level": 1,
+      "marker": "2."
+    },
+    {
+      "index": 17,
+      "text": "Letras:",
+      "listType": 0,
+      "level": 1,
+      "marker": ""
+    },
+    {
+      "index": 18,
+      "text": "Item a",
+      "listType": 3,
+      "level": 1,
+      "marker": "a)"
+    },
+    {
+      "index": 19,
+      "text": "Item b",
+      "listType": 3,
+      "level": 1,
+      "marker": "b)"
+    },
+    {
+      "index": 20,
+      "text": "Romanos:",
+      "listType": 0,
+      "level": 1,
+      "marker": ""
+    },
+    {
+      "index": 21,
+      "text": "Item romano um",
+      "listType": 3,
+      "level": 1,
+      "marker": "i."
+    },
+    {
+      "index": 22,
+      "text": "Item romano dois",
+      "listType": 3,
+      "level": 1,
+      "marker": "ii."
+    },
+    {
+      "index": 23,
+      "text": "Varios niveis:",
+      "listType": 0,
+      "level": 1,
+      "marker": ""
+    },
+    {
+      "index": 24,
+      "text": "Nivel um",
+      "listType": 4,
+      "level": 1,
+      "marker": "1."
+    },
+    {
+      "index": 25,
+      "text": "Nivel um ponto um",
+      "listType": 4,
+      "level": 2,
+      "marker": "1.1."
+    },
+    {
+      "index": 26,
+      "text": "Nivel um ponto dois",
+      "listType": 4,
+      "level": 2,
+      "marker": "1.2."
+    },
+    {
+      "index": 27,
+      "text": "Nivel dois",
+      "listType": 4,
+      "level": 1,
+      "marker": "2."
+    },
+    {
+      "index": 28,
+      "text": "• texto que comeca com um marcador digitado",
+      "listType": 0,
+      "level": 1,
+      "marker": ""
+    },
+    {
+      "index": 29,
+      "text": "1. texto que comeca com numero digitado",
+      "listType": 0,
+      "level": 1,
+      "marker": ""
+    },
+    {
+      "index": 30,
+      "text": "Fim.",
+      "listType": 0,
+      "level": 1,
+      "marker": ""
+    }
+  ],
+  "note": "Gerado pelo Microsoft Word (script de automação, texto sintético): marcador (ListString), nível e tipo de lista de cada parágrafo, como o Word os mostra."
+}

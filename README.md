@@ -84,6 +84,7 @@ export function PostEditor({
 | `showFileButtons`                                    | `boolean`                                           | `true`                    | Save/Open file buttons.                                                                                               |
 | `showDictation` / `speechLang` / `speechRecognition` | —                                                   | `true` / locale / browser | Dictation (see below).                                                                                                |
 | `pasteImages`                                        | `boolean`                                           | `true`                    | Keep images when pasting (see Security).                                                                              |
+| `pasteSpacing`                                       | `'remove' \| 'preserve'`                            | `'remove'`                | Pasting from Word: keep its spacing, indents, blank lines and lists ([details](#pasting-from-word)).                  |
 | `allowExternalMedia`                                 | `boolean`                                           | `false`                   | Let `<audio>`/`<video>` in loaded content load inside the editor.                                                     |
 | `scrollable`                                         | `boolean`                                           | `true`                    | The editing area scrolls when content is taller. `false`: extra content is hidden, like a fixed-height block.         |
 | `truncateOnOverflow`                                 | `boolean`                                           | `false`                   | Cut content that exceeds the editor height.                                                                           |
@@ -205,6 +206,34 @@ Shift: 1 px). `sizeControls` adds width and height fields below the area.
   handles to any frame, and `core.setContentLimit({ width, height })` keeps the content limit at
   the configured size.
 
+### Pasting from Word
+
+By default (`pasteSpacing="remove"`), text pasted from Microsoft Word follows your site's spacing:
+paragraph and line spacing, indents and blank lines are dropped, as before. With
+`pasteSpacing="preserve"`, VersaEdit keeps Word's layout in the HTML:
+
+```tsx
+<VersaEdit pasteSpacing="preserve" />
+```
+
+- Space before and after paragraphs, left and first-line indents and line spacing are read from
+  Word's styles (including the class rules Word sends, such as `MsoNormal`) and written as inline
+  styles in pt, within safe limits: spacing 0–72 pt, left indent 0–144 pt, first-line indent −72
+  to 144 pt. Blank lines (empty paragraphs) are kept.
+- Word lists become real `ul`/`ol` lists: levels; bullets, numbers, letters and Roman numerals;
+  numbering continued after a paragraph (`<ol start="4">`) or restarted; mixed lists (items that
+  came from a web page plus Word paragraphs of the same list); and the indent of each level, as
+  inline style of the list. Word's drawn bullet is removed; the item text is kept as it is.
+- Line spacing: Word's "Multiple" (1.15, 1.5…) is applied to the browser's single line height for
+  that font, measured when pasting. Word and browsers take "single" from different metrics of the
+  same font (from about −8% to +6%; Aptos −7.7%), so a long document drifts by about one line in
+  thirteen. "Exactly" and "At least" keep their value.
+- Saved documents keep this spacing when reopened, whatever `pasteSpacing` says: it only decides
+  what happens when pasting. It is plain inline CSS, shown the same on your site, with or without
+  [Layout Mirror](#layout-mirror). "Clear formatting" removes it from the selected paragraphs.
+- Only HTML from Microsoft Word is affected; pasting from web pages and other sources works as
+  before. See [Known limitations](#known-limitations) for what still differs from Word.
+
 ## Examples and guides
 
 - [Integration guide](docs/integration.md): server sanitization, saving, Supabase (public key + RLS),
@@ -282,7 +311,15 @@ side, as before; nothing else changes.
   Korean) and Safari's menus have not been checked by hand yet.
 - After the highlighter or a custom color, bold is written as `<span style="font-weight: bold">`
   instead of `<b>` (works the same).
-- Pasting from Microsoft Word has not been validated with real documents yet.
+- Pasting from Microsoft Word (`pasteSpacing="preserve"`), compared with Word at the same width,
+  font and size: line spacing differs by the font metrics (see [Pasting from Word](#pasting-from-word));
+  a paragraph may wrap into one line more or less; a horizontal line takes about 17 pt more
+  height in Word; table cells get the site's (or editor's) padding; paragraphs and list items
+  that Word spaces automatically (content that came from a web page, `mso-margin-*-alt: auto`)
+  lose those 14 pt; multi-level numbering such as 1.1 and 1.2 shows as a nested list numbered 1,
+  2; Word's bullet glyphs become the browser's disc and circle; and the pasted text uses a single
+  font from the editor's font list (the first one found in the document). Pasting is not covered
+  by automated tests in Firefox.
 - Only HTML output (no JSON or Markdown export).
 - WebKit (Safari), with `truncateOnOverflow` and a resized editing area: spaces typed after the
   content limit may be saved as a different mix of spaces and `&nbsp;` than in an area that was

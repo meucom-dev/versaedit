@@ -1,0 +1,90 @@
+{
+  "generator": "Word 16.0",
+  "paragraphs": [
+    {
+      "index": 1,
+      "y": 72,
+      "intable": false,
+      "text": "Texto antes da linha."
+    },
+    {
+      "index": 2,
+      "y": 105,
+      "intable": false,
+      "text": "(linha horizontal)"
+    },
+    {
+      "index": 3,
+      "y": 122.25,
+      "intable": false,
+      "text": "Texto depois da linha."
+    },
+    {
+      "index": 4,
+      "y": 147,
+      "intable": false,
+      "text": "Texto antes da tabela."
+    },
+    {
+      "index": 5,
+      "y": 172.5,
+      "intable": true,
+      "text": "Coluna A"
+    },
+    {
+      "index": 6,
+      "y": 172.5,
+      "intable": true,
+      "text": "Coluna B"
+    },
+    {
+      "index": 7,
+      "y": 172.5,
+      "intable": true,
+      "text": "(fim da linha da tabela)"
+    },
+    {
+      "index": 8,
+      "y": 198,
+      "intable": true,
+      "text": "Linha um A"
+    },
+    {
+      "index": 9,
+      "y": 198,
+      "intable": true,
+      "text": "Linha um B"
+    },
+    {
+      "index": 10,
+      "y": 198,
+      "intable": true,
+      "text": "(fim da linha da tabela)"
+    },
+    {
+      "index": 11,
+      "y": 223.5,
+      "intable": true,
+      "text": "Linha dois A"
+    },
+    {
+      "index": 12,
+      "y": 223.5,
+      "intable": true,
+      "text": "Linha dois B"
+    },
+    {
+      "index": 13,
+      "y": 223.5,
+      "intable": true,
+      "text": "(fim da linha da tabela)"
+    },
+    {
+      "index": 14,
+      "y": 249,
+      "intable": false,
+      "text": "Texto depois da tabela."
+    }
+  ],
+  "note": "Gerado pelo Microsoft Word (script de automação, texto sintético): posição vertical (pt) de cada parágrafo, inclusive dentro da tabela."
+}

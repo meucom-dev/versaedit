@@ -110,8 +110,12 @@ describe('isSafeUrl', () => {
 })
 
 describe('sanitizeHtml (carregar conteúdo)', () => {
-  it('remove margens e classes estranhas de textos comuns', () => {
-    expect(sanitizeHtml('<p style="margin:9px" class="landing x">um</p>')).toBe('<p>um</p>')
+  it('normaliza o espaçamento de textos comuns (pt) e remove classes estranhas', () => {
+    // Desde a colagem com espaçamento do Word (pasteSpacing): o espaçamento válido de
+    // blocos de texto fica, em pt; a margem direita não é espaçamento de parágrafo
+    expect(sanitizeHtml('<p style="margin:9px" class="landing x">um</p>')).toBe(
+      '<p style="margin-top: 6.75pt; margin-bottom: 6.75pt; margin-left: 6.75pt;">um</p>',
+    )
   })
   it('mantém formatação de texto permitida', () => {
     const out = sanitizeHtml(
@@ -183,10 +187,16 @@ describe('sanitizeHtml — recuo e citação', () => {
     expect(quote.hasAttribute('role')).toBe(false)
     expect(quote.style.marginLeft).toBe('40px')
   })
-  it('margens que não são recuo do editor continuam removidas', () => {
-    expect(sanitizeHtml('<p style="margin-left: 48px;">a</p>')).toBe('<p>a</p>')
+  it('margens que não são recuo do editor viram espaçamento normalizado (pt, com limites)', () => {
+    expect(sanitizeHtml('<p style="margin-left: 48px;">a</p>')).toBe(
+      '<p style="margin-left: 36pt;">a</p>',
+    )
+    // Negativa: vai ao limite (0) e, sendo o padrão, sai
     expect(sanitizeHtml('<p style="margin-left: -40px;">a</p>')).toBe('<p>a</p>')
-    expect(sanitizeHtml('<p style="margin: 20px;">a</p>')).toBe('<p>a</p>')
+    expect(sanitizeHtml('<p style="margin: 20px;">a</p>')).toBe(
+      '<p style="margin-top: 15pt; margin-bottom: 15pt; margin-left: 15pt;">a</p>',
+    )
+    // Fora de blocos de texto, margem não é espaçamento de parágrafo
     expect(sanitizeHtml('<p><span style="margin-left: 40px;">a</span></p>')).toBe(
       '<p><span>a</span></p>',
     )
@@ -221,9 +231,11 @@ describe('sanitizeHtml — atributos ficam onde estavam', () => {
   })
   it('a filtragem não muda: classe estranha e estilo proibido saem, no lugar', () => {
     expect(
-      sanitizeHtml('<p class="x pos-left y" title="t" style="margin: 9px; color: red;">t</p>'),
+      sanitizeHtml(
+        '<p class="x pos-left y" title="t" style="font-variant: small-caps; color: red;">t</p>',
+      ),
     ).toBe('<p class="pos-left" title="t" style="color: red;">t</p>')
-    expect(sanitizeHtml('<p class="x" title="t" style="margin: 9px;">t</p>')).toBe(
+    expect(sanitizeHtml('<p class="x" title="t" style="font-variant: small-caps;">t</p>')).toBe(
       '<p title="t">t</p>',
     )
   })
