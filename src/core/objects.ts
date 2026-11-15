@@ -317,6 +317,7 @@ export const STACK_STEP = 40
 export const STACK_MIN = 200
 export const STACK_MAX = 2400
 const STACK_ATTR = 'data-ve-stack'
+const STACK_CONTAINER = 'versaedit'
 const FLOATING =
   'img.pos-left, img.pos-right, .rich-textbox.tb-float-left, .rich-textbox.tb-float-right'
 
@@ -361,8 +362,15 @@ function outerWidthAt(el: HTMLElement): (w: number) => number {
 }
 
 // Menor largura de contêiner (em STACK_STEP) a partir da qual a coluna entre os dois
-// objetos é legível; null quando qualquer largura serve, "always" quando nenhuma
-function stackBelow(a: HTMLElement, b: HTMLElement, minColumn: number): string | null {
+// objetos é legível; null quando qualquer largura serve, "always" quando nenhuma.
+// gutter: o quanto a largura consultada passa da largura em que os objetos se apoiam
+// (a barra de rolagem da área de edição, que o Chromium não desconta da consulta)
+function stackBelow(
+  a: HTMLElement,
+  b: HTMLElement,
+  minColumn: number,
+  gutter: number,
+): string | null {
   const wa = outerWidthAt(a)
   const wb = outerWidthAt(b)
   const narrow = (w: number) => w - wa(w) - wb(w) < minColumn
@@ -370,7 +378,7 @@ function stackBelow(a: HTMLElement, b: HTMLElement, minColumn: number): string |
   let threshold = 0
   for (let w = STACK_MAX; w > 0; w -= 4) {
     if (narrow(w)) {
-      threshold = w + 4
+      threshold = w + 4 + gutter
       break
     }
   }
@@ -380,10 +388,63 @@ function stackBelow(a: HTMLElement, b: HTMLElement, minColumn: number): string |
 
 const fontPx = (el: Element) => parseFloat(window.getComputedStyle(el).fontSize) || 16
 
+// Maior fonte do texto que corre na faixa [top, bottom] (fora das caixas de texto);
+// sem texto na faixa, a fonte da área de edição
+function adjacentFontPx(editor: HTMLElement, top: number, bottom: number): number {
+  let max = 0
+  for (const block of editor.children) {
+    const r = block.getBoundingClientRect()
+    if (r.bottom <= top || r.top >= bottom || block.classList.contains('rich-textbox')) continue
+    const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT)
+    while (walker.nextNode()) {
+      const node = walker.currentNode as Text
+      const parent = node.parentElement
+      if (!parent || !node.data.trim() || parent.closest('.rich-textbox')) continue
+      const range = document.createRange()
+      range.selectNodeContents(node)
+      const t = range.getBoundingClientRect()
+      if (t.bottom > top && t.top < bottom) max = Math.max(max, fontPx(parent))
+    }
+  }
+  return max || fontPx(editor)
+}
+
+// Só os objetos cujo bloco tem a largura da área (o contêiner das consultas): no
+// editor e no publicado a largura consultada é a mesma em que o objeto se apoia.
+// Objeto dentro de caixa de texto, tabela, lista ou parágrafo recuado fica de fora.
+function followsEditorWidth(el: HTMLElement, editor: HTMLElement, inner: number): boolean {
+  const parent = el.parentElement
+  if (parent === editor) return true
+  if (!parent || parent.parentElement !== editor || parent.classList.contains('rich-textbox'))
+    return false
+  const cs = window.getComputedStyle(parent)
+  const content =
+    parent.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0)
+  return Math.abs(content - inner) < 1
+}
+
+// Idempotente: o atributo só muda quando o valor muda (pode rodar a cada edição,
+// inclusive depois de mudar a fonte do texto ao lado sem mexer no objeto)
 export function keepReadableColumns(editor: HTMLElement) {
-  editor.querySelectorAll(`[${STACK_ATTR}]`).forEach((el) => el.removeAttribute(STACK_ATTR))
-  const floats = [...editor.querySelectorAll<HTMLElement>(FLOATING)]
-  if (floats.length < 2) return
+  const inner = innerWidth(editor)
+  const ecs = window.getComputedStyle(editor)
+  const gutter = Math.max(
+    0,
+    editor.offsetWidth -
+      editor.clientWidth -
+      (parseFloat(ecs.borderLeftWidth) || 0) -
+      (parseFloat(ecs.borderRightWidth) || 0),
+  )
+  const all = [...editor.querySelectorAll<HTMLElement>(FLOATING)]
+  const floats = all.filter((el) => followsEditorWidth(el, editor, inner))
+  const set = (el: HTMLElement, value: string | null) => {
+    if (el.getAttribute(STACK_ATTR) === value) return
+    if (value === null) el.removeAttribute(STACK_ATTR)
+    else el.setAttribute(STACK_ATTR, value)
+  }
+  editor.querySelectorAll<HTMLElement>(`[${STACK_ATTR}]`).forEach((el) => {
+    if (!floats.includes(el)) set(el, null)
+  })
   const band = (el: HTMLElement) => {
     const r = el.getBoundingClientRect()
     const cs = window.getComputedStyle(el)
@@ -394,21 +455,19 @@ export function keepReadableColumns(editor: HTMLElement) {
   }
   floats.forEach((el, i) => {
     const b = band(el)
-    const text = el.parentElement && el.parentElement !== editor ? el.parentElement : editor
-    const minColumn = MIN_TEXT_COLUMN_EM * Math.max(fontPx(editor), fontPx(text))
+    let value: string | null = null
     for (const prev of floats.slice(0, i)) {
       const a = band(prev)
-      // Na mesma faixa, ou empurrado para logo abaixo do anterior por não caber ao
-      // lado dele nesta largura (num contêiner mais largo ficariam lado a lado)
+      // Na mesma faixa, ou logo abaixo do anterior (empurrado por não caber ao lado
+      // dele nesta largura, ou descido por este atributo)
       const sameBand = a.top < b.bottom - 0.5 && b.top < a.bottom - 0.5
       const pushed = Math.abs(b.top - a.bottom) < 1
       if (!sameBand && !pushed) continue
-      const below = stackBelow(prev, el, minColumn)
-      if (below) {
-        el.setAttribute(STACK_ATTR, below)
-        return
-      }
+      const font = adjacentFontPx(editor, Math.min(a.top, b.top), Math.max(a.bottom, b.bottom))
+      value = stackBelow(prev, el, MIN_TEXT_COLUMN_EM * font, gutter)
+      if (value) break
     }
+    set(el, value)
   })
 }
 
@@ -418,11 +477,15 @@ export function stackRules(scope: string): string {
   const target = (v: string) =>
     `${scope} [${STACK_ATTR}="${v}"]:is(.pos-left, .pos-right, .tb-float-left, .tb-float-right)`
   const lines = [
-    `${scope}:has([${STACK_ATTR}]) { container-type: inline-size; }`,
+    // Contêiner com nome: a consulta nunca cai num contêiner da página (navegador
+    // sem :has, ou ancestral com container-type), só na área de edição/conteúdo
+    `${scope}:has([${STACK_ATTR}]) { container: ${STACK_CONTAINER} / inline-size; }`,
     `${target('always')} { clear: both; }`,
   ]
   for (let w = STACK_MIN; w <= STACK_MAX; w += STACK_STEP) {
-    lines.push(`@container (width < ${w}px) { ${target(String(w))} { clear: both; } }`)
+    lines.push(
+      `@container ${STACK_CONTAINER} (width < ${w}px) { ${target(String(w))} { clear: both; } }`,
+    )
   }
   return lines.join('\n')
 }

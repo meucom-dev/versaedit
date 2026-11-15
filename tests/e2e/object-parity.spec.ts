@@ -4,7 +4,7 @@
 // acompanha o ponteiro e não esconde texto; arrastar para baixo solta no parágrafo
 // que está sob o ponteiro, sem deixar parágrafo vazio para trás.
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { mount, PNG } from './helpers'
+import { mount, PNG, selectText } from './helpers'
 
 const TEXT =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. '
@@ -450,6 +450,68 @@ test.describe('coluna legível: responsiva à largura do contêiner', () => {
     await core(page, `positionSelectedTextbox('right')`)
     await core(page, 'resizeSelectedTextbox(30)')
     expect(await img(page).evaluate((n) => (n as HTMLElement).style.clear)).toBe('left')
+  })
+})
+
+// ─── Revisão antes do push (15/11/2026) ─────────────────────────────────────────
+test.describe('coluna legível: fonte mudada depois e contêiner das consultas', () => {
+  test('fonte do texto ao lado aumentada depois, sem mexer no objeto: o limite é refeito', async ({
+    page,
+  }) => {
+    await setup(page)
+    await selectImage(page)
+    await core(page, 'resizeSelectedImage(40)')
+    await core(page, `floatImage('left')`)
+    await selectBox(page)
+    await core(page, `positionSelectedTextbox('right')`)
+    await core(page, 'resizeSelectedTextbox(25)')
+    // 16px: coluna de ~144px, legível; os dois lado a lado
+    expect(await box(page).getAttribute('data-ve-stack')).toBe('800')
+    expect((await pairIn(page, '#host .ve-content')).sideBySide).toBe(true)
+    // Só o texto do parágrafo B (ao lado dos dois) passa a 18pt (24px): coluna mínima 180px
+    await selectText(page, 'B Lorem ipsum dolor sit amet')
+    await core(page, `applyFontSizePt('18')`)
+    expect(await box(page).getAttribute('data-ve-stack')).toBe('1000')
+    expect((await pairIn(page, '#host .ve-content')).sideBySide).toBe(false)
+    // Fonte de volta a 12pt (16px): o limite volta, de novo sem mexer no objeto
+    await selectText(page, 'B Lorem ipsum dolor sit amet')
+    await core(page, `applyFontSizePt('12')`)
+    expect(await box(page).getAttribute('data-ve-stack')).toBe('800')
+    expect((await pairIn(page, '#host .ve-content')).sideBySide).toBe(true)
+  })
+
+  test('publicado: a consulta usa o versaedit-content, não um contêiner da página', async ({
+    page,
+  }) => {
+    await narrowPair(page)
+    const saved = await page.evaluate(() => window.__ref.current!.getHTML())
+    // Conteúdo de 1100px (lado a lado) dentro de um contêiner da página de 700px...
+    await page.evaluate((h) => window.__showPublished(h, { width: 1100 }), saved)
+    await page.evaluate(() => {
+      const pub = document.getElementById('published')!
+      const wrap = document.createElement('div')
+      wrap.style.cssText = 'container-type: inline-size; width: 1200px'
+      pub.before(wrap)
+      wrap.append(pub)
+    })
+    expect((await pairIn(page, '#published')).sideBySide).toBe(true)
+    // ...e de 700px (um abaixo do outro) dentro de um contêiner da página de 1200px
+    await page.evaluate(() => {
+      document.getElementById('published')!.style.width = '700px'
+    })
+    expect((await pairIn(page, '#published')).sideBySide).toBe(false)
+  })
+
+  test('objeto dentro de uma caixa de texto não usa a largura da área', async ({ page }) => {
+    const inside = `<div class="rich-textbox" style="width: 400px;"><span class="textbox-handle" contenteditable="false">⠿</span><img class="pos-left" src="data:image/png;base64,${PNG}" style="width: 40%;"><img class="pos-right" src="data:image/png;base64,${PNG}" style="width: 40%;">texto dentro da caixa</div>`
+    await mount(page, {
+      initialContent: `<p>A ${TEXT}</p>${inside}<p>B ${TEXT}</p>`,
+      width: 900,
+      height: 900,
+    })
+    await page.locator('#host .ve-content p').first().click()
+    await page.keyboard.type('x')
+    expect(await page.locator('#host .ve-content [data-ve-stack]').count()).toBe(0)
   })
 })
 

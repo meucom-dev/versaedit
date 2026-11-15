@@ -57,11 +57,15 @@ by the internal stabilization batches.
   a few pixels wide, breaking words syllable by syllable. When the column left between them would
   be narrower than 7.5em of the text beside them (120px at 16px), the later object moves below the
   earlier one. The decision depends on the container width, so the saved HTML keeps the width
-  below which the object moves down (`data-ve-stack`, recalculated after every move, resize,
-  alignment or deletion), and the editor and `versaedit-content.css` apply `clear: both` with a
+  below which the object moves down (`data-ve-stack`, recalculated after every change to the
+  content, including a later font size change of the text beside the objects; loading a document
+  does not change it), and the editor and `versaedit-content.css` apply `clear: both` with a
   container query at the width each one actually has (editor, site, phone). A container with such
-  objects gets `container-type: inline-size`; its width must come from the layout (a block), not
-  from its content.
+  objects becomes the named container `versaedit` (`container: versaedit / inline-size`), so the
+  queries never match a container of the page; its width must come from the layout (a block), not
+  from its content. With a scrollbar in the editing area the saved width includes the scrollbar,
+  so the text never gets a column below the minimum. Objects inside text boxes, tables, lists or
+  indented paragraphs are not handled by this rule.
 - Text box inserted into an empty editor (or after the last paragraph) was the only block around:
   clicking the first line put the caret inside the box, there was nowhere to type before or after
   it, and the box alone had nowhere to be dragged vertically. A new box at either end of the

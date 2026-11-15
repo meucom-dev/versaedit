@@ -271,3 +271,13 @@ describe('sanitizeHtml — data-ve-stack (largura em que o objeto desce)', () =>
     }
   })
 })
+
+describe('CONTENT_CSS — consultas da largura em que o objeto desce', () => {
+  it('todas usam o contêiner com nome versaedit', async () => {
+    const { CONTENT_CSS } = await import('../../src/core/styles')
+    const queries = CONTENT_CSS.match(/@container[^{]*/g) ?? []
+    expect(queries.length).toBeGreaterThan(50)
+    for (const q of queries) expect(q).toMatch(/^@container versaedit \(width < \d+px\)/)
+    expect(CONTENT_CSS).toContain('container: versaedit / inline-size')
+  })
+})

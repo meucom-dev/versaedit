@@ -601,6 +601,8 @@ export class VersaEditCore {
    * gera aviso se nada mudou).
    */
   emitChange = (): void => {
+    // Coluna de texto entre objetos: a fonte ou o texto ao lado podem ter mudado
+    keepReadableColumns(this.el)
     if (this.cb.onOverflowChange) this.cb.onOverflowChange(editorContentExceedsHeight(this.el))
     if (this.cb.onChange) {
       const html = this.getHTML()
