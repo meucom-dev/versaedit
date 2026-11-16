@@ -101,10 +101,12 @@ export const CONTENT = {
     },
     features: [
       'Text formatting, fonts and sizes, text and highlight colors, paper color, headings, quotes, lists, indentation, links and horizontal rules.',
-      'Images (with an optional upload callback) and text boxes that can be moved, resized and floated; tables pasted from web pages or Word keep their structure.',
+      'Images (with an optional upload callback) and text boxes that can be moved, resized and floated, with adjustable margins around them.',
+      'Pasting from web pages and Word: tables keep their structure, and Word paragraph spacing can be kept as in the original document.',
+      'Optional Layout Mirror: published content keeps the same layout seen while editing.',
       'Its own undo and redo history, keyboard shortcuts and a keyboard-navigable toolbar (WAI-ARIA).',
       'Dictation with spoken punctuation, using the speech recognition of Chrome, Edge and Safari.',
-      'Configurable toolbar groups, fluid width, a scrolling or fixed-height editing area, and replaceable interface texts.',
+      'Configurable toolbar groups, fluid width, a scrolling, fixed-height or resizable editing area, an optional settings panel opened from a gear on the toolbar, and replaceable interface texts.',
     ],
     installation:
       'VersaEdit is an ES module with TypeScript types, published on npm as a beta (0.5.0-beta.2).',
@@ -130,7 +132,7 @@ export const CONTENT = {
           'Firefox (desktop)',
           'warn',
           'Works, with differences',
-          'Diagnostic test runs only. Small HTML differences (for example, an inserted image is placed inside the paragraph). Paste and Ctrl+B/I/U are not covered by automated tests. Dictation is not available.',
+          'Diagnostic test runs only. Small HTML differences (for example, an inserted image is placed inside the paragraph). The bold, italic and underline shortcuts (Ctrl+B/I/U) work; they were checked in local diagnostic runs and on the published site. The Word paste tests do not run in Firefox. Dictation is not available.',
         ],
         [
           'Safari',
@@ -151,7 +153,7 @@ export const CONTENT = {
       'Undo and redo: after undoing in the editor, the browser’s own Redo (Edit or context menu) may be unavailable; Ctrl+Y and the Redo button work. Typing with system IME keyboards (Japanese, Chinese, Korean) and Safari’s menus have not yet been checked by hand.',
       'After the highlighter or a custom color, bold is saved as <code>&lt;span style="font-weight: bold"&gt;</code> instead of <code>&lt;b&gt;</code> (it displays the same).',
       'Text flows around a floated image or text box on one side only (a CSS float limitation).',
-      'Pasting from Microsoft Word has not yet been validated with real documents.',
+      'Pasting from Microsoft Word is supported and covered by automated tests with HTML samples; compatibility with a range of real documents has not yet been validated systematically.',
       'Output is HTML only, with no JSON or Markdown export.',
     ],
     seeAlso: [
@@ -269,10 +271,12 @@ export const CONTENT = {
     },
     features: [
       'Formatação de texto, fontes e tamanhos, cores do texto e do marca-texto, cor do papel, títulos, citações, listas, recuo, links e linhas horizontais.',
-      'Imagens (com envio opcional por callback) e caixas de texto que podem ser movidas, redimensionadas e posicionadas ao lado do texto; tabelas coladas de páginas da web ou do Word mantêm a estrutura.',
+      'Imagens (com envio opcional por callback) e caixas de texto que podem ser movidas, redimensionadas e posicionadas ao lado do texto, com margens ajustáveis ao redor.',
+      'Colagem de páginas da web e do Word: tabelas mantêm a estrutura, e o espaçamento entre parágrafos do Word pode ser mantido como no documento original.',
+      'Layout Mirror opcional: o conteúdo publicado mantém o mesmo layout visto durante a edição.',
       'Histórico próprio de desfazer e refazer, atalhos de teclado e barra de ferramentas navegável pelo teclado (WAI-ARIA).',
       'Ditado com pontuação falada, usando o reconhecimento de voz do Chrome, do Edge e do Safari.',
-      'Grupos da barra configuráveis, largura fluida, área de edição com rolagem ou altura fixa e textos da interface substituíveis.',
+      'Grupos da barra configuráveis, largura fluida, área de edição com rolagem, altura fixa ou redimensionável, painel de configurações opcional aberto pela engrenagem da barra e textos da interface substituíveis.',
     ],
     installation:
       'O VersaEdit é um módulo ES com tipos TypeScript, publicado no npm em versão beta (0.5.0-beta.2).',
@@ -298,7 +302,7 @@ export const CONTENT = {
           'Firefox (computador)',
           'warn',
           'Funciona, com diferenças',
-          'Só execuções de diagnóstico. Pequenas diferenças no HTML (por exemplo, uma imagem inserida fica dentro do parágrafo). A colagem e Ctrl+B/I/U não são cobertos por testes automáticos. O ditado não está disponível.',
+          'Só execuções de diagnóstico. Pequenas diferenças no HTML (por exemplo, uma imagem inserida fica dentro do parágrafo). Os atalhos de negrito, itálico e sublinhado (Ctrl+B/I/U) funcionam; foram verificados em execuções locais de diagnóstico e no site publicado. Os testes de colagem do Word não rodam no Firefox. O ditado não está disponível.',
         ],
         [
           'Safari',
@@ -319,7 +323,7 @@ export const CONTENT = {
       'Desfazer e refazer: depois de desfazer no editor, o Refazer do próprio navegador (menu Editar ou de contexto) pode ficar indisponível; Ctrl+Y e o botão Refazer funcionam. A digitação com teclados IME do sistema (japonês, chinês, coreano) e os menus do Safari ainda não foram verificados à mão.',
       'Depois do marca-texto ou de uma cor personalizada, o negrito é gravado como <code>&lt;span style="font-weight: bold"&gt;</code> em vez de <code>&lt;b&gt;</code> (a aparência é a mesma).',
       'O texto contorna uma imagem ou caixa de texto flutuante de um lado só (limitação do float do CSS).',
-      'A colagem do Microsoft Word ainda não foi validada com documentos reais.',
+      'A colagem de conteúdo do Microsoft Word é suportada e tem testes automatizados com amostras de HTML; a compatibilidade com diferentes documentos reais ainda não foi validada sistematicamente.',
       'Exporta apenas HTML, sem JSON nem Markdown.',
     ],
     seeAlso: [
@@ -440,10 +444,12 @@ export const CONTENT = {
     },
     features: [
       'Formato de texto, fuentes y tamaños, colores de texto y de resaltado, color del papel, títulos, citas, listas, sangría, enlaces y líneas horizontales.',
-      'Imágenes (con carga opcional mediante callback) y cuadros de texto que se pueden mover, redimensionar y hacer flotar junto al texto; las tablas pegadas desde páginas web o Word conservan su estructura.',
+      'Imágenes (con carga opcional mediante callback) y cuadros de texto que se pueden mover, redimensionar y hacer flotar junto al texto, con márgenes ajustables a su alrededor.',
+      'Pegado desde páginas web y Word: las tablas conservan su estructura y el espaciado entre párrafos de Word puede mantenerse como en el documento original.',
+      'Layout Mirror opcional: el contenido publicado conserva el mismo diseño que se ve durante la edición.',
       'Historial propio de deshacer y rehacer, atajos de teclado y una barra de herramientas navegable con el teclado (WAI-ARIA).',
       'Dictado con puntuación hablada, mediante el reconocimiento de voz de Chrome, Edge y Safari.',
-      'Grupos de la barra configurables, ancho fluido, área de edición con desplazamiento o de altura fija, y textos de la interfaz reemplazables.',
+      'Grupos de la barra configurables, ancho fluido, área de edición con desplazamiento, de altura fija o redimensionable, panel de configuración opcional que se abre con el engranaje de la barra, y textos de la interfaz reemplazables.',
     ],
     installation:
       'VersaEdit es un módulo ES con tipos de TypeScript, publicado en npm como versión beta (0.5.0-beta.2).',
@@ -469,7 +475,7 @@ export const CONTENT = {
           'Firefox (escritorio)',
           'warn',
           'Funciona, con diferencias',
-          'Solo ejecuciones de diagnóstico. Pequeñas diferencias en el HTML (por ejemplo, una imagen insertada queda dentro del párrafo). El pegado y Ctrl+B/I/U no están cubiertos por pruebas automáticas. El dictado no está disponible.',
+          'Solo ejecuciones de diagnóstico. Pequeñas diferencias en el HTML (por ejemplo, una imagen insertada queda dentro del párrafo). Los atajos de negrita, cursiva y subrayado (Ctrl+B/I/U) funcionan; se verificaron en ejecuciones locales de diagnóstico y en el sitio publicado. Las pruebas de pegado desde Word no se ejecutan en Firefox. El dictado no está disponible.',
         ],
         [
           'Safari',
@@ -490,7 +496,7 @@ export const CONTENT = {
       'Deshacer y rehacer: después de deshacer en el editor, el Rehacer del propio navegador (menú Edición o contextual) puede no estar disponible; Ctrl+Y y el botón Rehacer funcionan. La escritura con teclados IME del sistema (japonés, chino, coreano) y los menús de Safari aún no se han verificado manualmente.',
       'Después del resaltador o de un color personalizado, la negrita se guarda como <code>&lt;span style="font-weight: bold"&gt;</code> en lugar de <code>&lt;b&gt;</code> (el aspecto es el mismo).',
       'El texto rodea una imagen o un cuadro de texto flotante solo por un lado (limitación del float de CSS).',
-      'El pegado desde Microsoft Word aún no se ha validado con documentos reales.',
+      'El pegado de contenido desde Microsoft Word es compatible y cuenta con pruebas automatizadas con muestras de HTML; la compatibilidad con distintos documentos reales aún no se ha validado de forma sistemática.',
       'Solo exporta HTML, sin JSON ni Markdown.',
     ],
     seeAlso: [
