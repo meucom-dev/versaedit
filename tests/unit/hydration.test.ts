@@ -61,3 +61,30 @@ describe('hidratação com reconhecimento de voz no navegador', () => {
     expect(container.querySelector('button')).not.toBeNull()
   })
 })
+
+// Dicas dos botões de formatação no Mac (Cmd+B/I/U): o servidor não sabe a
+// plataforma e gera Ctrl; a hidratação não pode divergir, e a dica muda logo depois
+describe('hidratação no Mac: dicas de formatação', () => {
+  afterEach(() => {
+    delete (navigator as unknown as Record<string, unknown>).platform
+    document.body.innerHTML = ''
+  })
+
+  it('servidor com Ctrl+B, sem erro de hidratação, Cmd+B depois', async () => {
+    const element = createElement(VersaEdit, { initialContent: '<p>olá</p>' })
+    const container = document.createElement('div')
+    document.body.appendChild(container)
+    container.innerHTML = renderToString(element)
+    expect(container.innerHTML).toContain('Bold (Ctrl+B)')
+    Object.defineProperty(navigator, 'platform', { configurable: true, get: () => 'MacIntel' })
+    const recoverable: unknown[] = []
+    await act(async () => {
+      hydrateRoot(container, element, { onRecoverableError: (e) => recoverable.push(e) })
+    })
+    expect(recoverable).toEqual([])
+    for (const title of ['Bold (Cmd+B)', 'Italic (Cmd+I)', 'Underline (Cmd+U)']) {
+      expect(container.querySelector(`[title="${title}"]`), title).not.toBeNull()
+    }
+    expect(container.querySelector('[title="Bold (Ctrl+B)"]')).toBeNull()
+  })
+})

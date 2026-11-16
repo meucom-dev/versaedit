@@ -98,7 +98,7 @@ O `initialContent` é carregado (e sanitizado) quando muda; o editor ignora o ec
 
 **Grupos da barra** (`TOOLBAR_GROUPS`, sempre nesta ordem): `dictation`, `file`, `history`, `font`,
 `block`, `format`, `highlight`, `color`, `align`, `list`, `indent`, `link`, `insert`, `textbox`,
-`clear`. Sem `format`, Ctrl+B/I/U não formatam; sem `link`, Ctrl+K não abre o link. Desfazer e refazer
+`clear`. Sem `format`, Ctrl+B/I/U (Cmd no macOS) não formatam; sem `link`, Ctrl+K não abre o link. Desfazer e refazer
 pelo teclado funcionam sempre.
 
 **Códigos de erro** (`VersaEditError.code`): `file-wrong-type`, `file-too-large`, `file-read`,
@@ -381,16 +381,17 @@ Relate vulnerabilidades em privado — veja o [SECURITY.md](SECURITY.md) (suppor
 
 ## Teclado
 
-| Teclas                        | Ação                                                    |
-| ----------------------------- | ------------------------------------------------------- |
-| Ctrl+B / I / U                | Negrito / itálico / sublinhado                          |
-| Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z) | Desfazer, refazer                                       |
-| Ctrl+K                        | Formulário de link (Enter aplica, Esc cancela)          |
-| Tab                           | Insere espaços                                          |
-| Delete / Backspace            | Apaga a imagem selecionada                              |
-| Ctrl+setas (Shift: 10px)      | Move de leve a imagem ou caixa de texto selecionada     |
-| Alt+↑/↓, Alt+←/→              | Move no fluxo do texto / flutua à esquerda ou à direita |
-| ←/→, Home/End, Esc (barra)    | Passa entre os controles da barra, fecha paletas        |
+| Teclas                          | Ação                                                    |
+| ------------------------------- | ------------------------------------------------------- |
+| Ctrl+B / I / U (Windows, Linux) | Negrito / itálico / sublinhado                          |
+| Cmd+B / I / U (macOS)           | Negrito / itálico / sublinhado                          |
+| Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z)   | Desfazer, refazer                                       |
+| Ctrl+K                          | Formulário de link (Enter aplica, Esc cancela)          |
+| Tab                             | Insere espaços                                          |
+| Delete / Backspace              | Apaga a imagem selecionada                              |
+| Ctrl+setas (Shift: 10px)        | Move de leve a imagem ou caixa de texto selecionada     |
+| Alt+↑/↓, Alt+←/→                | Move no fluxo do texto / flutua à esquerda ou à direita |
+| ←/→, Home/End, Esc (barra)      | Passa entre os controles da barra, fecha paletas        |
 
 ## Navegadores
 

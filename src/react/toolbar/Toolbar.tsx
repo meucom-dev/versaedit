@@ -27,6 +27,7 @@ import {
 import { ColorPicker, type ColorKind } from './ColorPicker'
 import { FontPicker } from './FontPicker'
 import { DictationButton } from './DictationButton'
+import { useApplePlatform } from '../useApplePlatform'
 import { HighlightPicker } from './HighlightPicker'
 import { LinkPopover } from './LinkPopover'
 import { TextboxControls } from './TextboxControls'
@@ -171,6 +172,9 @@ export function Toolbar({
   }
 
   const run = (command: string) => () => core()?.execCommand(command)
+  // Dica dos botões de formatação: Cmd no Mac, como o atalho que o editor trata
+  const apple = useApplePlatform()
+  const shortcutTitle = (label: string) => (apple ? label.replace('Ctrl+', 'Cmd+') : label)
 
   // ─── TECLADO (padrão WAI-ARIA de toolbar) ─────────────────────────
   // Só um controle da barra entra na ordem do Tab; as setas ← → (Home/End)
@@ -332,13 +336,13 @@ export function Toolbar({
         [
           on('format') && (
             <Fragment key="format">
-              <ToolbarBtn onClick={run('bold')} title={L.bold}>
+              <ToolbarBtn onClick={run('bold')} title={shortcutTitle(L.bold)}>
                 <IconBold />
               </ToolbarBtn>
-              <ToolbarBtn onClick={run('italic')} title={L.italic}>
+              <ToolbarBtn onClick={run('italic')} title={shortcutTitle(L.italic)}>
                 <IconItalic />
               </ToolbarBtn>
-              <ToolbarBtn onClick={run('underline')} title={L.underline}>
+              <ToolbarBtn onClick={run('underline')} title={shortcutTitle(L.underline)}>
                 <IconUnderline />
               </ToolbarBtn>
             </Fragment>

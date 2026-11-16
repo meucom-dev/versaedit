@@ -84,6 +84,7 @@ import {
   type SelectionSnapshot,
   type SelectionType,
 } from './selection'
+import { isApplePlatform } from './platform'
 
 export type { SelectionType, TbBorderStyle }
 
@@ -247,6 +248,22 @@ function inputTime(e: Event): number | null {
 }
 // Interações fora do editor que encerram o passo aberto
 const OUTSIDE_EVENTS = ['pointerdown', 'keydown']
+// Negrito, itálico e sublinhado pelo teclado: o próprio editor aplica, com o mesmo
+// comando dos botões da barra. O Firefox não associa Ctrl+B/I/U à edição (Ctrl+B
+// abre os favoritos) e o WebKit no Windows não sublinha com Ctrl+U. No Mac o atalho
+// é Cmd (Ctrl+B e Ctrl+U são atalhos de texto do sistema e continuam como estão).
+const FORMAT_SHORTCUTS: Record<string, 'bold' | 'italic' | 'underline'> = {
+  b: 'bold',
+  i: 'italic',
+  u: 'underline',
+}
+/** Letra do atalho: a tecla digitada ou, em teclados não latinos, a posição (KeyB) */
+const shortcutLetter = (e: KeyboardEvent) => {
+  const key = e.key.toLowerCase()
+  if (/^[a-z]$/.test(key)) return key
+  return /^Key[A-Z]$/.test(e.code) ? e.code.slice(3).toLowerCase() : key
+}
+
 const INTERACTION_EVENTS = [
   'keydown',
   'pointerdown',
@@ -2222,10 +2239,19 @@ export class VersaEditCore {
     // Durante uma composição de caracteres, os atalhos são do teclado de composição
     if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.isComposing) {
       const key = e.key.toLowerCase()
-      // Formatação desligada na barra: o atalho do navegador também não formata
-      if (!this.opts.shortcuts.format && ['b', 'i', 'u'].includes(key) && !e.shiftKey) {
-        e.preventDefault()
-        return
+      const format = FORMAT_SHORTCUTS[shortcutLetter(e)]
+      if (format && !e.shiftKey) {
+        // Formatação desligada na barra: o atalho do navegador também não formata
+        if (!this.opts.shortcuts.format) {
+          e.preventDefault()
+          return
+        }
+        // Ctrl (Windows, Linux) ou Cmd (Mac): o mesmo comando dos botões da barra
+        if (isApplePlatform() ? e.metaKey && !e.ctrlKey : e.ctrlKey && !e.metaKey) {
+          e.preventDefault()
+          this.execCommand(format)
+          return
+        }
       }
       if (key === 'k' && this.cb.onLinkRequest && this.opts.shortcuts.link) {
         e.preventDefault()

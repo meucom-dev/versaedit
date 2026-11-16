@@ -98,7 +98,7 @@ export function PostEditor({
 
 **Toolbar groups** (`TOOLBAR_GROUPS`, always shown in this order): `dictation`, `file`, `history`,
 `font`, `block`, `format`, `highlight`, `color`, `align`, `list`, `indent`, `link`, `insert`,
-`textbox`, `clear`. Without `format`, Ctrl+B/I/U don't format; without `link`, Ctrl+K doesn't open
+`textbox`, `clear`. Without `format`, Ctrl+B/I/U (Cmd on macOS) don't format; without `link`, Ctrl+K doesn't open
 the link form. Undo/redo shortcuts always work.
 
 **Error codes** (`VersaEditError.code`): `file-wrong-type`, `file-too-large`, `file-read`,
@@ -373,16 +373,17 @@ Report vulnerabilities privately — see [SECURITY.md](SECURITY.md) (support@ver
 
 ## Keyboard
 
-| Keys                          | Action                                            |
-| ----------------------------- | ------------------------------------------------- |
-| Ctrl+B / I / U                | Bold / italic / underline                         |
-| Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z) | Undo, redo                                        |
-| Ctrl+K                        | Link form (Enter applies, Esc cancels)            |
-| Tab                           | Insert spaces                                     |
-| Delete / Backspace            | Delete the selected image                         |
-| Ctrl+arrows (Shift: 10px)     | Nudge the selected image or text box              |
-| Alt+↑/↓, Alt+←/→              | Move it in the text flow / float it left or right |
-| ←/→, Home/End, Esc (toolbar)  | Move between toolbar controls, close palettes     |
+| Keys                            | Action                                            |
+| ------------------------------- | ------------------------------------------------- |
+| Ctrl+B / I / U (Windows, Linux) | Bold / italic / underline                         |
+| Cmd+B / I / U (macOS)           | Bold / italic / underline                         |
+| Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z)   | Undo, redo                                        |
+| Ctrl+K                          | Link form (Enter applies, Esc cancels)            |
+| Tab                             | Insert spaces                                     |
+| Delete / Backspace              | Delete the selected image                         |
+| Ctrl+arrows (Shift: 10px)       | Nudge the selected image or text box              |
+| Alt+↑/↓, Alt+←/→                | Move it in the text flow / float it left or right |
+| ←/→, Home/End, Esc (toolbar)    | Move between toolbar controls, close palettes     |
 
 ## Browser support
 

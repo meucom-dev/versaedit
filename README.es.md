@@ -100,7 +100,7 @@ export function PostEditor({
 
 **Grupos de la barra** (`TOOLBAR_GROUPS`, siempre en este orden): `dictation`, `file`, `history`,
 `font`, `block`, `format`, `highlight`, `color`, `align`, `list`, `indent`, `link`, `insert`,
-`textbox`, `clear`. Sin `format`, Ctrl+B/I/U no formatean; sin `link`, Ctrl+K no abre el
+`textbox`, `clear`. Sin `format`, Ctrl+B/I/U (Cmd en macOS) no formatean; sin `link`, Ctrl+K no abre el
 formulario de enlace. Los atajos de deshacer/rehacer siempre funcionan.
 
 **Códigos de error** (`VersaEditError.code`): `file-wrong-type`, `file-too-large`, `file-read`,
@@ -390,16 +390,17 @@ Informe de vulnerabilidades de forma privada — consulte [SECURITY.md](SECURITY
 
 ## Teclado
 
-| Teclas                        | Acción                                                                        |
-| ----------------------------- | ----------------------------------------------------------------------------- |
-| Ctrl+B / I / U                | Negrita / cursiva / subrayado                                                 |
-| Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z) | Deshacer, rehacer                                                             |
-| Ctrl+K                        | Formulario de enlace (Enter aplica, Esc cancela)                              |
-| Tab                           | Inserta espacios                                                              |
-| Supr / Retroceso              | Elimina la imagen seleccionada                                                |
-| Ctrl+flechas (Mayús: 10px)    | Desplaza la imagen o el cuadro de texto seleccionado                          |
-| Alt+↑/↓, Alt+←/→              | Lo mueve en el flujo del texto / lo hace flotar a la izquierda o a la derecha |
-| ←/→, Inicio/Fin, Esc (barra)  | Recorre los controles de la barra, cierra las paletas                         |
+| Teclas                          | Acción                                                                        |
+| ------------------------------- | ----------------------------------------------------------------------------- |
+| Ctrl+B / I / U (Windows, Linux) | Negrita / cursiva / subrayado                                                 |
+| Cmd+B / I / U (macOS)           | Negrita / cursiva / subrayado                                                 |
+| Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z)   | Deshacer, rehacer                                                             |
+| Ctrl+K                          | Formulario de enlace (Enter aplica, Esc cancela)                              |
+| Tab                             | Inserta espacios                                                              |
+| Supr / Retroceso                | Elimina la imagen seleccionada                                                |
+| Ctrl+flechas (Mayús: 10px)      | Desplaza la imagen o el cuadro de texto seleccionado                          |
+| Alt+↑/↓, Alt+←/→                | Lo mueve en el flujo del texto / lo hace flotar a la izquierda o a la derecha |
+| ←/→, Inicio/Fin, Esc (barra)    | Recorre los controles de la barra, cierra las paletas                         |
 
 ## Compatibilidad con navegadores
 

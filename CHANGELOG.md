@@ -117,6 +117,14 @@ by the internal stabilization batches.
 
 ### Fixed
 
+- Keyboard shortcuts for bold, italic and underline now work in every browser: the editor handles
+  Ctrl+B/I/U (Cmd+B/I/U on macOS) itself, with the same command as the toolbar buttons. Firefox does
+  not bind these shortcuts to editing (Ctrl+B opened the bookmarks sidebar and did not format), and
+  WebKit on Windows did not underline with Ctrl+U. Selection, focus, undo/redo and `onChange` behave
+  as with the buttons; IME composition, Shift and Alt combinations, macOS's own Ctrl+B and Ctrl+U,
+  and keys pressed outside the editing area are left alone, and without the `format` toolbar group
+  the shortcuts still do nothing. The tooltips of the three buttons show Cmd on macOS (after
+  hydration; the server renders Ctrl).
 - A fixed `width` wider than the container no longer makes the toolbar overflow it: the toolbar,
   like the editing area, is limited to the container width (`max-width: 100%`), so narrow screens
   have no horizontal scrolling.
