@@ -4,7 +4,7 @@ Editor de texto rico leve para aplicações React.
 
 > **Beta** (`0.5.0-beta.2`) — a API pode mudar antes da 1.0; veja as [Limitações conhecidas](#limitações-conhecidas).
 
-[versaedit.dev](https://versaedit.dev) · [Playground](https://versaedit.dev/playground/) ·
+[versaedit.dev](https://versaedit.dev/pt/) · [Playground](https://versaedit.dev/playground/) ·
 [Read in English](README.md) · [Leer en español](README.es.md)
 
 O VersaEdit edita HTML com o `contentEditable` do próprio navegador e acrescenta barra de
@@ -13,7 +13,7 @@ da web), imagens, caixas de texto, tabelas, ditado e abrir/salvar arquivo. Não 
 entrega HTML e você guarda onde quiser (Supabase, Firebase, REST…).
 
 - React 18.3+ ou 19 · renderização no servidor (testada com Next.js)
-- Uma dependência: [DOMPurify](https://github.com/cure53/DOMPurify) · só módulos ES (sem versão
+- Uma dependência em tempo de execução: [DOMPurify](https://github.com/cure53/DOMPurify) · só módulos ES (sem versão
   CommonJS) · tipos TypeScript para bundlers e `moduleResolution: node16/nodenext`
 - Interface em inglês, português do Brasil e espanhol (`locale`), com todos os textos trocáveis (`labels`)
 
@@ -44,7 +44,7 @@ export function EditorDePost({
         initialContent={htmlInicial}
         onChange={(html) => console.log('mudou', html.length)}
         width="100%"
-        height={480}
+        height={500}
         locale="pt-BR"
       />
       <button onClick={() => aoSalvar(editor.current!.getHTML())}>Salvar</button>
@@ -70,7 +70,7 @@ O `initialContent` é carregado (e sanitizado) quando muda; o editor ignora o ec
 | `onSave`                                             | `(html) => void`                                    | download                          | O botão Salvar entrega o HTML em vez de baixar um `.html`.                                                                      |
 | `onImageUpload`                                      | `(file) => Promise<url>`                            | base64                            | Envia a imagem e insere a URL devolvida (recomendado).                                                                          |
 | `width`                                              | `number \| string`                                  | `'100%'`                          | Largura total; número em px, texto é medida CSS. Nunca passa do contêiner ([Tamanho](#tamanho)).                                |
-| `height`                                             | `number`                                            | `500`                             | Altura da área de edição em px (altura inicial com `resizable`).                                                                |
+| `height`                                             | `number`                                            | `500`                             | Altura em px, moldura incluída (altura inicial com `resizable`).                                                                |
 | `resizable`                                          | `boolean \| ResizableOptions`                       | `false`                           | Alças para redimensionar a área de edição ([detalhes](#área-de-edição-redimensionável)).                                        |
 | `sizeControls`                                       | `boolean`                                           | `false`                           | Campos de largura e altura (px) abaixo da área de edição (com `resizable`).                                                     |
 | `settingsPanel`                                      | `ReactNode \| (close) => ReactNode`                 | —                                 | Suas configurações, num painel aberto por uma engrenagem no fim da barra ([Painel de configurações](#painel-de-configurações)). |
@@ -171,9 +171,9 @@ import { objectMarginStyle, VersaEdit } from 'versaedit'
 
 const margem = { text: 24, outer: 8 }
 
-<VersaEdit objectMargin={margem} />
+;<VersaEdit objectMargin={margem} />
 
-<div
+;<div
   className="versaedit-content"
   style={objectMarginStyle(margem)}
   dangerouslySetInnerHTML={{ __html: htmlSanitizado }}
@@ -182,7 +182,8 @@ const margem = { text: 24, outer: 8 }
 
 `objectMarginStyle()` devolve as variáveis CSS `--ve-object-text`, `--ve-object-outer`,
 `--ve-object-top` e `--ve-object-bottom`; sem React, aplique-as ao elemento de edição e ao
-contêiner publicado. Mudar `objectMargin` durante a edição refaz o ponto em que objetos lado a
+contêiner publicado e chame o `refreshObjects()` do núcleo depois de mudá-las durante a edição.
+Mudar `objectMargin` durante a edição refaz o ponto em que objetos lado a
 lado precisam descer (`data-ve-stack`), sem mexer no histórico de desfazer.
 
 ### Painel de configurações
@@ -193,6 +194,9 @@ O editor não guarda nem interpreta esse conteúdo: os controles mudam o estado 
 volta ao editor como props. Sem a prop não há engrenagem e nada muda.
 
 ```tsx
+import { useState } from 'react'
+import { VersaEdit } from 'versaedit'
+
 function Editor() {
   const [spacing, setSpacing] = useState<'remove' | 'preserve'>('remove')
   return (
@@ -224,7 +228,7 @@ function Editor() {
   nessa linha quando há espaço; senão, fica numa linha própria, também à direita. Com
   `toolbar={[]}`, a barra mostra só a engrenagem. O painel abre abaixo da engrenagem, alinhado à
   borda direita dela, com 260 a 360 px de largura (nunca mais que a tela menos 16 px), e rola quando
-  passa de 70% da altura da tela. Em telas estreitas, fica dentro da área visível.
+  passa de 70% da altura da tela ou de 640 px. Em telas estreitas, fica dentro da área visível.
 - Teclado e leitores de tela: a engrenagem é um botão da barra (setas, Home, End) com o nome de
   `labels.settings` ("Configurações"), `aria-haspopup="dialog"` e `aria-expanded`. O painel é um
   diálogo não modal com o mesmo nome. Ao abrir, o foco vai para o primeiro controle; Tab e
@@ -260,7 +264,8 @@ import 'versaedit/versaedit-content.css'
   (por exemplo, 800 → 766 px). Em colunas mais estreitas o texto se reacomoda, e imagens e caixas de texto
   encolhem para caber.
 - `fontFamily` / `headingFontFamily` próprios vão por variáveis CSS:
-  `style={{ '--ve-font': 'Georgia, serif', '--ve-heading-font': 'Inter, sans-serif' }}`.
+  `style={{ '--ve-font': 'Georgia, serif', '--ve-heading-font': 'Inter, sans-serif' } as React.CSSProperties}`
+  (o TypeScript exige o `as React.CSSProperties`).
 - As regras de elemento do site (`p {}`, `h2 {}`, `ul {}`…) não alcançam o conteúdo espelhado.
   Regras que o alcançam por uma classe (ex.: `.post p {}`) são mais específicas e continuam valendo,
   assim como as com `!important`: mantenha-as longe do contêiner `ve-mirror`.
@@ -341,15 +346,18 @@ espaço entre parágrafos, entrelinha, recuos e linhas em branco são descartado
 
 ## Exemplos e guias
 
-- [Guia de integração](docs/integration.pt-BR.md): sanitização no servidor, salvar, Supabase (chave
-  pública + RLS), envio de imagens, Next.js, CSP, exibir o conteúdo.
+- [Guia de integração](docs/integration.pt-BR.md): sanitização no servidor, salvar, tamanho da área
+  de edição, painel de configurações, Supabase (chave pública + RLS), envio de imagens, Next.js, CSP,
+  exibir o conteúdo.
+- [`examples/quick-start`](examples/quick-start): o código do
+  [guia rápido](https://versaedit.dev/pt/guia-rapido/) (Vite + React + TypeScript).
 - [`examples/vite-react`](examples/vite-react): uma aba por caso de uso (básico, callbacks de
   integração, barra personalizada, CSP restrita, exibição, ditado externo).
 - [`examples/nextjs`](examples/nextjs): Next.js 16 App Router com renderização no servidor.
-- Playground (`npm run dev`): abra **Ver HTML → Propriedades** para mudar props ao vivo, carregar
-  conteúdos de exemplo, ver os eventos e copiar o JSX equivalente.
+- Playground (`npm run dev`): a engrenagem no fim da barra muda as props ao vivo; **Ver HTML →
+  Ferramentas do playground** carrega conteúdos de exemplo e mostra os eventos e o JSX equivalente.
 
-Os dois exemplos rodam no CI com o pacote gerado (`npm pack`), instalado fora do repositório.
+Os três exemplos rodam no CI com o pacote gerado (`npm pack`), instalado fora do repositório.
 
 ## Ditado
 
@@ -357,7 +365,8 @@ O botão de microfone transforma fala em texto com a Web Speech API do navegador
 Safari; no Firefox o botão não aparece), no idioma da interface (`en-US`, `pt-BR` ou `es-ES`;
 `speechLang` muda). Pontuação falada funciona ("vírgula", "ponto final", "nova linha"…; em inglês
 "comma", "period", "new line"…; em espanhol "coma", "punto final", "nueva línea"…; em espanhol só
-entram o ? e o ! de fechamento, sem ¿ e ¡). **Privacidade:** nesses navegadores o áudio
+entram o ? e o ! de fechamento, sem ¿ e ¡). Os comandos de pontuação seguem o `locale`, mesmo
+quando o `speechLang` é outro. **Privacidade:** nesses navegadores o áudio
 é processado nos servidores do fabricante (Google, Microsoft, Apple). Use `speechRecognition` para
 outro mecanismo com a mesma interface, ou `showDictation={false}` para tirar o botão.
 `VersaEditDictation` coloca o microfone em qualquer lugar da página
@@ -381,26 +390,28 @@ Relate vulnerabilidades em privado — veja o [SECURITY.md](SECURITY.md) (suppor
 
 ## Teclado
 
-| Teclas                          | Ação                                                    |
-| ------------------------------- | ------------------------------------------------------- |
-| Ctrl+B / I / U (Windows, Linux) | Negrito / itálico / sublinhado                          |
-| Cmd+B / I / U (macOS)           | Negrito / itálico / sublinhado                          |
-| Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z)   | Desfazer, refazer                                       |
-| Ctrl+K                          | Formulário de link (Enter aplica, Esc cancela)          |
-| Tab                             | Insere espaços                                          |
-| Delete / Backspace              | Apaga a imagem selecionada                              |
-| Ctrl+setas (Shift: 10px)        | Move de leve a imagem ou caixa de texto selecionada     |
-| Alt+↑/↓, Alt+←/→                | Move no fluxo do texto / flutua à esquerda ou à direita |
-| ←/→, Home/End, Esc (barra)      | Passa entre os controles da barra, fecha paletas        |
+| Teclas                                      | Ação                                                          |
+| ------------------------------------------- | ------------------------------------------------------------- |
+| Ctrl+B / I / U (Windows, Linux)             | Negrito / itálico / sublinhado                                |
+| Cmd+B / I / U (macOS)                       | Negrito / itálico / sublinhado                                |
+| Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z); Cmd no macOS | Desfazer, refazer                                             |
+| Ctrl+K (Cmd+K no macOS)                     | Formulário de link (Enter aplica, Esc cancela)                |
+| Tab                                         | Insere espaços; Shift+Tab, ou Esc e depois Tab, sai do editor |
+| Delete / Backspace                          | Apaga a imagem selecionada                                    |
+| Delete                                      | Apaga a caixa de texto selecionada como objeto                |
+| Esc                                         | Tira a seleção da imagem ou da caixa de texto                 |
+| Ctrl+setas (Shift: 10px)                    | Move de leve a imagem ou caixa de texto selecionada           |
+| Alt+↑/↓, Alt+←/→                            | Move no fluxo do texto / flutua à esquerda ou à direita       |
+| ←/→, Home/End, Esc (barra)                  | Passa entre os controles da barra, fecha paletas              |
 
 ## Navegadores
 
-Os testes automáticos rodam a cada push no Chromium (Chrome/Edge). Firefox e WebKit (Safari) rodam
+Os testes automáticos rodam a cada push na `main` e em cada pull request no Chromium (Chrome/Edge). Firefox e WebKit (Safari) rodam
 como diagnóstico (`VE_ALL_BROWSERS=1 npx playwright test --project=firefox --project=webkit`):
 
 | Navegador       | Situação                                                                                                                                     |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chrome, Edge    | Suíte completa passando.                                                                                                                     |
+| Chrome, Edge    | Suíte automática passando no CI.                                                                                                             |
 | Firefox         | Funciona; o HTML difere em detalhes (ex.: imagem inserida dentro do parágrafo). A colagem não é coberta pelos testes automáticos no Firefox. |
 | Safari (WebKit) | Funciona; listas ganham `<span style="font-size">` extras; as outras diferenças são de forma.                                                |
 
@@ -415,7 +426,7 @@ lado a lado, como antes; nada mais muda.
   pouco entre navegadores.
 - Desfazer/refazer: depois de desfazer no editor, o Refazer do próprio navegador (menu Editar ou de
   contexto) pode ficar indisponível; Ctrl+Y e o botão Refazer funcionam. A digitação com teclados IME
-  do sistema e os menus do Safari ainda não foram verificados à mão.
+  do sistema (japonês, chinês, coreano) e os menus do Safari ainda não foram verificados à mão.
 - Depois do marca-texto ou de uma cor personalizada, o negrito é gravado como
   `<span style="font-weight: bold">` em vez de `<b>` (funciona igual).
 - Colagem do Microsoft Word (`pasteSpacing="preserve"`), comparada com o Word na mesma largura,

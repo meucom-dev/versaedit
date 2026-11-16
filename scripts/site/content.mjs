@@ -18,6 +18,7 @@ export const PHILOSOPHY = {
   title: 'The VersaEdit Philosophy',
   en: {
     path: '/philosophy/',
+    pageTitle: 'The VersaEdit Philosophy',
     file: 'philosophy.en.md',
     synthesis: [
       'Versatility will be our differentiator. Precision will be our reputation.',
@@ -26,6 +27,7 @@ export const PHILOSOPHY = {
   },
   pt: {
     path: '/pt/filosofia/',
+    pageTitle: 'A Filosofia do VersaEdit',
     file: 'philosophy.pt.md',
     synthesis: [
       'A versatilidade será nosso diferencial. A precisão será nossa reputação.',
@@ -34,6 +36,7 @@ export const PHILOSOPHY = {
   },
   es: {
     path: '/es/filosofia/',
+    pageTitle: 'La filosofía de VersaEdit',
     file: 'philosophy.es.md',
     synthesis: [
       'La versatilidad será nuestro diferencial. La precisión será nuestra reputación.',
@@ -126,7 +129,7 @@ export const CONTENT = {
           'Chrome, Edge (desktop)',
           'ok',
           'Supported',
-          'Full automated test suite in continuous integration (Chromium engine), with React 18 and 19.',
+          'Automated test suite in continuous integration (Chromium engine), with React 18 and 19.',
         ],
         [
           'Firefox (desktop)',
@@ -138,7 +141,7 @@ export const CONTENT = {
           'Safari',
           'warn',
           'Works, with differences',
-          'Tested only with the WebKit engine, not in Safari itself. Lists receive extra font-size spans; other HTML differences are cosmetic (how styles are written). Loading external audio and video, when enabled (<code>allowExternalMedia</code>), was not verified.',
+          'Diagnostic test runs only, with the WebKit engine, not in Safari itself. Lists receive extra font-size spans; other HTML differences are cosmetic (how styles are written). Loading external audio and video, when enabled (<code>allowExternalMedia</code>), was not verified.',
         ],
         [
           'Mobile browsers',
@@ -170,7 +173,7 @@ export const CONTENT = {
       ],
     ],
     references: [
-      [`${REPO}#readme`, 'VersaEdit README', ', github.com/meucom-dev/versaedit.'],
+      [`${REPO}/blob/main/README.md`, 'VersaEdit README', ', github.com/meucom-dev/versaedit.'],
       [
         `${REPO}/blob/main/docs/integration.md`,
         'Integration guide: sanitization in the browser and on the server',
@@ -178,7 +181,7 @@ export const CONTENT = {
       ],
       [`${REPO}/blob/main/CHANGELOG.md`, 'CHANGELOG: version 0.5.0-beta.2', '.'],
     ],
-    docsUrl: `${REPO}#readme`,
+    docsUrl: `${REPO}/blob/main/README.md`,
     facts: {
       caption: 'VersaEdit logo',
       developer: 'Developer',
@@ -296,7 +299,7 @@ export const CONTENT = {
           'Chrome, Edge (computador)',
           'ok',
           'Suportado',
-          'Suíte completa de testes automáticos na integração contínua (motor Chromium), com React 18 e 19.',
+          'Suíte de testes automáticos na integração contínua (motor Chromium), com React 18 e 19.',
         ],
         [
           'Firefox (computador)',
@@ -308,7 +311,7 @@ export const CONTENT = {
           'Safari',
           'warn',
           'Funciona, com diferenças',
-          'Testado só com o motor WebKit, não no próprio Safari. Listas recebem spans de font-size a mais; as outras diferenças no HTML são cosméticas (a forma de escrever os estilos). O carregamento de áudio e vídeo externos, quando ativado (<code>allowExternalMedia</code>), não foi verificado.',
+          'Só execuções de diagnóstico, com o motor WebKit, não no próprio Safari. Listas recebem spans de font-size a mais; as outras diferenças no HTML são cosméticas (a forma de escrever os estilos). O carregamento de áudio e vídeo externos, quando ativado (<code>allowExternalMedia</code>), não foi verificado.',
         ],
         [
           'Navegadores de celular',
@@ -356,7 +359,7 @@ export const CONTENT = {
     facts: {
       caption: 'Logotipo do VersaEdit',
       developer: 'Desenvolvedor',
-      started: 'Criado em',
+      started: 'Início do desenvolvimento',
       preview: 'Versão de prévia',
       previewValue:
         '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.2</a> (16 de novembro de 2026)',
@@ -469,7 +472,7 @@ export const CONTENT = {
           'Chrome, Edge (escritorio)',
           'ok',
           'Compatible',
-          'Batería completa de pruebas automáticas en la integración continua (motor Chromium), con React 18 y 19.',
+          'Batería de pruebas automáticas en la integración continua (motor Chromium), con React 18 y 19.',
         ],
         [
           'Firefox (escritorio)',
@@ -481,7 +484,7 @@ export const CONTENT = {
           'Safari',
           'warn',
           'Funciona, con diferencias',
-          'Probado solo con el motor WebKit, no en el propio Safari. Las listas reciben elementos span de font-size adicionales; las demás diferencias en el HTML son estéticas (la forma de escribir los estilos). No se verificó la carga de audio y vídeo externos cuando está activada (<code>allowExternalMedia</code>).',
+          'Solo ejecuciones de diagnóstico, con el motor WebKit, no en el propio Safari. Las listas reciben elementos span de font-size adicionales; las demás diferencias en el HTML son estéticas (la forma de escribir los estilos). No se verificó la carga de audio y vídeo externos cuando está activada (<code>allowExternalMedia</code>).',
         ],
         [
           'Navegadores móviles',
@@ -513,7 +516,11 @@ export const CONTENT = {
       ],
     ],
     references: [
-      [`${REPO}#readme`, 'README de VersaEdit', ' (en inglés), github.com/meucom-dev/versaedit.'],
+      [
+        `${REPO}/blob/main/README.es.md`,
+        'README de VersaEdit',
+        ', github.com/meucom-dev/versaedit.',
+      ],
       [
         `${REPO}/blob/main/docs/integration.md`,
         'Guía de integración: saneamiento en el navegador y en el servidor',
@@ -521,11 +528,11 @@ export const CONTENT = {
       ],
       [`${REPO}/blob/main/CHANGELOG.md`, 'CHANGELOG: versión 0.5.0-beta.2', ' (en inglés).'],
     ],
-    docsUrl: `${REPO}#readme`,
+    docsUrl: `${REPO}/blob/main/README.es.md`,
     facts: {
       caption: 'Logotipo de VersaEdit',
       developer: 'Desarrollador',
-      started: 'Creado en',
+      started: 'Inicio del desarrollo',
       preview: 'Versión preliminar',
       previewValue:
         '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.2</a> (16 de noviembre de 2026)',

@@ -46,7 +46,7 @@ export function PostEditor({
         initialContent={initialHtml}
         onChange={(html) => console.log('changed', html.length)}
         width="100%"
-        height={480}
+        height={500}
         locale="es"
       />
       <button onClick={() => onSave(editor.current!.getHTML())}>Guardar</button>
@@ -72,7 +72,7 @@ export function PostEditor({
 | `onSave`                                             | `(html) => void`                                    | descarga                    | El botón Guardar entrega el HTML en lugar de descargar un archivo `.html`.                                                           |
 | `onImageUpload`                                      | `(file) => Promise<url>`                            | base64                      | Sube las imágenes e inserta la URL devuelta (recomendado).                                                                           |
 | `width`                                              | `number \| string`                                  | `'100%'`                    | Ancho total; un número son px, una cadena es CSS. Nunca supera el contenedor ([Tamaño](#tamaño)).                                    |
-| `height`                                             | `number`                                            | `500`                       | Altura del área de edición en px (altura inicial con `resizable`).                                                                   |
+| `height`                                             | `number`                                            | `500`                       | Altura en px, borde incluido (altura inicial con `resizable`).                                                                       |
 | `resizable`                                          | `boolean \| ResizableOptions`                       | `false`                     | Controladores para redimensionar el área de edición ([detalles](#área-de-edición-redimensionable)).                                  |
 | `sizeControls`                                       | `boolean`                                           | `false`                     | Campos de ancho y alto (px) debajo del área de edición (con `resizable`).                                                            |
 | `settingsPanel`                                      | `ReactNode \| (close) => ReactNode`                 | —                           | Su propia configuración, en un panel que abre un engranaje al final de la barra ([Panel de configuración](#panel-de-configuración)). |
@@ -176,9 +176,9 @@ import { objectMarginStyle, VersaEdit } from 'versaedit'
 
 const margen = { text: 24, outer: 8 }
 
-<VersaEdit objectMargin={margen} />
+;<VersaEdit objectMargin={margen} />
 
-<div
+;<div
   className="versaedit-content"
   style={objectMarginStyle(margen)}
   dangerouslySetInnerHTML={{ __html: htmlSanitizado }}
@@ -187,7 +187,8 @@ const margen = { text: 24, outer: 8 }
 
 `objectMarginStyle()` devuelve las variables CSS `--ve-object-text`, `--ve-object-outer`,
 `--ve-object-top` y `--ve-object-bottom`; sin React, aplíquelas al elemento de edición y al
-contenedor publicado. Cambiar `objectMargin` durante la edición rehace el punto en que los
+contenedor publicado, y llame a `refreshObjects()` del núcleo después de cambiarlas durante la
+edición. Cambiar `objectMargin` durante la edición rehace el punto en que los
 objetos lado a lado deben bajar (`data-ve-stack`), sin tocar el historial de deshacer.
 
 ### Panel de configuración
@@ -198,6 +199,9 @@ El editor no guarda ni interpreta ese contenido: los controles cambian el estado
 que vuelve al editor como props. Sin la prop no hay engranaje y nada cambia.
 
 ```tsx
+import { useState } from 'react'
+import { VersaEdit } from 'versaedit'
+
 function Editor() {
   const [spacing, setSpacing] = useState<'remove' | 'preserve'>('remove')
   return (
@@ -229,7 +233,7 @@ function Editor() {
   Entra en esa fila cuando hay espacio; si no, queda en una fila propia, también a la derecha. Con
   `toolbar={[]}`, la barra muestra solo el engranaje. El panel se abre debajo del engranaje,
   alineado con su borde derecho, con 260 a 360 px de ancho (nunca más que la pantalla menos 16 px),
-  y se desplaza cuando supera el 70% del alto de la pantalla. En pantallas estrechas se mantiene
+  y se desplaza cuando supera el 70% del alto de la pantalla o 640 px. En pantallas estrechas se mantiene
   dentro del área visible.
 - Teclado y lectores de pantalla: el engranaje es un botón de la barra (flechas, Inicio, Fin) con
   el nombre de `labels.settings` ("Configuración"), `aria-haspopup="dialog"` y `aria-expanded`. El
@@ -263,7 +267,8 @@ import 'versaedit/versaedit-content.css'
   relleno (por ejemplo, 800 → 766 px). En columnas más estrechas el texto se reacomoda, y las imágenes y los
   cuadros de texto se reducen para caber.
 - Un `fontFamily` / `headingFontFamily` propio se pasa con variables CSS:
-  `style={{ '--ve-font': 'Georgia, serif', '--ve-heading-font': 'Inter, sans-serif' }}`.
+  `style={{ '--ve-font': 'Georgia, serif', '--ve-heading-font': 'Inter, sans-serif' } as React.CSSProperties}`
+  (TypeScript exige el `as React.CSSProperties`).
 - Las reglas de elemento de su sitio (`p {}`, `h2 {}`, `ul {}`…) no alcanzan el contenido
   reflejado. Las reglas que lo alcanzan mediante una clase (p. ej. `.post p {}`) son más
   específicas y siguen aplicándose, igual que las que usan `!important`: manténgalas lejos del
@@ -349,14 +354,18 @@ HTML:
 ## Ejemplos y guías
 
 - [Guía de integración](docs/integration.md) (en inglés): saneamiento en el servidor, guardado,
-  Supabase (clave pública + RLS), subida de imágenes, Next.js, CSP, visualización del contenido.
+  tamaño del área de edición, panel de configuración, Supabase (clave pública + RLS), subida de
+  imágenes, Next.js, CSP, visualización del contenido.
+- [`examples/quick-start`](examples/quick-start): el código de la
+  [guía rápida](https://versaedit.dev/es/guia-rapida/) (Vite + React + TypeScript).
 - [`examples/vite-react`](examples/vite-react): una pestaña por caso de uso (básico, callbacks de
   integración, barra personalizada, CSP estricta, visualización, dictado externo).
 - [`examples/nextjs`](examples/nextjs): Next.js 16 App Router con renderizado en el servidor.
-- Playground (`npm run dev`): abra **Show HTML → Properties** para cambiar las props en vivo, cargar
-  contenido de ejemplo, ver los eventos y copiar el JSX equivalente.
+- Playground (`npm run dev`): el engranaje al final de la barra cambia las props en vivo; **Ver HTML →
+  Herramientas del playground** carga contenido de ejemplo y muestra los eventos y el JSX
+  equivalente.
 
-Los dos ejemplos se ejecutan en CI con el paquete empaquetado (`npm pack`), instalado fuera del
+Los tres ejemplos se ejecutan en CI con el paquete empaquetado (`npm pack`), instalado fuera del
 repositorio.
 
 ## Dictado
@@ -365,7 +374,8 @@ Un botón de micrófono convierte la voz en texto con la Web Speech API del nave
 Safari; oculto en Firefox), en el idioma de la interfaz (`en-US`, `pt-BR` o `es-ES`; `speechLang`
 lo cambia). La puntuación hablada funciona ("comma", "period", "new line"… en inglés; "vírgula",
 "ponto final", "nova linha"… en pt-BR; "coma", "punto final", "nueva línea"… en español; en español
-solo se escriben los signos de cierre ? y !, no ¿ ni ¡). **Privacidad:** estos navegadores procesan
+solo se escriben los signos de cierre ? y !, no ¿ ni ¡). Los comandos de puntuación siguen el
+`locale`, aunque `speechLang` sea otro. **Privacidad:** estos navegadores procesan
 el audio en los servidores del fabricante (Google, Microsoft, Apple). Pase `speechRecognition` para
 usar otro motor con la misma interfaz, o `showDictation={false}` para quitarlo. `VersaEditDictation`
 muestra el micrófono en cualquier lugar de la página (`<VersaEditDictation editor={ref} />`).
@@ -390,27 +400,30 @@ Informe de vulnerabilidades de forma privada — consulte [SECURITY.md](SECURITY
 
 ## Teclado
 
-| Teclas                          | Acción                                                                        |
-| ------------------------------- | ----------------------------------------------------------------------------- |
-| Ctrl+B / I / U (Windows, Linux) | Negrita / cursiva / subrayado                                                 |
-| Cmd+B / I / U (macOS)           | Negrita / cursiva / subrayado                                                 |
-| Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z)   | Deshacer, rehacer                                                             |
-| Ctrl+K                          | Formulario de enlace (Enter aplica, Esc cancela)                              |
-| Tab                             | Inserta espacios                                                              |
-| Supr / Retroceso                | Elimina la imagen seleccionada                                                |
-| Ctrl+flechas (Mayús: 10px)      | Desplaza la imagen o el cuadro de texto seleccionado                          |
-| Alt+↑/↓, Alt+←/→                | Lo mueve en el flujo del texto / lo hace flotar a la izquierda o a la derecha |
-| ←/→, Inicio/Fin, Esc (barra)    | Recorre los controles de la barra, cierra las paletas                         |
+| Teclas                                      | Acción                                                                        |
+| ------------------------------------------- | ----------------------------------------------------------------------------- |
+| Ctrl+B / I / U (Windows, Linux)             | Negrita / cursiva / subrayado                                                 |
+| Cmd+B / I / U (macOS)                       | Negrita / cursiva / subrayado                                                 |
+| Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z); Cmd en macOS | Deshacer, rehacer                                                             |
+| Ctrl+K (Cmd+K en macOS)                     | Formulario de enlace (Enter aplica, Esc cancela)                              |
+| Tab                                         | Inserta espacios; Mayús+Tab, o Esc y luego Tab, sale del editor               |
+| Supr / Retroceso                            | Elimina la imagen seleccionada                                                |
+| Supr                                        | Elimina el cuadro de texto seleccionado como objeto                           |
+| Esc                                         | Quita la selección de la imagen o del cuadro de texto                         |
+| Ctrl+flechas (Mayús: 10px)                  | Desplaza la imagen o el cuadro de texto seleccionado                          |
+| Alt+↑/↓, Alt+←/→                            | Lo mueve en el flujo del texto / lo hace flotar a la izquierda o a la derecha |
+| ←/→, Inicio/Fin, Esc (barra)                | Recorre los controles de la barra, cierra las paletas                         |
 
 ## Compatibilidad con navegadores
 
-Las pruebas automáticas se ejecutan en cada push en Chromium (Chrome/Edge). Firefox y WebKit
+Las pruebas automáticas se ejecutan en cada push a `main` y en cada pull request en Chromium
+(Chrome/Edge). Firefox y WebKit
 (Safari) se ejecutan como diagnóstico
 (`VE_ALL_BROWSERS=1 npx playwright test --project=firefox --project=webkit`):
 
 | Navegador       | Estado                                                                                                                                                 |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Chrome, Edge    | Todas las pruebas pasan.                                                                                                                               |
+| Chrome, Edge    | Las pruebas automáticas pasan en CI.                                                                                                                   |
 | Firefox         | Funciona; el HTML difiere en detalles (p. ej., imágenes insertadas dentro del párrafo). El pegado no está cubierto por pruebas automáticas en Firefox. |
 | Safari (WebKit) | Funciona; las listas reciben `<span style="font-size">` adicionales; las demás diferencias son estéticas.                                              |
 

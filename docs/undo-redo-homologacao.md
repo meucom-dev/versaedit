@@ -5,7 +5,8 @@ experimental: o que está comprovado por testes automáticos, o que foi verifica
 nos menus dos navegadores, as limitações dos navegadores e os critérios da decisão.
 
 **Situação: estável.** Aprovado pelo mantenedor em 21/10/2026, com base nos testes
-automáticos (Chromium, Firefox e WebKit; React 18 e 19) e na homologação manual dos
+automáticos (Chromium no CI, Firefox e WebKit em execuções locais; React 18 e 19) e na
+homologação manual dos
 menus no Chrome e no Firefox (Windows 11). Versão homologada: commit `d035855` (lotes
 D1 a D7), com a suíte permanente de `cf035bd`.
 
@@ -21,7 +22,8 @@ seção 3 continua disponível para essa execução.
 
 ## 1. Comprovado automaticamente
 
-Testes de navegador (Playwright) em Chromium, Firefox e WebKit, com React 18 e 19.
+Testes de navegador (Playwright) com React 18 e 19: Chromium no CI; Firefox e WebKit em
+execuções locais de diagnóstico (`VE_ALL_BROWSERS=1`).
 "Real" quer dizer entrada do próprio navegador (teclado, mouse, toque ou comando de
 edição, eventos `isTrusted`); "sintético" quer dizer um evento montado pelo teste,
 que prova o tratamento no editor, não o comportamento do navegador.

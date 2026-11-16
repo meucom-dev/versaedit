@@ -1,5 +1,5 @@
 // Server-side sanitization of HTML produced by VersaEdit (Node.js).
-// Requires: npm install dompurify jsdom
+// Requires: npm install dompurify jsdom (jsdom 29 needs Node.js 20.19+, 22.13+ or 24+)
 // Tested by tests/unit/recipes.test.ts: editor output passes through unchanged and
 // the XSS battery comes out harmless.
 import createDOMPurify from 'dompurify'
@@ -21,7 +21,7 @@ purify.addHook('afterSanitizeAttributes', (node) => {
 export function sanitizeOnServer(html: string): string {
   return purify.sanitize(html, {
     ADD_ATTR: ['target', 'contenteditable'],
-    // Same exclusions as the editor: no SVG/MathML, forms or embedded documents
+    // The elements and attributes the editor forbids, plus SVG/MathML and embedded documents
     FORBID_TAGS: [
       'svg',
       'math',
@@ -30,10 +30,14 @@ export function sanitizeOnServer(html: string): string {
       'button',
       'textarea',
       'select',
+      'option',
+      'template',
+      'noscript',
       'iframe',
       'object',
       'embed',
       'style',
     ],
+    FORBID_ATTR: ['action', 'formaction', 'background', 'poster', 'srcset'],
   })
 }

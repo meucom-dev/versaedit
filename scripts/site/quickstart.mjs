@@ -8,6 +8,7 @@ import { REPO } from './content.mjs'
 
 const NPM = 'https://www.npmjs.com/package/versaedit'
 const GUIDE = `${REPO}/blob/main/docs/integration.md`
+const GUIDE_PT = `${REPO}/blob/main/docs/integration.pt-BR.md`
 
 // Traduções do código: [texto do original, texto traduzido]
 const CODE_PT = {
@@ -188,7 +189,7 @@ const PROPS = {
       'toolbar',
       'readonly ToolbarGroup[]',
       'all groups',
-      'Toolbar groups to show, always in the toolbar’s fixed order; <code>[]</code> hides the toolbar. The groups are listed in <code>TOOLBAR_GROUPS</code>.',
+      'Toolbar groups to show, always in the toolbar’s fixed order; <code>[]</code> hides the toolbar (unless <code>settingsPanel</code> is set). The groups are listed in <code>TOOLBAR_GROUPS</code>.',
       "toolbar={['history', 'format', 'list', 'link']}",
     ],
     [
@@ -295,7 +296,7 @@ const PROPS = {
       'toolbar',
       'readonly ToolbarGroup[]',
       'todos os grupos',
-      'Grupos da barra a exibir, sempre na ordem fixa da barra; <code>[]</code> esconde a barra. Os grupos estão em <code>TOOLBAR_GROUPS</code>.',
+      'Grupos da barra a exibir, sempre na ordem fixa da barra; <code>[]</code> esconde a barra (a menos que haja <code>settingsPanel</code>). Os grupos estão em <code>TOOLBAR_GROUPS</code>.',
       "toolbar={['history', 'format', 'list', 'link']}",
     ],
     [
@@ -402,7 +403,7 @@ const PROPS = {
       'toolbar',
       'readonly ToolbarGroup[]',
       'todos los grupos',
-      'Grupos de la barra que se muestran, siempre en el orden fijo de la barra; <code>[]</code> oculta la barra. Los grupos están en <code>TOOLBAR_GROUPS</code>.',
+      'Grupos de la barra que se muestran, siempre en el orden fijo de la barra; <code>[]</code> oculta la barra (salvo si hay <code>settingsPanel</code>). Los grupos están en <code>TOOLBAR_GROUPS</code>.',
       "toolbar={['history', 'format', 'list', 'link']}",
     ],
     [
@@ -490,7 +491,7 @@ export const QUICKSTART = {
       tested:
         'This is the code of the <a href="' +
         REPO +
-        '/tree/main/examples/quick-start">quick-start example</a>, compiled and tested in a browser with the package installed from npm.',
+        '/tree/main/examples/quick-start">quick-start example</a>, compiled and tested in a browser in continuous integration with the packed npm package, and after each release with the package from the npm registry.',
     },
     styles:
       'By default the editor injects its own stylesheet, so no import is needed. The example turns injection off (<code>injectStyles={false}</code>) and imports <code>versaedit/versaedit.css</code> instead, which is required on sites with a strict Content Security Policy. To display saved content on your site, wrap it in an element with the <code>versaedit-content</code> class and import <code>versaedit/versaedit-content.css</code>.',
@@ -499,9 +500,9 @@ export const QUICKSTART = {
       head: ['Property', 'Type', 'Required', 'Default', 'Description', 'Example'],
       no: 'No',
       more:
-        'The complete list (frame, fonts, colors, dictation, paste and overflow options) is in the <a href="' +
+        'The complete list (frame, fonts, colors, dictation, paste and overflow options, resizable area, settings panel, Layout Mirror and object margin) is in the <a href="' +
         REPO +
-        '#props">README</a>.',
+        '/blob/main/README.md#props">README</a>.',
     },
     ref: {
       intro: 'With <code>ref</code>, the application reads and controls the editor at any time:',
@@ -512,6 +513,10 @@ export const QUICKSTART = {
         ['clear(): void', 'Erases all content.'],
         ['focus(): void', 'Puts the cursor back in the editor.'],
         ['undo() / redo()', 'Undo and redo, as with the toolbar buttons.'],
+        [
+          'getSize() / setSize(size)',
+          'Visible size of the editing area; setSize works only with <code>resizable</code>.',
+        ],
       ],
     },
     flow: {
@@ -533,7 +538,9 @@ export const QUICKSTART = {
       '">integration guide</a> includes a tested server-side recipe.',
     next: [
       'Try every tool in the <a href="/playground/">Playground</a>.',
-      'All properties, error codes and toolbar groups: <a href="' + REPO + '#readme">README</a>.',
+      'All properties, error codes and toolbar groups: <a href="' +
+        REPO +
+        '/blob/main/README.md">README</a>.',
       'Image upload, server-side sanitization and display: <a href="' +
         GUIDE +
         '">integration guide</a>.',
@@ -582,7 +589,7 @@ export const QUICKSTART = {
       tested:
         'Este é o código do <a href="' +
         REPO +
-        '/tree/main/examples/quick-start">exemplo quick-start</a>, compilado e testado no navegador com o pacote instalado do npm; aqui, só os comentários, os textos da tela e o <code>locale</code> estão em português.',
+        '/tree/main/examples/quick-start">exemplo quick-start</a>, compilado e testado no navegador na integração contínua com o pacote gerado pelo npm, e depois de cada versão com o pacote do registro do npm; aqui, só os comentários, os textos da tela e o <code>locale</code> estão em português.',
     },
     styles:
       'Por padrão o editor injeta a própria folha de estilos, então nenhuma importação é necessária. O exemplo desliga a injeção (<code>injectStyles={false}</code>) e importa <code>versaedit/versaedit.css</code> no lugar, o que é obrigatório em sites com política de segurança de conteúdo (CSP) restrita. Para exibir o conteúdo salvo no seu site, coloque-o num elemento com a classe <code>versaedit-content</code> e importe <code>versaedit/versaedit-content.css</code>.',
@@ -591,7 +598,7 @@ export const QUICKSTART = {
       head: ['Propriedade', 'Tipo', 'Obrigatória', 'Padrão', 'Descrição', 'Exemplo'],
       no: 'Não',
       more:
-        'A lista completa (moldura, fontes, cores, ditado, colagem e excesso de conteúdo) está no <a href="' +
+        'A lista completa (moldura, fontes, cores, ditado, colagem, excesso de conteúdo, área redimensionável, painel de configurações, Layout Mirror e margem dos objetos) está no <a href="' +
         REPO +
         '/blob/main/README.pt-BR.md">README</a>.',
     },
@@ -604,6 +611,10 @@ export const QUICKSTART = {
         ['clear(): void', 'Apaga todo o conteúdo.'],
         ['focus(): void', 'Devolve o cursor ao editor.'],
         ['undo() / redo()', 'Desfazer e refazer, como os botões da barra.'],
+        [
+          'getSize() / setSize(size)',
+          'Tamanho visível da área de edição; o setSize só funciona com <code>resizable</code>.',
+        ],
       ],
     },
     flow: {
@@ -616,7 +627,7 @@ export const QUICKSTART = {
     },
     security:
       'O editor sanitiza tudo o que recebe (DOMPurify e listas de permissão próprias), mas ele roda no navegador do usuário, onde pode ser contornado. O seu servidor deve validar e sanitizar o HTML de novo antes de gravá-lo ou publicá-lo, conforme a política de segurança da sua aplicação. O <a href="' +
-      GUIDE +
+      GUIDE_PT +
       '">guia de integração</a> inclui uma receita testada para o servidor.',
     next: [
       'Experimente todas as ferramentas no <a href="/playground/">Playground</a>.',
@@ -624,8 +635,8 @@ export const QUICKSTART = {
         REPO +
         '/blob/main/README.pt-BR.md">README</a>.',
       'Envio de imagens, sanitização no servidor e exibição: <a href="' +
-        GUIDE +
-        '">guia de integração</a> (em inglês).',
+        GUIDE_PT +
+        '">guia de integração</a>.',
       'Mais exemplos (Vite e Next.js): <a href="' +
         REPO +
         '/tree/main/examples">pasta de exemplos</a>.',
@@ -671,7 +682,7 @@ export const QUICKSTART = {
       tested:
         'Este es el código del <a href="' +
         REPO +
-        '/tree/main/examples/quick-start">ejemplo quick-start</a>, compilado y probado en el navegador con el paquete instalado desde npm; aquí solo los comentarios, los textos de la pantalla y el <code>locale</code> están en español.',
+        '/tree/main/examples/quick-start">ejemplo quick-start</a>, compilado y probado en el navegador en la integración continua con el paquete generado por npm, y después de cada versión con el paquete del registro de npm; aquí solo los comentarios, los textos de la pantalla y el <code>locale</code> están en español.',
     },
     styles:
       'De forma predeterminada, el editor inyecta su propia hoja de estilos, por lo que no hace falta ninguna importación. El ejemplo desactiva la inyección (<code>injectStyles={false}</code>) e importa <code>versaedit/versaedit.css</code> en su lugar, lo que es obligatorio en sitios con una política de seguridad de contenido (CSP) estricta. Para mostrar el contenido guardado en su sitio, colóquelo en un elemento con la clase <code>versaedit-content</code> e importe <code>versaedit/versaedit-content.css</code>.',
@@ -680,7 +691,7 @@ export const QUICKSTART = {
       head: ['Propiedad', 'Tipo', 'Obligatoria', 'Predeterminado', 'Descripción', 'Ejemplo'],
       no: 'No',
       more:
-        'La lista completa (marco, fuentes, colores, dictado, pegado y desbordamiento) está en el <a href="' +
+        'La lista completa (marco, fuentes, colores, dictado, pegado, desbordamiento, área redimensionable, panel de configuración, Layout Mirror y margen de los objetos) está en el <a href="' +
         REPO +
         '/blob/main/README.es.md">README</a>.',
     },
@@ -694,6 +705,10 @@ export const QUICKSTART = {
         ['clear(): void', 'Borra todo el contenido.'],
         ['focus(): void', 'Devuelve el cursor al editor.'],
         ['undo() / redo()', 'Deshacer y rehacer, como los botones de la barra.'],
+        [
+          'getSize() / setSize(size)',
+          'Tamaño visible del área de edición; setSize solo funciona con <code>resizable</code>.',
+        ],
       ],
     },
     flow: {

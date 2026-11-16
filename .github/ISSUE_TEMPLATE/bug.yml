@@ -5,8 +5,8 @@ body:
   - type: markdown
     attributes:
       value: |
-        Security problems: do **not** use this form — see SECURITY.md.
-        Problemas de segurança: **não** use este formulário — veja o SECURITY.md.
+        Security problems: do **not** use this form — see the [security policy](https://github.com/meucom-dev/versaedit/security/policy).
+        Problemas de segurança: **não** use este formulário — veja a [política de segurança](https://github.com/meucom-dev/versaedit/security/policy).
   - type: input
     id: version
     attributes:

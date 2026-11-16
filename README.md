@@ -44,7 +44,7 @@ export function PostEditor({
         initialContent={initialHtml}
         onChange={(html) => console.log('changed', html.length)}
         width="100%"
-        height={480}
+        height={500}
         locale="en"
       />
       <button onClick={() => onSave(editor.current!.getHTML())}>Save</button>
@@ -70,7 +70,7 @@ export function PostEditor({
 | `onSave`                                             | `(html) => void`                                    | download                  | Save button gives you the HTML instead of downloading a `.html` file.                                                 |
 | `onImageUpload`                                      | `(file) => Promise<url>`                            | base64                    | Upload images and insert the returned URL (recommended).                                                              |
 | `width`                                              | `number \| string`                                  | `'100%'`                  | Total width; a number is px, a string is CSS. Never wider than the container ([Size](#size)).                         |
-| `height`                                             | `number`                                            | `500`                     | Height of the editing area in px (initial height with `resizable`).                                                   |
+| `height`                                             | `number`                                            | `500`                     | Height in px, frame included (initial height with `resizable`).                                                       |
 | `resizable`                                          | `boolean \| ResizableOptions`                       | `false`                   | Let people resize the editing area by dragging its edges ([Resizable editing area](#resizable-editing-area)).         |
 | `sizeControls`                                       | `boolean`                                           | `false`                   | Width and height fields (px) below the editing area (with `resizable`).                                               |
 | `settingsPanel`                                      | `ReactNode \| (close) => ReactNode`                 | —                         | Your own settings, in a panel opened by a gear at the end of the toolbar ([Settings panel](#settings-panel)).         |
@@ -171,9 +171,9 @@ import { objectMarginStyle, VersaEdit } from 'versaedit'
 
 const margin = { text: 24, outer: 8 }
 
-<VersaEdit objectMargin={margin} />
+;<VersaEdit objectMargin={margin} />
 
-<div
+;<div
   className="versaedit-content"
   style={objectMarginStyle(margin)}
   dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
@@ -182,7 +182,8 @@ const margin = { text: 24, outer: 8 }
 
 `objectMarginStyle()` returns the CSS variables `--ve-object-text`, `--ve-object-outer`,
 `--ve-object-top` and `--ve-object-bottom`; without React, set them on the editing element and on
-the published container. Changing `objectMargin` while editing recalculates where objects side by
+the published container, and call the core's `refreshObjects()` after changing them while editing.
+Changing `objectMargin` while editing recalculates where objects side by
 side must move down (`data-ve-stack`), without touching the undo history.
 
 ### Settings panel
@@ -193,6 +194,9 @@ store or interpret that content: its controls change your own state, which you p
 props. Without the prop there is no gear and nothing changes.
 
 ```tsx
+import { useState } from 'react'
+import { VersaEdit } from 'versaedit'
+
 function Editor() {
   const [spacing, setSpacing] = useState<'remove' | 'preserve'>('remove')
   return (
@@ -224,7 +228,7 @@ function Editor() {
   that row when there is room for it; otherwise it starts a row of its own, still on the right. With
   `toolbar={[]}`, the toolbar shows only the gear. The panel opens below the gear, aligned to its
   right edge, 260 to 360 px wide (never wider than the screen minus 16 px), and scrolls when taller
-  than 70% of the screen. On narrow screens it is kept inside the viewport.
+  than 70% of the screen height or 640 px. On narrow screens it is kept inside the viewport.
 - Keyboard and screen readers: the gear is a toolbar button (arrow keys, Home, End) named by
   `labels.settings` ("Settings"), with `aria-haspopup="dialog"` and `aria-expanded`. The panel is
   a non-modal dialog with the same name. Opening it moves focus to its first control; Tab and
@@ -254,8 +258,9 @@ import 'versaedit/versaedit-content.css'
 - Lines break at the same points when the published container has the same usable width as the
   editing area: `width` minus the frame (1 px on each side by default) minus 32 px of padding
   (e.g. 800 → 766 px). In narrower columns the text reflows, and images and text boxes shrink to fit.
-- A custom `fontFamily` / `headingFontFamily` is passed with CSS variables:
-  `style={{ '--ve-font': 'Georgia, serif', '--ve-heading-font': 'Inter, sans-serif' }}`.
+- A custom `fontFamily` / `headingFontFamily` is passed with CSS variables (TypeScript needs the
+  cast):
+  `style={{ '--ve-font': 'Georgia, serif', '--ve-heading-font': 'Inter, sans-serif' } as React.CSSProperties}`.
 - Your site's element rules (`p {}`, `h2 {}`, `ul {}`…) do not reach mirrored content. Rules
   that target it through a class (e.g. `.post p {}`) are more specific and still apply, as do
   `!important` rules: keep them away from the `ve-mirror` container.
@@ -334,15 +339,17 @@ paragraph and line spacing, indents and blank lines are dropped, as before. With
 
 ## Examples and guides
 
-- [Integration guide](docs/integration.md): server sanitization, saving, Supabase (public key + RLS),
-  image upload, Next.js, CSP, displaying content.
+- [Integration guide](docs/integration.md): server sanitization, saving, editing area size, settings
+  panel, Supabase (public key + RLS), image upload, Next.js, CSP, displaying content.
+- [`examples/quick-start`](examples/quick-start): the code of the
+  [Quick Start guide](https://versaedit.dev/quick-start/) (Vite + React + TypeScript).
 - [`examples/vite-react`](examples/vite-react): one tab per use case (basic, integration callbacks,
   customized toolbar, strict CSP, display, external dictation).
 - [`examples/nextjs`](examples/nextjs): Next.js 16 App Router with server rendering.
-- Playground (`npm run dev`): open **Show HTML → Properties** to change props live, load sample
-  content, watch events and copy the equivalent JSX.
+- Playground (`npm run dev`): the gear at the end of the toolbar changes props live; **Show HTML →
+  Playground tools** loads sample content, shows the events and the equivalent JSX.
 
-Both examples run against the packed package (`npm pack`), installed outside the repository, in CI.
+All three examples run against the packed package (`npm pack`), installed outside the repository, in CI.
 
 ## Dictation
 
@@ -350,7 +357,8 @@ A microphone button converts speech to text using the browser's Web Speech API (
 Safari; hidden in Firefox), in the interface language (`en-US`, `pt-BR` or `es-ES`; `speechLang`
 changes it). Spoken punctuation works ("comma", "period", "new line"…; in pt-BR "vírgula", "ponto
 final", "nova linha"…; in Spanish "coma", "punto final", "nueva línea"…; Spanish gets only the
-closing ? and !, not ¿ and ¡). **Privacy:** these browsers process the audio on the
+closing ? and !, not ¿ and ¡). The punctuation commands follow `locale`, even when `speechLang`
+is different. **Privacy:** these browsers process the audio on the
 vendor's servers (Google, Microsoft, Apple). Pass `speechRecognition` to use another engine with the
 same interface, or `showDictation={false}` to remove it. `VersaEditDictation` renders the microphone
 anywhere on the page (`<VersaEditDictation editor={ref} />`).
@@ -373,26 +381,28 @@ Report vulnerabilities privately — see [SECURITY.md](SECURITY.md) (support@ver
 
 ## Keyboard
 
-| Keys                            | Action                                            |
-| ------------------------------- | ------------------------------------------------- |
-| Ctrl+B / I / U (Windows, Linux) | Bold / italic / underline                         |
-| Cmd+B / I / U (macOS)           | Bold / italic / underline                         |
-| Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z)   | Undo, redo                                        |
-| Ctrl+K                          | Link form (Enter applies, Esc cancels)            |
-| Tab                             | Insert spaces                                     |
-| Delete / Backspace              | Delete the selected image                         |
-| Ctrl+arrows (Shift: 10px)       | Nudge the selected image or text box              |
-| Alt+↑/↓, Alt+←/→                | Move it in the text flow / float it left or right |
-| ←/→, Home/End, Esc (toolbar)    | Move between toolbar controls, close palettes     |
+| Keys                                        | Action                                                       |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| Ctrl+B / I / U (Windows, Linux)             | Bold / italic / underline                                    |
+| Cmd+B / I / U (macOS)                       | Bold / italic / underline                                    |
+| Ctrl+Z, Ctrl+Y (Ctrl+Shift+Z); Cmd on macOS | Undo, redo                                                   |
+| Ctrl+K (Cmd+K on macOS)                     | Link form (Enter applies, Esc cancels)                       |
+| Tab                                         | Insert spaces; Shift+Tab, or Esc then Tab, leaves the editor |
+| Delete / Backspace                          | Delete the selected image                                    |
+| Delete                                      | Delete the text box selected as an object                    |
+| Esc                                         | Deselect the selected image or text box                      |
+| Ctrl+arrows (Shift: 10px)                   | Nudge the selected image or text box                         |
+| Alt+↑/↓, Alt+←/→                            | Move it in the text flow / float it left or right            |
+| ←/→, Home/End, Esc (toolbar)                | Move between toolbar controls, close palettes                |
 
 ## Browser support
 
-Automated tests run on every push in Chromium (Chrome/Edge). Firefox and WebKit (Safari) are run as a
-diagnostic (`VE_ALL_BROWSERS=1 npx playwright test --project=firefox --project=webkit`):
+Automated tests run on every push to `main` and every pull request in Chromium (Chrome/Edge).
+Firefox and WebKit (Safari) are run as a diagnostic (`VE_ALL_BROWSERS=1 npx playwright test --project=firefox --project=webkit`):
 
 | Browser         | Status                                                                                                                          |
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| Chrome, Edge    | Full suite passing.                                                                                                             |
+| Chrome, Edge    | Automated suite passing in CI.                                                                                                  |
 | Firefox         | Works; HTML differs in details (e.g. images inserted inside the paragraph). Paste is not covered by automated tests in Firefox. |
 | Safari (WebKit) | Works; lists get extra `<span style="font-size">` wrappers; other differences are cosmetic.                                     |
 

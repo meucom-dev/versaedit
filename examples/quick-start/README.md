@@ -17,7 +17,7 @@ checks the app in a browser.
 
 ## Run
 
-From the repository root, `npm run test:package` builds the package with `npm pack`, copies this
+From the repository root, `npm run test:package -- quick-start` builds the package with `npm pack`, copies this
 folder to a temporary directory, installs the `.tgz` there, builds it and runs the browser test.
 With the published package instead:
 

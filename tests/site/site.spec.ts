@@ -689,8 +689,8 @@ test.describe('guia rápido', () => {
       await expect(props.locator('tbody tr').first().locator('td').first()).toHaveText(
         'initialContent',
       )
-      // Métodos da ref, fluxo em 4 passos, 8 seções no sumário e no artigo
-      await expect(page.locator('#ref ~ table.props').first().locator('tbody tr')).toHaveCount(5)
+      // Métodos da ref (6 linhas, com getSize/setSize), fluxo em 4 passos, 8 seções no sumário e no artigo
+      await expect(page.locator('#ref ~ table.props').first().locator('tbody tr')).toHaveCount(6)
       await expect(page.locator('ol.flow li')).toHaveCount(4)
       await expect(page.locator('#rail > ol li')).toHaveCount(8)
       await expect(page.locator('main h2.sec')).toHaveCount(8)

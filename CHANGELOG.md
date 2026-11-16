@@ -6,6 +6,17 @@ by the internal stabilization batches.
 
 ## [Unreleased]
 
+### Site, playground and tooling
+
+- Site only (versaedit.dev; the npm package is unchanged): the home page lists the 0.5.0-beta.2
+  features and the browser notes (Ctrl+B/I/U in Firefox, automated Word paste tests); the fact box
+  shows the circular logo as a vector image (SVG, light and dark variants); `favicon.svg` is now a
+  true vector drawing (it embedded a PNG), also in `/playground/`.
+- Documentation corrected against the code: READMEs (playground instructions, the three examples,
+  keyboard shortcuts, TypeScript cast for `--ve-font`), integration guides, server sanitization
+  recipe (now forbids the same elements and attributes as the editor), release procedure and site
+  links to the translated documents.
+
 ## [0.5.0-beta.2] - 2026-11-16
 
 ### Upgrading from 0.5.0-beta.1
@@ -58,7 +69,7 @@ changed, and each one can be kept as it was:
   images and text boxes shrink to fit. A custom font goes through `--ve-font` /
   `--ve-heading-font`. The saved HTML is unchanged; without the prop and the class nothing changes
   (editor and published CSS rules are the same as before, only new `.ve-mirror` rules were added).
-  The playground shows the published preview when `layoutMirror` is on (Properties panel).
+  The playground shows the published preview when `layoutMirror` is on (option in the gear).
 - Resizable editing area (optional, `resizable` prop): handles on the right edge, the bottom edge
   and the corner between them, used with a mouse, a finger or the arrow keys; `resizable.handles`
   adds the left, top and other corners. Only the visible area changes: the HTML, undo history,
@@ -515,10 +526,8 @@ caret-color: …">`, or the same declarations added to the user's own elements).
 
 ## Future improvements (not scheduled)
 
-- Restore the cursor position after undo/redo.
 - Keep `<b>` for bold after the highlighter / custom color (CSS mode left on).
-- Manual validation in Firefox of paste and of Ctrl+B/I/U (the editor relies on the browser;
-  Playwright's Firefox does not apply them even in a plain `contenteditable`).
+- Manual validation of paste in Firefox (the Word paste tests do not run in Firefox).
 - Validation of paste with real Microsoft Word documents.
 - WebKit: avoid the extra `<span style="font-size">` in lists.
 

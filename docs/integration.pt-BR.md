@@ -25,7 +25,7 @@ O VersaEdit sanitiza **no navegador** — e isso sozinho não basta.
 | Dá para contornar? | Sim — qualquer pessoa pode chamar sua API diretamente, sem o editor.                                     | Não, se toda gravação passar por ele.                   |
 
 **Receita para o servidor** — [`docs/recipes/sanitize-on-server.ts`](recipes/sanitize-on-server.ts),
-para Node.js (`npm install dompurify jsdom`):
+para Node.js (`npm install dompurify jsdom`; o jsdom 29 exige Node.js 20.19+, 22.13+ ou 24+):
 
 ```ts
 import createDOMPurify from 'dompurify'
@@ -55,11 +55,15 @@ export function sanitizeOnServer(html: string): string {
       'button',
       'textarea',
       'select',
+      'option',
+      'template',
+      'noscript',
       'iframe',
       'object',
       'embed',
       'style',
     ],
+    FORBID_ATTR: ['action', 'formaction', 'background', 'poster', 'srcset'],
   })
 }
 ```
@@ -67,7 +71,8 @@ export function sanitizeOnServer(html: string): string {
 _Verificado no CI_ (`tests/unit/recipes.test.ts`): todo HTML gravado pelos testes de navegador passa
 sem mudança (só reinterpretado pelo parser), e os 42 vetores de XSS saem sem scripts, eventos ou
 links `javascript:`/`data:`. Mantenha os atributos `style` e `class`: formatação, posição de imagens e
-caixas de texto dependem deles.
+caixas de texto dependem deles. A receita proíbe os mesmos elementos e atributos que o editor, mas,
+ao contrário dele, não limita quais propriedades CSS o `style` pode ter.
 
 **Colado do Word com `pasteSpacing="preserve"`.** O conteúdo traz o espaço entre parágrafos, os
 recuos e a entrelinha como estilo inline em pt (`margin-top`, `margin-bottom`, `margin-left`,
@@ -124,8 +129,8 @@ const [tamanho, setTamanho] = useState(() => lerTamanhoSalvo() ?? { width: 720, 
 Passar o tamanho salvo como `width` e `height` também o torna o limite de conteúdo do
 `truncateOnOverflow`. Para manter um limite de conteúdo fixo e restaurar só o tamanho visível,
 mantenha `width`/`height` fixos e chame `editor.current!.setSize(salvo)` depois de montar (ele não
-chama `onResize`). O `onResize` é chamado uma vez com `'end'` a cada mudança feita pelas setas ou
-pelos campos de tamanho, e com `'start'`/`'move'`/`'end'` durante o arraste. _Verificado:_
+chama `onResize`). O `onResize` é chamado uma vez com `'end'` a cada mudança feita pelas setas,
+pelos campos de tamanho ou pelo editor encolhendo com o contêiner, e com `'start'`/`'move'`/`'end'` durante o arraste. _Verificado:_
 `tests/e2e/editor-resize.spec.ts` e `tests/e2e/editor-resize-api.spec.ts`.
 
 ## Painel de configurações: suas opções na barra
@@ -274,8 +279,9 @@ import 'versaedit/versaedit.css'
 ```
 
 A formatação fica em atributos `style` dentro do conteúdo, então a CSP precisa permiti-los
-(`style-src-attr 'unsafe-inline'`, ou sem restrição em `style-src-attr`) nas páginas que o exibem.
-_Verificado:_ aba "Strict CSP" de `examples/vite-react` (sem elemento `<style>`, mesma aparência).
+(`style-src-attr 'unsafe-inline'`, ou sem restrição em `style-src-attr`) nas páginas que o editam
+ou exibem. _Verificado:_ aba "Strict CSP" de `examples/vite-react`: sem elemento `<style>`, e a
+barra recebe o estilo do arquivo importado (o próprio exemplo não envia um cabeçalho de CSP).
 
 ## Exibir o conteúdo salvo
 
@@ -305,7 +311,8 @@ _Verificado:_ `tests/e2e/object-margin.spec.ts`.
 **Mesma aparência da edição (Layout Mirror).** Acrescente `layoutMirror` ao editor e a classe
 `ve-mirror` ao contêiner: `<div className="versaedit-content ve-mirror">`. O texto fica isolado das
 regras de elemento do site nas duas pontas, e as linhas quebram nos mesmos pontos quando o contêiner
-tem a largura útil da área de edição (`width` − moldura − 32 px). O HTML salvo é o mesmo com ou sem
+tem a largura útil da área de edição (`width` − 2 × largura da moldura − 32 px). O HTML salvo é o mesmo com ou sem
 o espelho. Veja [Layout Mirror](../README.pt-BR.md#layout-mirror). _Verificado:_
 `tests/e2e/layout-mirror.spec.ts` (estilos calculados e posições reais comparados elemento a
-elemento, no Chromium, Firefox e WebKit, com e sem um CSS de site agressivo).
+elemento, com e sem um CSS de site agressivo; Chromium no CI, Firefox e WebKit em execuções locais
+de diagnóstico).

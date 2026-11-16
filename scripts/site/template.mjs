@@ -281,7 +281,7 @@ export function renderPage(t, { editedDate }) {
   initialContent={html}
   onChange={setHtml}
   width="100%"
-  height={480}
+  height={500}
   locale="${LANGUAGES.find((l) => l.key === t.key).editorLocale}"
 /&gt;`
 
@@ -459,8 +459,8 @@ export function renderPhilosophy(md, t, { editedDate }) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>${esc(PHILOSOPHY.title)} — VersaEdit</title>
-<meta name="description" content="${esc(PHILOSOPHY.title)}">
+<title>${esc(PHILOSOPHY[t.key].pageTitle)} — VersaEdit</title>
+<meta name="description" content="${esc(PHILOSOPHY[t.key].pageTitle)}">
 <link rel="canonical" href="https://versaedit.dev${PHILOSOPHY[t.key].path}">
 ${LANGUAGES.map((l) => `<link rel="alternate" hreflang="${l.htmlLang}" href="https://versaedit.dev${PHILOSOPHY[l.key].path}">`).join('\n')}
 <link rel="alternate" hreflang="x-default" href="https://versaedit.dev${PHILOSOPHY.en.path}">

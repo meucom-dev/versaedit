@@ -25,7 +25,7 @@ VersaEdit sanitizes **in the browser**, and that is not enough on its own.
 | Can be bypassed? | Yes — anyone can call your API directly, without the editor.                                                    | No, if every write goes through it.                              |
 
 **Server recipe** — [`docs/recipes/sanitize-on-server.ts`](recipes/sanitize-on-server.ts), for
-Node.js (`npm install dompurify jsdom`):
+Node.js (`npm install dompurify jsdom`; jsdom 29 needs Node.js 20.19+, 22.13+ or 24+):
 
 ```ts
 import createDOMPurify from 'dompurify'
@@ -55,11 +55,15 @@ export function sanitizeOnServer(html: string): string {
       'button',
       'textarea',
       'select',
+      'option',
+      'template',
+      'noscript',
       'iframe',
       'object',
       'embed',
       'style',
     ],
+    FORBID_ATTR: ['action', 'formaction', 'background', 'poster', 'srcset'],
   })
 }
 ```
@@ -67,7 +71,8 @@ export function sanitizeOnServer(html: string): string {
 _Verified in CI_ (`tests/unit/recipes.test.ts`): every HTML output recorded by the browser tests
 passes through unchanged (only re-parsed), and the 42 XSS vectors come out without scripts, event
 handlers or `javascript:`/`data:` links. Keep `style` and `class` attributes: formatting, image
-positions and text boxes depend on them.
+positions and text boxes depend on them. The recipe forbids the same elements and attributes as the
+editor, but, unlike the editor, it does not limit which CSS properties `style` may contain.
 
 **Pasted from Word with `pasteSpacing="preserve"`.** The content carries paragraph spacing,
 indents and line spacing as inline styles in pt (`margin-top`, `margin-bottom`, `margin-left`,
@@ -124,8 +129,8 @@ const [size, setSize] = useState(() => readSavedSize() ?? { width: 720, height: 
 Passing the saved size as `width` and `height` also makes it the content limit of
 `truncateOnOverflow`. To keep a fixed content limit and restore only the visible size, keep
 `width`/`height` fixed and call `editor.current!.setSize(saved)` after mounting (it does not call
-`onResize`). `onResize` is called once with `'end'` for each change made by the arrow keys or the
-size fields, and `'start'`/`'move'`/`'end'` while dragging. _Verified:_
+`onResize`). `onResize` is called once with `'end'` for each change made by the arrow keys, the
+size fields or the editor shrinking with its container, and `'start'`/`'move'`/`'end'` while dragging. _Verified:_
 `tests/e2e/editor-resize.spec.ts` and `tests/e2e/editor-resize-api.spec.ts`.
 
 ## Settings panel: your options in the toolbar
@@ -273,8 +278,9 @@ import 'versaedit/versaedit.css'
 ```
 
 Formatting is stored in `style` attributes inside the content, so the CSP must allow them
-(`style-src-attr 'unsafe-inline'`, or no `style-src-attr` restriction) on pages that display it.
-_Verified:_ "Strict CSP" tab of `examples/vite-react` (no `<style>` element, same appearance).
+(`style-src-attr 'unsafe-inline'`, or no `style-src-attr` restriction) on pages that edit or display
+it. _Verified:_ "Strict CSP" tab of `examples/vite-react`: no `<style>` element, and the toolbar is
+styled by the imported file (the example itself does not send a CSP header).
 
 ## Displaying saved content
 
@@ -303,7 +309,8 @@ the same as an editor without the prop. _Verified:_ `tests/e2e/object-margin.spe
 **Same appearance as the editor (Layout Mirror).** Add `layoutMirror` to the editor and the
 `ve-mirror` class to the container: `<div className="versaedit-content ve-mirror">`. The text is
 then isolated from the site's element rules on both sides, and lines break at the same points
-when the container has the editing area's usable width (`width` − frame − 32 px). The saved HTML
+when the container has the editing area's usable width (`width` − 2 × frame width − 32 px). The saved HTML
 is the same with or without it. See [Layout Mirror](../README.md#layout-mirror). _Verified:_
 `tests/e2e/layout-mirror.spec.ts` (computed styles and real positions compared element by element,
-in Chromium, Firefox and WebKit, with and without an aggressive site stylesheet).
+with and without an aggressive site stylesheet; Chromium in CI, Firefox and WebKit in local
+diagnostic runs).

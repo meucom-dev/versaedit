@@ -13,7 +13,7 @@ One tab per use case. Each tab is covered by `tests/package/vite-react.spec.ts`.
 
 ## Run
 
-From the repository root, `npm run test:package` builds the
+From the repository root, `npm run test:package -- vite-react` builds the
 package with `npm pack`, copies this folder to a temporary directory, installs the `.tgz` there
 (`npm ci`, then `npm install <file>.tgz`), builds it and runs the browser tests.
 
