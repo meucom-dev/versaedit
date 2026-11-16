@@ -6,7 +6,7 @@ by the internal stabilization batches.
 
 ## [Unreleased]
 
-## [0.5.0-beta.2] - unreleased
+## [0.5.0-beta.2] - 2026-11-16
 
 ### Upgrading from 0.5.0-beta.1
 

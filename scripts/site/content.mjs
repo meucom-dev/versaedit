@@ -182,7 +182,8 @@ export const CONTENT = {
       developer: 'Developer',
       started: 'Development started',
       preview: 'Preview release',
-      previewValue: '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.2</a>',
+      previewValue:
+        '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.2</a> (16 November 2026)',
       playground: 'Playground',
       repository: 'Repository',
       writtenIn: 'Written in',
@@ -353,7 +354,8 @@ export const CONTENT = {
       developer: 'Desenvolvedor',
       started: 'Criado em',
       preview: 'Versão de prévia',
-      previewValue: '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.2</a>',
+      previewValue:
+        '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.2</a> (16 de novembro de 2026)',
       playground: 'Playground',
       repository: 'Repositório',
       writtenIn: 'Escrito em',
@@ -519,7 +521,8 @@ export const CONTENT = {
       developer: 'Desarrollador',
       started: 'Creado en',
       preview: 'Versión preliminar',
-      previewValue: '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.2</a>',
+      previewValue:
+        '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.2</a> (16 de noviembre de 2026)',
       playground: 'Playground',
       repository: 'Repositorio',
       writtenIn: 'Escrito en',
