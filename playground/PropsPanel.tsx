@@ -175,7 +175,7 @@ export function settingsToJsx(s: Settings, locale: VersaEditLocale): string {
 }
 
 const PIXEL =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgaPj/HwAEhQJ/UhG2BwAAAABJRU5ErkJggg=='
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNgaPj/HwAEggJ/OIZIfAAAAABJRU5ErkJggg=='
 
 // Textos dos conteúdos de exemplo. A estrutura HTML, os estilos e a imagem são
 // os mesmos nos três idiomas; só o texto muda

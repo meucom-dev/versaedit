@@ -1,4 +1,5 @@
 // Playground: o JSX equivalente mostrado no painel compila e reproduz as props
+import { crc32, inflateSync } from 'node:zlib'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
 import {
@@ -118,5 +119,43 @@ describe('conteúdos de exemplo nos três idiomas', () => {
     expect(textbox.html).toBe(
       '<p>Before.</p><div class="rich-textbox"><span contenteditable="false" class="textbox-handle">⠿</span>A text box</div><p>After.</p>',
     )
+  })
+})
+
+// Imagem de exemplo do playground (PNG 1 × 1 em data URI): um PNG corrompido
+// (CRC ou checksum do zlib errados) aparecia no Firefox como "Image corrupt or
+// truncated" no console (15/11/2026)
+describe('imagem de exemplo do playground', () => {
+  const png = () => {
+    const html = samplesFor('en').find((x) => x.id === 'image')!.html
+    const b64 = /src="data:image\/png;base64,([^"]+)"/.exec(html)![1]
+    return Buffer.from(b64, 'base64')
+  }
+
+  it('PNG íntegro: assinatura, CRC de cada bloco e checksum dos dados comprimidos', () => {
+    const b = png()
+    expect([...b.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10])
+    const chunks: { type: string; data: Buffer }[] = []
+    for (let i = 8; i < b.length;) {
+      const length = b.readUInt32BE(i)
+      const type = b.toString('latin1', i + 4, i + 8)
+      const data = b.subarray(i + 8, i + 8 + length)
+      expect(b.readUInt32BE(i + 8 + length), `CRC de ${type}`).toBe(
+        crc32(b.subarray(i + 4, i + 8 + length)),
+      )
+      chunks.push({ type, data })
+      i += 12 + length
+    }
+    expect(chunks.map((c) => c.type)).toEqual(['IHDR', 'IDAT', 'IEND'])
+    // inflateSync confere o checksum Adler-32 do zlib (lança erro se estiver errado)
+    const raw = inflateSync(chunks[1].data)
+    expect([...raw]).toEqual([0, 0, 128, 255, 255])
+  })
+
+  it('1 × 1, RGBA de 8 bits: o quadrado azul (#0080ff) opaco do exemplo', () => {
+    const ihdr = png().subarray(16, 29)
+    expect(ihdr.readUInt32BE(0)).toBe(1)
+    expect(ihdr.readUInt32BE(4)).toBe(1)
+    expect([ihdr[8], ihdr[9]]).toEqual([8, 6])
   })
 })
