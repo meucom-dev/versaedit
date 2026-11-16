@@ -59,10 +59,10 @@ img { max-width: 100%; }
 .site-header .menu-row { display: none; padding-bottom: 10px; }
 .menu-btn { display: none; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 2px; background: var(--bg); color: var(--fg); font: 14px var(--sans); padding: 6px 10px; cursor: pointer; }
 /* Logo circular vetorial (1:1, anel inteiro dentro do SVG): 100px no cabeçalho
-   (80px no celular) e 160px na caixa de informações */
+   (80px no celular), o mesmo tamanho na caixa de informações */
 .logo { display: block; flex: none; line-height: 0; }
 .logo img { display: block; width: 100px; height: auto; aspect-ratio: 1 / 1; }
-.facts .logo-band img { display: block; width: 160px; height: auto; aspect-ratio: 1 / 1; }
+.facts .logo-band img { display: block; width: 100px; height: auto; aspect-ratio: 1 / 1; }
 .site-nav { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; font-size: 14px; }
 .lang-links { display: inline-flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; }
 .lang-links svg { margin-right: -8px; color: var(--link); }
@@ -106,7 +106,6 @@ ol.refs { padding-left: 24px; font-size: 13px; display: grid; gap: 6px; }
 .facts .name { margin: 0; text-align: center; font: 700 19px var(--sans); padding: 6px 0; }
 .facts figure { margin: 0; }
 .facts .logo-band { padding: 10px 0; display: flex; justify-content: center; }
-.facts figcaption { text-align: center; color: var(--muted); font-size: 12px; padding: 4px 0 8px; }
 .facts dl { margin: 0; }
 .facts .row { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 10px; padding: 5px 6px; border-top: 1px solid var(--hair); }
 .facts dt { font-weight: 700; }
@@ -133,7 +132,7 @@ ol.refs { padding-left: 24px; font-size: 13px; display: grid; gap: 6px; }
 /* Celular: uma coluna, caixa de informações logo depois do título, tabela em blocos */
 @media (max-width: 767px) {
   .site-header .header-row { flex-wrap: wrap; gap: 10px 14px; }
-  .logo img { width: 80px; }
+  .logo img, .facts .logo-band img { width: 80px; }
   .site-nav { margin-left: 0; width: 100%; gap: 6px 16px; }
   h1 { font-size: 28px; }
   .content { grid-template-columns: minmax(0, 1fr); }
@@ -395,8 +394,7 @@ ${t.references.map(([href, label, after], i) => `          <li id="ref-${i + 1}"
       <aside class="facts" aria-labelledby="facts-name">
         <p class="name" id="facts-name">VersaEdit</p>
         <figure>
-          <div class="logo-band">${logoCircle(t.facts.caption, 160)}</div>
-          <figcaption>${t.facts.caption}</figcaption>
+          <div class="logo-band">${logoCircle(t.facts.caption, 100)}</div>
         </figure>
         <dl>
           ${factRow(t.facts.developer, 'meucom-dev')}

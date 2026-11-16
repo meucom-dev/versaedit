@@ -301,7 +301,7 @@ test.describe('logo oficial', () => {
     })
 
   for (const scheme of ['light', 'dark'] as const) {
-    test(`cabeçalho com o logo circular (100px; 80px no celular) e caixa com 160px, sem fundo — tema ${scheme}`, async ({
+    test(`cabeçalho e caixa com o logo circular (100px; 80px no celular), sem fundo — tema ${scheme}`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme: scheme })
@@ -315,9 +315,10 @@ test.describe('logo oficial', () => {
         expect(m.head.height, `${width}px`).toBeCloseTo(size, 0)
         expect(m.head.top, 'círculo sem corte em cima').toBeGreaterThanOrEqual(0)
         expect(m.head.left, 'círculo sem corte à esquerda').toBeGreaterThanOrEqual(0)
-        // Caixa de informações: 160px, 1:1
-        expect(m.facts.width, `${width}px`).toBeCloseTo(160, 0)
-        expect(m.facts.height, `${width}px`).toBeCloseTo(160, 0)
+        // Caixa de informações: o mesmo tamanho do cabeçalho, 1:1, sem legenda visível
+        expect(m.facts.width, `${width}px`).toBeCloseTo(size, 0)
+        expect(m.facts.height, `${width}px`).toBeCloseTo(size, 0)
+        expect(await page.locator('.facts figcaption').count(), 'sem legenda').toBe(0)
         for (const c of m.backgrounds)
           expect(c, 'sem fundo, selo ou faixa').toBe('rgba(0, 0, 0, 0)')
       }
@@ -379,7 +380,7 @@ test.describe('logo oficial', () => {
 test.describe('logo por tema', () => {
   for (const scheme of ['light', 'dark'] as const) {
     const circle = scheme === 'dark' ? '/assets/logo-circle-dark.svg' : '/assets/logo-circle.svg'
-    test(`tema ${scheme}: cabeçalho e caixa usam ${circle} (100/80px e 160px), sem filtro`, async ({
+    test(`tema ${scheme}: cabeçalho e caixa usam ${circle} (100px; 80px no celular), sem filtro`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme: scheme })
@@ -400,7 +401,7 @@ test.describe('logo por tema', () => {
           )
           const expected = [
             { src: circle, width: width < 768 ? 80 : 100 },
-            { src: circle, width: 160 },
+            { src: circle, width: width < 768 ? 80 : 100 },
           ]
           imgs.forEach((img, i) => {
             expect(img.src, `${l.path} ${width}px`).toBe(expected[i].src)
