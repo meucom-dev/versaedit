@@ -110,7 +110,7 @@ test('todos os links levam a um destino real; a troca de idioma mantém a seçã
       } else {
         expect(href, 'só https e mailto').toMatch(/^(https:\/\/|mailto:support@versaedit\.dev$)/)
       }
-      // Publicado (0.5.0-beta.1): o npm só aparece pela página oficial do pacote
+      // Publicado (0.5.0-beta.2): o npm só aparece pela página oficial do pacote
       if (/npmjs/.test(href)) {
         expect(href, 'link para o npm').toBe('https://www.npmjs.com/package/versaedit')
       }
@@ -633,7 +633,7 @@ test.describe('guia rápido', () => {
       await expect(page.locator('h1')).toHaveText(p.title)
       await expect(page.locator('#cmd-latest + pre code')).toHaveText('npm install versaedit@beta')
       await expect(page.locator('#cmd-pinned + pre code')).toHaveText(
-        'npm install versaedit@0.5.0-beta.1',
+        'npm install versaedit@0.5.0-beta.2',
       )
       // Código do site = arquivos do exemplo (só comentários, textos e locale traduzidos)
       const app = await page.locator('#file-app + pre code').textContent()

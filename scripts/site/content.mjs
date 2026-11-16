@@ -78,7 +78,7 @@ export const CONTENT = {
     },
     tagline: 'From versaedit.dev, the open-source rich text editor for React',
     hatnote:
-      'For the interactive demo, see the <a href="/playground/">Playground</a>. The beta (0.5.0-beta.1) is published on <a href="https://www.npmjs.com/package/versaedit">npm</a>.',
+      'For the interactive demo, see the <a href="/playground/">Playground</a>. The beta (0.5.0-beta.2) is published on <a href="https://www.npmjs.com/package/versaedit">npm</a>.',
     notice: {
       title: 'This software is in beta.',
       body: `The public API may change before version 1.0. Known limitations are listed below; please <a href="${REPO}/issues/new/choose">report problems on GitHub</a>.`,
@@ -107,7 +107,7 @@ export const CONTENT = {
       'Configurable toolbar groups, fluid width, a scrolling or fixed-height editing area, and replaceable interface texts.',
     ],
     installation:
-      'VersaEdit is an ES module with TypeScript types, published on npm as a beta (0.5.0-beta.1).',
+      'VersaEdit is an ES module with TypeScript types, published on npm as a beta (0.5.0-beta.2).',
     installLabel: 'Install the beta',
     quickStartLink:
       'Step-by-step setup with a complete React example: <a href="/quick-start/">Quick Start</a>.',
@@ -174,7 +174,7 @@ export const CONTENT = {
         'Integration guide: sanitization in the browser and on the server',
         '.',
       ],
-      [`${REPO}/blob/main/CHANGELOG.md`, 'CHANGELOG: version 0.5.0-beta.1', '.'],
+      [`${REPO}/blob/main/CHANGELOG.md`, 'CHANGELOG: version 0.5.0-beta.2', '.'],
     ],
     docsUrl: `${REPO}#readme`,
     facts: {
@@ -182,8 +182,7 @@ export const CONTENT = {
       developer: 'Developer',
       started: 'Development started',
       preview: 'Preview release',
-      previewValue:
-        '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.1</a> (23 October 2026)',
+      previewValue: '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.2</a>',
       playground: 'Playground',
       repository: 'Repository',
       writtenIn: 'Written in',
@@ -246,7 +245,7 @@ export const CONTENT = {
     },
     tagline: 'De versaedit.dev, o editor de texto rico de código aberto para React',
     hatnote:
-      'Para a demonstração interativa, veja o <a href="/playground/">Playground</a>. A versão beta (0.5.0-beta.1) está publicada no <a href="https://www.npmjs.com/package/versaedit">npm</a>.',
+      'Para a demonstração interativa, veja o <a href="/playground/">Playground</a>. A versão beta (0.5.0-beta.2) está publicada no <a href="https://www.npmjs.com/package/versaedit">npm</a>.',
     notice: {
       title: 'Este software está em versão beta.',
       body: `A API pública pode mudar antes da versão 1.0. As limitações conhecidas estão listadas abaixo; <a href="${REPO}/issues/new/choose">relate problemas no GitHub</a>.`,
@@ -275,7 +274,7 @@ export const CONTENT = {
       'Grupos da barra configuráveis, largura fluida, área de edição com rolagem ou altura fixa e textos da interface substituíveis.',
     ],
     installation:
-      'O VersaEdit é um módulo ES com tipos TypeScript, publicado no npm em versão beta (0.5.0-beta.1).',
+      'O VersaEdit é um módulo ES com tipos TypeScript, publicado no npm em versão beta (0.5.0-beta.2).',
     installLabel: 'Instalação da versão beta',
     quickStartLink:
       'Configuração passo a passo, com um exemplo completo em React: <a href="/pt/guia-rapido/">Guia rápido</a>.',
@@ -346,7 +345,7 @@ export const CONTENT = {
         'Guia de integração: sanitização no navegador e no servidor',
         '.',
       ],
-      [`${REPO}/blob/main/CHANGELOG.md`, 'CHANGELOG: versão 0.5.0-beta.1', ' (em inglês).'],
+      [`${REPO}/blob/main/CHANGELOG.md`, 'CHANGELOG: versão 0.5.0-beta.2', ' (em inglês).'],
     ],
     docsUrl: `${REPO}/blob/main/README.pt-BR.md`,
     facts: {
@@ -354,8 +353,7 @@ export const CONTENT = {
       developer: 'Desenvolvedor',
       started: 'Criado em',
       preview: 'Versão de prévia',
-      previewValue:
-        '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.1</a> (23 de outubro de 2026)',
+      previewValue: '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.2</a>',
       playground: 'Playground',
       repository: 'Repositório',
       writtenIn: 'Escrito em',
@@ -417,7 +415,7 @@ export const CONTENT = {
     },
     tagline: 'De versaedit.dev, el editor de texto enriquecido de código abierto para React',
     hatnote:
-      'Para la demostración interactiva, véase el <a href="/playground/">Playground</a>. La versión beta (0.5.0-beta.1) está publicada en <a href="https://www.npmjs.com/package/versaedit">npm</a>.',
+      'Para la demostración interactiva, véase el <a href="/playground/">Playground</a>. La versión beta (0.5.0-beta.2) está publicada en <a href="https://www.npmjs.com/package/versaedit">npm</a>.',
     notice: {
       title: 'Este software está en fase beta.',
       body: `La API pública puede cambiar antes de la versión 1.0. Las limitaciones conocidas se indican más abajo; si encuentra algún problema, <a href="${REPO}/issues/new/choose">infórmelo en GitHub</a>.`,
@@ -446,7 +444,7 @@ export const CONTENT = {
       'Grupos de la barra configurables, ancho fluido, área de edición con desplazamiento o de altura fija, y textos de la interfaz reemplazables.',
     ],
     installation:
-      'VersaEdit es un módulo ES con tipos de TypeScript, publicado en npm como versión beta (0.5.0-beta.1).',
+      'VersaEdit es un módulo ES con tipos de TypeScript, publicado en npm como versión beta (0.5.0-beta.2).',
     installLabel: 'Instalación de la versión beta',
     quickStartLink:
       'Configuración paso a paso, con un ejemplo completo en React: <a href="/es/guia-rapida/">Guía rápida</a>.',
@@ -513,7 +511,7 @@ export const CONTENT = {
         'Guía de integración: saneamiento en el navegador y en el servidor',
         ' (en inglés).',
       ],
-      [`${REPO}/blob/main/CHANGELOG.md`, 'CHANGELOG: versión 0.5.0-beta.1', ' (en inglés).'],
+      [`${REPO}/blob/main/CHANGELOG.md`, 'CHANGELOG: versión 0.5.0-beta.2', ' (en inglés).'],
     ],
     docsUrl: `${REPO}#readme`,
     facts: {
@@ -521,8 +519,7 @@ export const CONTENT = {
       developer: 'Desarrollador',
       started: 'Creado en',
       preview: 'Versión preliminar',
-      previewValue:
-        '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.1</a> (23 de octubre de 2026)',
+      previewValue: '<a href="https://www.npmjs.com/package/versaedit">0.5.0-beta.2</a>',
       playground: 'Playground',
       repository: 'Repositorio',
       writtenIn: 'Escrito en',

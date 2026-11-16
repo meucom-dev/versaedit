@@ -2,7 +2,7 @@
 
 Lightweight rich text editor for React applications.
 
-> **Beta** (`0.5.0-beta.1`) — the API may change before 1.0; see [Known limitations](#known-limitations).
+> **Beta** (`0.5.0-beta.2`) — the API may change before 1.0; see [Known limitations](#known-limitations).
 
 [versaedit.dev](https://versaedit.dev) · [Playground](https://versaedit.dev/playground/) ·
 [Leia em português](README.pt-BR.md) · [Leer en español](README.es.md)

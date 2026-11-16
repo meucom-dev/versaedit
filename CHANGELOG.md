@@ -6,6 +6,40 @@ by the internal stabilization batches.
 
 ## [Unreleased]
 
+## [0.5.0-beta.2] - unreleased
+
+### Upgrading from 0.5.0-beta.1
+
+No public API was removed or renamed; every new prop is optional. These defaults and behaviors
+changed, and each one can be kept as it was:
+
+- Width: without `width`, the editor now fills its container (`'100%'`; was 640 px). Keep the
+  previous size with `width={640}`. A numeric width wider than the container now shrinks to fit it.
+- Height: without `height`, the editing area starts 500 px tall (was 480 px). Keep it with
+  `height={480}`.
+- Object margins: images and text boxes placed left or right have 16 px on the text side, 0 on the
+  outer side, 4 px above and 12 px below; centered objects and text boxes in the flow have 16 px
+  above and below (was 40 px on every side). This also applies to content already published with
+  `versaedit-content.css`. Keep the previous look with
+  `objectMargin={{ text: 40, outer: 40, top: 40, bottom: 40 }}` on the editor and the same values,
+  through `objectMarginStyle()`, on the published container.
+- Paragraph spacing in loaded HTML: `initialContent`, `setHTML` and opening a file now keep valid
+  inline spacing (`margin-top`, `margin-bottom`, `margin-left`, `text-indent`, `line-height`, list
+  padding) instead of removing it. Documents saved by 0.5.0-beta.1 never contain these styles and
+  look the same; HTML from other sources that has them now shows them. To keep the previous result,
+  remove those properties from the HTML before loading it (there is no option to strip them).
+- Text box alignment buttons: in the text box menu, Left and Right now float the box with the text
+  around it (`tb-float-left` / `tb-float-right`) and Center centers the box (`tb-center`), like
+  images; before, they aligned the text inside the box. Text inside a box is still aligned with the
+  paragraph alignment buttons, and `core.alignSelectedTextbox()` keeps its previous behavior (text
+  alignment inside the box). Boxes saved by 0.5.0-beta.1 are unchanged.
+- Keyboard: Ctrl+B/I/U (Cmd on macOS) are now handled by the editor in every browser; in Firefox
+  they format instead of opening the bookmarks sidebar.
+- Floated objects side by side move one below the other when the text column between them would be
+  too narrow (`data-ve-stack`, written into the HTML). This needs `:has()` and container queries
+  (Chrome/Edge 105, Safari 16, Firefox 121); older browsers keep the objects side by side, as
+  before.
+
 ### Added
 
 - Quick Start guide on the site in English, Portuguese and Spanish (`/quick-start/`,
@@ -117,6 +151,8 @@ by the internal stabilization batches.
 
 ### Fixed
 
+- Server rendering with React 18 no longer logs the `useLayoutEffect` warning: the hook that keeps
+  toolbar menus inside the window runs only in the browser.
 - Keyboard shortcuts for bold, italic and underline now work in every browser: the editor handles
   Ctrl+B/I/U (Cmd+B/I/U on macOS) itself, with the same command as the toolbar buttons. Firefox does
   not bind these shortcuts to editing (Ctrl+B opened the bookmarks sidebar and did not format), and
@@ -177,6 +213,23 @@ by the internal stabilization batches.
   selection), Esc did not close the font menu, the color palette or the highlight palette. Esc now
   closes them without cancelling the key or touching the selection; Esc outside the editor does not
   close them. The highlight palette also closes on a click outside, like the other menus.
+
+### Site, playground and tooling
+
+- Site and playground icons: `favicon.svg`, `favicon.ico` (16, 32 and 48 px, made from the SVG) and
+  a 180 × 180 opaque `apple-touch-icon.png`, served from `public/` at the root of versaedit.dev and
+  in `/playground/`; they are not part of the npm package. The playground page title is "VersaEdit —
+  Rich Text Editor".
+- Playground settings in the gear, translated into English, Portuguese and Spanish: Appearance
+  (including the object margin), Menu functions in toolbar order, Behavior and Resizing (Dimensions
+  first, handles in one column, limits with px and the editor default shown in each empty field).
+  The playground starts at 800 × 500 px and pastes from Word with `pasteSpacing="preserve"`; the
+  "Image" sample is a valid PNG again (Firefox reported it as corrupt).
+- The site (GitHub Pages) is published only manually, from `main`, after review; a push builds and
+  tests it without publishing. The home page was updated after the first release, and the docs
+  explain how `versaedit-content.css` keeps objects side by side responsive.
+- Release workflow (`release.yml`): checks before publishing with npm Trusted Publishing (OIDC),
+  including that the version is not already on npm.
 
 ## [0.5.0-beta.1] - 2026-10-23
 

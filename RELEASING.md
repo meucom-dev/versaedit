@@ -1,8 +1,36 @@
-# Publicação — roteiro da `0.5.0-beta.1`
+# Publicação do VersaEdit
 
-Estado atual: **não publicado**. `package.json` com `"private": true` e versão `0.0.0`; repositório
-GitHub privado. Cada passo marcado **(mantenedor)** é feito por você, na sua conta; os demais são
-preparados no repositório. Nada é publicado sem a sua confirmação expressa.
+Estado atual: **0.5.0-beta.1 publicada** no npm em 23/10/2026 (tags `beta` e `latest`; tag git
+`v0.5.0-beta.1`); **0.5.0-beta.2 em preparação**. Cada passo marcado **(mantenedor)** é feito por
+você, na sua conta; os demais são preparados no repositório. Nada é publicado sem a sua confirmação
+expressa.
+
+## Próximas betas (a partir da 0.5.0-beta.2)
+
+1. Commit da versão: `npm version 0.5.0-beta.2 --no-git-tag-version` (package.json e lock), seção
+   `## [0.5.0-beta.2] - unreleased` no `CHANGELOG.md` (a data entra no passo 3) e a versão citada
+   nos três READMEs, no site (`scripts/site/content.mjs`, `scripts/site/quickstart.mjs` e o teste
+   `tests/site/site.spec.ts`), em `examples/quick-start/README.md`, em
+   `scripts/test-package.mjs` e no modelo de bug (`.github/ISSUE_TEMPLATE/bug.yml`).
+2. Push e **CI verde** (jobs `check`, `e2e`, `react18`, `package`, `site`).
+3. **Data da publicação**, no dia em que ela for feita e antes de rodar o workflow: um commit
+   `chore(release): set 0.5.0-beta.2 date` que troca `## [0.5.0-beta.2] - unreleased` por
+   `## [0.5.0-beta.2] - AAAA-MM-DD` no `CHANGELOG.md` e acrescenta a data depois da versão no
+   quadro "Preview release" do site (`scripts/site/content.mjs`, nos três idiomas, como estava na
+   0.5.0-beta.1). Push e CI verde de novo.
+4. **(mantenedor)** Conferir no npmjs.com → pacote `versaedit` → Settings que o **Trusted publisher**
+   (seção 6) continua configurado para `release.yml` e o ambiente `npm-publish`.
+5. **(mantenedor)** Actions → **Publicação no npm (beta)** → Run workflow na `main` com a versão →
+   aprovar no ambiente `npm-publish`. O workflow publica com `--tag beta` e proveniência.
+6. **(mantenedor)** Tag no git, no commit publicado:
+   `git tag v0.5.0-beta.2 <commit> && git push origin v0.5.0-beta.2`.
+7. Conferir `npm view versaedit dist-tags` e rodar a seção 7 abaixo com a nova versão.
+8. **Só depois da publicação no npm**: deploy do site (Actions → **Site (GitHub Pages)**). O site já
+   anuncia a 0.5.0-beta.2 como publicada (página inicial, guia rápido e quadro de versão); um deploy
+   antes da publicação mostraria uma versão que ainda não existe no npm.
+
+As seções 1 a 6 abaixo registram a **primeira publicação** (0.5.0-beta.1) e a configuração que as
+próximas versões reaproveitam.
 
 ## 1. Repositório público
 
@@ -86,7 +114,7 @@ npm view versaedit dist-tags
 ## 7. Depois de publicar
 
 ```bash
-npm run test:package -- --from-registry=versaedit@0.5.0-beta.1   # exemplos com o pacote do npm
+npm run test:package -- --from-registry=versaedit@0.5.0-beta.2   # exemplos com o pacote do npm
 ```
 
 Num projeto vazio: `npm install versaedit@beta` e `npm audit signatures` (assinaturas e, a partir da
@@ -107,5 +135,5 @@ segunda versão, proveniência). Conferir `https://unpkg.com/versaedit@beta/` (a
 ## O que vai no pacote
 
 `dist/` (JS ESM minificado, mapa de código com o fonte embutido, `.d.ts`, os dois CSS), `README.md`,
-`README.pt-BR.md`, `README.es.md`, `CHANGELOG.md`, `LICENSE` e `package.json` — 48 arquivos. O `test:package` falha
+`README.pt-BR.md`, `README.es.md`, `CHANGELOG.md`, `LICENSE` e `package.json` — 57 arquivos. O `test:package` falha
 se faltar algum, se entrar qualquer outro, ou se houver caminhos locais ou padrões de chaves.

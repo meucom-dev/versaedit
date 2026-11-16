@@ -173,7 +173,7 @@ test.describe('Mac: Cmd formata; Ctrl continua com o sistema', () => {
     })
   })
 
-  test('dicas dos botões com Cmd no Mac (e Ctrl+Z do desfazer como está)', async ({ page }) => {
+  test('dicas dos botões com Cmd no Mac', async ({ page }) => {
     await mount(page, { initialContent: '<p>alpha</p>' })
     const bar = page.getByRole('toolbar').first()
     for (const name of ['Bold (Cmd+B)', 'Italic (Cmd+I)', 'Underline (Cmd+U)']) {

@@ -7,7 +7,7 @@
 //   npm run test:package                 todos os exemplos
 //   npm run test:package -- vite-react   só um
 //   npm run test:package -- --no-e2e     sem os testes de navegador
-//   npm run test:package -- --from-registry=versaedit@0.5.0-beta.1
+//   npm run test:package -- --from-registry=versaedit@0.5.0-beta.2
 //                                        depois de publicar: instala do npm
 //                                        (sem build nem pack) e confere igual
 import { execSync } from 'node:child_process'
