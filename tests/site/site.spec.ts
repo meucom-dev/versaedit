@@ -301,7 +301,7 @@ test.describe('logo oficial', () => {
     })
 
   for (const scheme of ['light', 'dark'] as const) {
-    test(`mesmo tamanho (110px) no cabeçalho e na caixa, sem fundo — tema ${scheme}`, async ({
+    test(`cabeçalho com 110px (horizontal) e caixa com 160px (circular), sem fundo — tema ${scheme}`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme: scheme })
@@ -310,10 +310,11 @@ test.describe('logo oficial', () => {
         await goto(page, '/')
         const m = await measure(page)
         expect(m.head.width, `${width}px`).toBeCloseTo(110, 0)
-        expect(m.facts.width, `${width}px`).toBeCloseTo(m.head.width, 1)
-        expect(m.facts.height, `${width}px`).toBeCloseTo(m.head.height, 1)
         // Proporção do arquivo (880×455), sem distorção
         expect(m.head.width / m.head.height).toBeCloseTo(880 / 455, 2)
+        // Logo circular: 160px, 1:1
+        expect(m.facts.width, `${width}px`).toBeCloseTo(160, 0)
+        expect(m.facts.height, `${width}px`).toBeCloseTo(160, 0)
         for (const c of m.backgrounds)
           expect(c, 'sem fundo, selo ou faixa').toBe('rgba(0, 0, 0, 0)')
       }
@@ -345,8 +346,9 @@ test.describe('logo oficial', () => {
 
 test.describe('logo por tema', () => {
   for (const scheme of ['light', 'dark'] as const) {
-    const file = scheme === 'dark' ? '/assets/logo-dark.png' : '/assets/logo.png'
-    test(`tema ${scheme}: cabeçalho e caixa usam ${file}, sem filtro, com 110px`, async ({
+    const head = scheme === 'dark' ? '/assets/logo-dark.png' : '/assets/logo.png'
+    const circle = scheme === 'dark' ? '/assets/logo-circle-dark.svg' : '/assets/logo-circle.svg'
+    test(`tema ${scheme}: cabeçalho usa ${head} (110px) e a caixa ${circle} (160px), sem filtro`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme: scheme })
@@ -365,12 +367,16 @@ test.describe('logo por tema', () => {
               }
             }),
           )
-          for (const img of imgs) {
-            expect(img.src, `${l.path} ${width}px`).toBe(file)
+          const expected = [
+            { src: head, width: 110 },
+            { src: circle, width: 160 },
+          ]
+          imgs.forEach((img, i) => {
+            expect(img.src, `${l.path} ${width}px`).toBe(expected[i].src)
             expect(img.loaded, 'imagem carregada').toBe(true)
             expect(img.filter, 'sem filtro de CSS').toBe('none')
-            expect(img.width).toBeCloseTo(110, 0)
-          }
+            expect(img.width).toBeCloseTo(expected[i].width, 0)
+          })
         }
       }
     })
@@ -400,6 +406,36 @@ test.describe('logo por tema', () => {
     expect(r.same, 'mesmas dimensões').toBe(true)
     expect(r.alphaDiff, 'pixels com transparência diferente').toBe(0)
     expect(r.corner, 'fundo transparente').toBe(0)
+  })
+
+  // Logo circular e favicon (16/11/2026): vetoriais de verdade (sem PNG embutido) e
+  // com o anel inteiro dentro do viewBox; a variante escura só troca a cor de "Versa"
+  test('logo circular e favicon: SVG vetorial, anel sem corte, variante escura só muda "Versa"', () => {
+    const read = (...p: string[]) => fs.readFileSync(path.join(process.cwd(), ...p), 'utf8')
+    const light = read('site-src', 'assets', 'logo-circle.svg')
+    const dark = read('site-src', 'assets', 'logo-circle-dark.svg')
+    const favicon = read('public', 'favicon.svg')
+    for (const [name, svg] of [
+      ['logo-circle.svg', light],
+      ['logo-circle-dark.svg', dark],
+      ['favicon.svg', favicon],
+    ]) {
+      expect(svg, name).not.toMatch(/<image\b|data:image|base64/)
+      const [vx, vy, vw, vh] = svg
+        .match(/viewBox="([^"]+)"/)![1]
+        .split(/\s+/)
+        .map(Number)
+      expect(vw, `${name}: 1:1`).toBe(vh)
+      const num = (attr: string) =>
+        Number(svg.match(new RegExp(`<circle[^>]* ${attr}="([^"]+)"`))![1])
+      const outer = num('r') + num('stroke-width') / 2
+      expect(num('cx') - outer, `${name}: anel à esquerda`).toBeGreaterThan(vx)
+      expect(num('cy') - outer, `${name}: anel no topo`).toBeGreaterThan(vy)
+      expect(num('cx') + outer, `${name}: anel à direita`).toBeLessThan(vx + vw)
+      expect(num('cy') + outer, `${name}: anel embaixo`).toBeLessThan(vy + vh)
+    }
+    expect(light).toContain('fill="#000629"')
+    expect(dark.replace('fill="#E6EAF0"', 'fill="#000629"')).toBe(light)
   })
 })
 

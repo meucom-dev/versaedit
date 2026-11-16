@@ -58,9 +58,11 @@ img { max-width: 100%; }
 .site-header .header-row { display: flex; align-items: center; gap: 20px; padding-top: 10px; padding-bottom: 10px; }
 .site-header .menu-row { display: none; padding-bottom: 10px; }
 .menu-btn { display: none; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 2px; background: var(--bg); color: var(--fg); font: 14px var(--sans); padding: 6px 10px; cursor: pointer; }
-/* Logo oficial, transparente, com o mesmo tamanho no cabeçalho e na caixa de informações */
+/* Logo oficial (horizontal, transparente) no cabeçalho */
 .logo { display: block; flex: none; line-height: 0; }
-.logo img, .facts .logo-band img { display: block; width: 110px; height: auto; aspect-ratio: 880 / 455; }
+.logo img { display: block; width: 110px; height: auto; aspect-ratio: 880 / 455; }
+/* Caixa de informações: logo circular vetorial (1:1), com o anel inteiro dentro do SVG */
+.facts .logo-band img { display: block; width: 160px; height: auto; aspect-ratio: 1 / 1; }
 .site-nav { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; font-size: 14px; }
 .lang-links { display: inline-flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; }
 .lang-links svg { margin-right: -8px; color: var(--link); }
@@ -204,6 +206,11 @@ const SCRIPT = `
 // pelo tema, como as demais cores da página; sem filtros de CSS na imagem.
 const logo = (alt) =>
   `<picture><source srcset="/assets/logo-dark.png" media="(prefers-color-scheme: dark)"><img src="/assets/logo.png" width="110" height="57" alt="${alt}"></picture>`
+
+// Logo circular (caixa de informações): SVG vetorial, com a mesma escolha por tema;
+// a variante escura só troca a cor de "Versa"
+const logoCircle = (alt) =>
+  `<picture><source srcset="/assets/logo-circle-dark.svg" media="(prefers-color-scheme: dark)"><img src="/assets/logo-circle.svg" width="160" height="160" alt="${alt}"></picture>`
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
@@ -392,7 +399,7 @@ ${t.references.map(([href, label, after], i) => `          <li id="ref-${i + 1}"
       <aside class="facts" aria-labelledby="facts-name">
         <p class="name" id="facts-name">VersaEdit</p>
         <figure>
-          <div class="logo-band">${logo(t.facts.caption)}</div>
+          <div class="logo-band">${logoCircle(t.facts.caption)}</div>
           <figcaption>${t.facts.caption}</figcaption>
         </figure>
         <dl>
