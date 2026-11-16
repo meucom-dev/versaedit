@@ -301,7 +301,7 @@ test.describe('logo oficial', () => {
     })
 
   for (const scheme of ['light', 'dark'] as const) {
-    test(`cabeçalho com 110px (horizontal) e caixa com 160px (circular), sem fundo — tema ${scheme}`, async ({
+    test(`cabeçalho com o logo circular (100px; 80px no celular) e caixa com 160px, sem fundo — tema ${scheme}`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme: scheme })
@@ -309,10 +309,13 @@ test.describe('logo oficial', () => {
         await page.setViewportSize({ width, height: 900 })
         await goto(page, '/')
         const m = await measure(page)
-        expect(m.head.width, `${width}px`).toBeCloseTo(110, 0)
-        // Proporção do arquivo (880×455), sem distorção
-        expect(m.head.width / m.head.height).toBeCloseTo(880 / 455, 2)
-        // Logo circular: 160px, 1:1
+        // Cabeçalho: logo circular 1:1, inteiro na tela
+        const size = width < 768 ? 80 : 100
+        expect(m.head.width, `${width}px`).toBeCloseTo(size, 0)
+        expect(m.head.height, `${width}px`).toBeCloseTo(size, 0)
+        expect(m.head.top, 'círculo sem corte em cima').toBeGreaterThanOrEqual(0)
+        expect(m.head.left, 'círculo sem corte à esquerda').toBeGreaterThanOrEqual(0)
+        // Caixa de informações: 160px, 1:1
         expect(m.facts.width, `${width}px`).toBeCloseTo(160, 0)
         expect(m.facts.height, `${width}px`).toBeCloseTo(160, 0)
         for (const c of m.backgrounds)
@@ -320,6 +323,35 @@ test.describe('logo oficial', () => {
       }
     })
   }
+
+  test('logo inteiro dentro do cabeçalho; menu centralizado na altura do logo (desktop) e abaixo dele (celular)', async ({
+    page,
+  }) => {
+    for (const width of [1440, 1024, 768, 375, 320]) {
+      await page.setViewportSize({ width, height: 900 })
+      for (const l of LANGS) {
+        await goto(page, l.path)
+        const r = await page.evaluate(() => {
+          const box = (s: string) => document.querySelector(s)!.getBoundingClientRect()
+          const [h, logo, nav] = [box('.site-header'), box('.logo img'), box('.site-nav')]
+          return {
+            h: { top: h.top, bottom: h.bottom },
+            logo: { top: logo.top, bottom: logo.bottom, mid: logo.top + logo.height / 2 },
+            nav: { top: nav.top, mid: nav.top + nav.height / 2 },
+          }
+        })
+        const tag = `${l.path} ${width}px`
+        expect(r.logo.top, `${tag}: logo dentro do cabeçalho`).toBeGreaterThanOrEqual(r.h.top)
+        expect(r.logo.bottom, `${tag}: logo dentro do cabeçalho`).toBeLessThanOrEqual(r.h.bottom)
+        if (width >= 768)
+          expect(
+            Math.abs(r.logo.mid - r.nav.mid),
+            `${tag}: menu alinhado ao logo`,
+          ).toBeLessThanOrEqual(1)
+        else expect(r.nav.top, `${tag}: menu abaixo do logo`).toBeGreaterThanOrEqual(r.logo.bottom)
+      }
+    }
+  })
 
   test('canto superior esquerdo: alinhado ao sumário no desktop, acima do botão nas telas menores', async ({
     page,
@@ -346,9 +378,8 @@ test.describe('logo oficial', () => {
 
 test.describe('logo por tema', () => {
   for (const scheme of ['light', 'dark'] as const) {
-    const head = scheme === 'dark' ? '/assets/logo-dark.png' : '/assets/logo.png'
     const circle = scheme === 'dark' ? '/assets/logo-circle-dark.svg' : '/assets/logo-circle.svg'
-    test(`tema ${scheme}: cabeçalho usa ${head} (110px) e a caixa ${circle} (160px), sem filtro`, async ({
+    test(`tema ${scheme}: cabeçalho e caixa usam ${circle} (100/80px e 160px), sem filtro`, async ({
       page,
     }) => {
       await page.emulateMedia({ colorScheme: scheme })
@@ -368,7 +399,7 @@ test.describe('logo por tema', () => {
             }),
           )
           const expected = [
-            { src: head, width: 110 },
+            { src: circle, width: width < 768 ? 80 : 100 },
             { src: circle, width: 160 },
           ]
           imgs.forEach((img, i) => {
@@ -382,30 +413,13 @@ test.describe('logo por tema', () => {
     })
   }
 
-  test('a variante escura tem a mesma forma do logo oficial (transparência idêntica)', async ({
-    page,
-  }) => {
-    await goto(page, '/')
-    const r = await page.evaluate(async () => {
-      const pixels = async (src: string) => {
-        const img = new Image()
-        img.src = src
-        await img.decode()
-        const c = document.createElement('canvas')
-        c.width = img.naturalWidth
-        c.height = img.naturalHeight
-        const g = c.getContext('2d')!
-        g.drawImage(img, 0, 0)
-        return { w: c.width, h: c.height, d: g.getImageData(0, 0, c.width, c.height).data }
-      }
-      const [a, b] = [await pixels('/assets/logo.png'), await pixels('/assets/logo-dark.png')]
-      let alphaDiff = 0
-      for (let i = 3; i < a.d.length; i += 4) if (a.d[i] !== b.d[i]) alphaDiff++
-      return { same: a.w === b.w && a.h === b.h, alphaDiff, corner: b.d[3] }
-    })
-    expect(r.same, 'mesmas dimensões').toBe(true)
-    expect(r.alphaDiff, 'pixels com transparência diferente').toBe(0)
-    expect(r.corner, 'fundo transparente').toBe(0)
+  // A logo horizontal antiga (logo.png/logo-dark.png) saiu do site; em /assets/ ficam
+  // só as duas variantes da logo circular
+  test('/assets/ do build tem só a logo circular (sem a logo horizontal antiga)', () => {
+    expect(fs.readdirSync(path.resolve('site', 'assets')).sort()).toEqual([
+      'logo-circle-dark.svg',
+      'logo-circle.svg',
+    ])
   })
 
   // Logo circular e favicon (16/11/2026): vetoriais de verdade (sem PNG embutido) e
@@ -435,6 +449,9 @@ test.describe('logo por tema', () => {
       expect(num('cy') + outer, `${name}: anel embaixo`).toBeLessThan(vy + vh)
     }
     expect(light).toContain('fill="#000629"')
+    // Anel no mesmo cinza dos sinais < > e _ (#818A97), nos dois temas
+    expect(light).toContain('stroke="#818A97"')
+    expect(light).toContain('fill="#818A97"')
     expect(dark.replace('fill="#E6EAF0"', 'fill="#000629"')).toBe(light)
   })
 })

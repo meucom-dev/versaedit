@@ -55,13 +55,13 @@ img { max-width: 100%; }
 @media (min-width: 768px) { .wrap { padding-left: 32px; padding-right: 32px; } }
 
 .site-header { border-bottom: 1px solid var(--hair); }
-.site-header .header-row { display: flex; align-items: center; gap: 20px; padding-top: 10px; padding-bottom: 10px; }
+.site-header .header-row { display: flex; align-items: center; gap: 28px; padding-top: 14px; padding-bottom: 14px; }
 .site-header .menu-row { display: none; padding-bottom: 10px; }
 .menu-btn { display: none; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 2px; background: var(--bg); color: var(--fg); font: 14px var(--sans); padding: 6px 10px; cursor: pointer; }
-/* Logo oficial (horizontal, transparente) no cabeçalho */
+/* Logo circular vetorial (1:1, anel inteiro dentro do SVG): 100px no cabeçalho
+   (80px no celular) e 160px na caixa de informações */
 .logo { display: block; flex: none; line-height: 0; }
-.logo img { display: block; width: 110px; height: auto; aspect-ratio: 880 / 455; }
-/* Caixa de informações: logo circular vetorial (1:1), com o anel inteiro dentro do SVG */
+.logo img { display: block; width: 100px; height: auto; aspect-ratio: 1 / 1; }
 .facts .logo-band img { display: block; width: 160px; height: auto; aspect-ratio: 1 / 1; }
 .site-nav { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 20px; font-size: 14px; }
 .lang-links { display: inline-flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; }
@@ -133,6 +133,7 @@ ol.refs { padding-left: 24px; font-size: 13px; display: grid; gap: 6px; }
 /* Celular: uma coluna, caixa de informações logo depois do título, tabela em blocos */
 @media (max-width: 767px) {
   .site-header .header-row { flex-wrap: wrap; gap: 10px 14px; }
+  .logo img { width: 80px; }
   .site-nav { margin-left: 0; width: 100%; gap: 6px 16px; }
   h1 { font-size: 28px; }
   .content { grid-template-columns: minmax(0, 1fr); }
@@ -201,16 +202,11 @@ const SCRIPT = `
 })();
 `
 
-// Logo: o oficial no tema claro; no escuro, a variante aprovada (mesma forma e
-// transparência, cores claras em "Versa" e nos símbolos). O navegador escolhe
-// pelo tema, como as demais cores da página; sem filtros de CSS na imagem.
-const logo = (alt) =>
-  `<picture><source srcset="/assets/logo-dark.png" media="(prefers-color-scheme: dark)"><img src="/assets/logo.png" width="110" height="57" alt="${alt}"></picture>`
-
-// Logo circular (caixa de informações): SVG vetorial, com a mesma escolha por tema;
-// a variante escura só troca a cor de "Versa"
-const logoCircle = (alt) =>
-  `<picture><source srcset="/assets/logo-circle-dark.svg" media="(prefers-color-scheme: dark)"><img src="/assets/logo-circle.svg" width="160" height="160" alt="${alt}"></picture>`
+// Logo circular (cabeçalho e caixa de informações): SVG vetorial; o navegador
+// escolhe a variante pelo tema, como as demais cores da página, sem filtros de CSS.
+// A variante escura só troca a cor de "Versa".
+const logoCircle = (alt, size) =>
+  `<picture><source srcset="/assets/logo-circle-dark.svg" media="(prefers-color-scheme: dark)"><img src="/assets/logo-circle.svg" width="${size}" height="${size}" alt="${alt}"></picture>`
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
@@ -222,7 +218,7 @@ const langLink = (l, href = l.path) =>
 // `target(l)` é o endereço da página atual na língua l
 const header = (t, others, { contentsButton, target }) => `<header class="site-header">
   <div class="wrap header-row">
-    <a class="logo" href="${t.path}">${logo('VersaEdit')}</a>
+    <a class="logo" href="${t.path}">${logoCircle('VersaEdit', 100)}</a>
     <nav class="site-nav" aria-label="${t.nav.label}">
       <a href="${QUICKSTART[t.key].path}">${QUICKSTART[t.key].navLabel}</a>
       <a href="${PHILOSOPHY[t.key].path}">${t.nav.philosophy}</a>
@@ -399,7 +395,7 @@ ${t.references.map(([href, label, after], i) => `          <li id="ref-${i + 1}"
       <aside class="facts" aria-labelledby="facts-name">
         <p class="name" id="facts-name">VersaEdit</p>
         <figure>
-          <div class="logo-band">${logoCircle(t.facts.caption)}</div>
+          <div class="logo-band">${logoCircle(t.facts.caption, 160)}</div>
           <figcaption>${t.facts.caption}</figcaption>
         </figure>
         <dl>
