@@ -1,10 +1,12 @@
 # Publicação do VersaEdit
 
-Estado atual: **0.5.0-beta.3 em preparação** (correção do estilo de texto entre blocos). Última
-publicada: **0.5.0-beta.2**, no npm em 16/11/2026 pelo workflow de publicação (Trusted Publishing,
-com proveniência; dist-tags `beta` e `latest`; tag git `v0.5.0-beta.2` no commit `e7e16ba`). A 0.5.0-beta.1 foi publicada em 23/10/2026. Cada passo marcado **(mantenedor)** é feito por
-você, na sua conta; os demais são preparados no repositório. Nada é publicado sem a sua confirmação
-expressa.
+Estado atual: **0.5.0-beta.3 publicada** no npm em 23/11/2026 pelo workflow de publicação
+(Trusted Publishing, com proveniência; dist-tags `beta` e `latest`; tag git `v0.5.0-beta.3` no
+commit `b6b6742`). Na execução, o passo "Confere no registro" esgotou os 5 minutos de espera com a
+versão já publicada: o registro demorou mais que isso para mostrá-la. A 0.5.0-beta.2 foi publicada
+em 16/11/2026 (tag `v0.5.0-beta.2` no commit `e7e16ba`) e a 0.5.0-beta.1 em 23/10/2026. Cada passo
+marcado **(mantenedor)** é feito por você, na sua conta; os demais são preparados no repositório.
+Nada é publicado sem a sua confirmação expressa.
 
 ## Próximas betas (roteiro usado na 0.5.0-beta.2)
 
