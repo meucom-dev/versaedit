@@ -6,7 +6,7 @@ by the internal stabilization batches.
 
 ## [Unreleased]
 
-## [0.5.0-beta.3] - unreleased
+## [0.5.0-beta.3] - 2026-11-23
 
 ### Fixed
 
