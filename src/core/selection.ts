@@ -227,22 +227,72 @@ export const isNodeWithinEditor = (editor: HTMLElement, node: Node): boolean =>
 export const isRangeWithinEditor = (editor: HTMLElement, range: Range): boolean =>
   isNodeWithinEditor(editor, range.commonAncestorContainer)
 
-// Aplica a fonte ou a cor de pré-visualização ao trecho selecionado
-export function setPreviewWrapperStyle(
-  wrapper: HTMLSpanElement,
-  property: 'fontFamily' | 'color',
-  value: string,
-) {
-  wrapper.style.fontFamily = ''
-  wrapper.style.color = ''
-  if (property === 'fontFamily') wrapper.style.fontFamily = value
-  else wrapper.style.color = value
+/** Pontas de uma seleção, com a direção (anchor = onde começou, focus = onde está) */
+export interface SelectionEnds {
+  anchorNode: Node
+  anchorOffset: number
+  focusNode: Node
+  focusOffset: number
+}
+
+/** Seleção feita de trás para frente (Shift+← ou arrasto para a esquerda/cima) */
+export function isSelectionBackward(selection: Selection | null): boolean {
+  if (!selection || selection.isCollapsed || !selection.anchorNode || !selection.focusNode) {
+    return false
+  }
+  // Com o fim antes do início, a faixa se recolhe: o focus vem antes do anchor
+  const range = document.createRange()
+  range.setStart(selection.anchorNode, selection.anchorOffset)
+  range.setEnd(selection.focusNode, selection.focusOffset)
+  return range.collapsed
+}
+
+/** Pontas de `range` na direção pedida */
+export const rangeEnds = (range: Range, backward: boolean): SelectionEnds =>
+  backward
+    ? {
+        anchorNode: range.endContainer,
+        anchorOffset: range.endOffset,
+        focusNode: range.startContainer,
+        focusOffset: range.startOffset,
+      }
+    : {
+        anchorNode: range.startContainer,
+        anchorOffset: range.startOffset,
+        focusNode: range.endContainer,
+        focusOffset: range.endOffset,
+      }
+
+/** As pontas vão de trás para frente (focus antes do anchor) */
+export function isBackwardEnds(ends: SelectionEnds): boolean {
+  const range = document.createRange()
+  range.setStart(ends.anchorNode, ends.anchorOffset)
+  range.setEnd(ends.focusNode, ends.focusOffset)
+  return (
+    range.collapsed &&
+    (ends.anchorNode !== ends.focusNode || ends.anchorOffset !== ends.focusOffset)
+  )
+}
+
+/** Faixa (sem direção) entre as pontas */
+export function rangeFromEnds(ends: SelectionEnds): Range {
+  const range = document.createRange()
+  range.setStart(ends.anchorNode, ends.anchorOffset)
+  range.setEnd(ends.focusNode, ends.focusOffset)
+  // Fim antes do início recolhe a faixa: a seleção era de trás para frente
+  if (range.collapsed) {
+    range.setStart(ends.focusNode, ends.focusOffset)
+    range.setEnd(ends.anchorNode, ends.anchorOffset)
+  }
+  return range
 }
 
 export type SelectionType = 'image' | 'textbox' | null
 export type PendingTypingStyle = { fontSize?: string; color?: string; fontFamily?: string }
+/** Pré-visualização de fonte ou cor: a seleção de antes e como desfazê-la */
 export type SelectionPreview = {
-  wrapper: HTMLSpanElement
-  originalNodes: Node[]
   property: 'fontFamily' | 'color'
+  value: string
+  ends: SelectionEnds
+  revert: () => void
 }

@@ -73,17 +73,22 @@ import { applyVoiceCommands, formatDictatedText } from './speech'
 import { isSafeUrl, safeCssColor, sanitizeHtml } from './sanitize'
 import {
   captureSelection,
+  isBackwardEnds,
   isNodeWithinEditor,
   isRangeWithinEditor,
+  isSelectionBackward,
   rangeAtTextOffset,
+  rangeEnds,
+  rangeFromEnds,
   restoreSelection,
-  setPreviewWrapperStyle,
   textOffsetIn,
   type PendingTypingStyle,
+  type SelectionEnds,
   type SelectionPreview,
   type SelectionSnapshot,
   type SelectionType,
 } from './selection'
+import { applyInlineStyle, type InlineStyleResult } from './inline-style'
 import { isApplePlatform } from './platform'
 
 export type { SelectionType, TbBorderStyle }
@@ -322,6 +327,8 @@ export class VersaEditCore {
 
   // Seleção de texto
   private savedRange: Range | null = null
+  // Direção da seleção guardada (a faixa não tem direção)
+  private savedBackward = false
   private pendingStyle: PendingTypingStyle = {}
   private preview: SelectionPreview | null = null
 
@@ -836,6 +843,7 @@ export class VersaEditCore {
     const range = sel.getRangeAt(0)
     if (!isRangeWithinEditor(editor, range)) return
     this.savedRange = range.cloneRange()
+    this.savedBackward = isSelectionBackward(sel)
     if (!range.collapsed) this.pendingStyle = {}
     // Usa o nó de início da seleção (funciona tanto com seleção quanto com cursor)
     const node = range.startContainer
@@ -870,6 +878,33 @@ export class VersaEditCore {
     selection?.removeAllRanges()
     selection?.addRange(range)
     this.savedRange = range.cloneRange()
+    this.savedBackward = false
+  }
+
+  // Direção da seleção atual (ou da guardada, com o foco fora do editor)
+  private selectionIsBackward(): boolean {
+    const selection = window.getSelection()
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null
+    if (range && isRangeWithinEditor(this.el, range)) return isSelectionBackward(selection)
+    return this.savedBackward
+  }
+
+  // Seleciona entre as pontas, na direção delas, e guarda a seleção
+  private selectEnds(ends: SelectionEnds): void {
+    this.el.focus()
+    const selection = window.getSelection()
+    if (!selection) return
+    selection.setBaseAndExtent(ends.anchorNode, ends.anchorOffset, ends.focusNode, ends.focusOffset)
+    if (selection.rangeCount) this.savedRange = selection.getRangeAt(0).cloneRange()
+    this.savedBackward = isSelectionBackward(selection)
+  }
+
+  // Seleção no texto que acabou de receber o estilo, na direção de antes
+  private selectStyled(result: InlineStyleResult, backward: boolean): void {
+    const range = document.createRange()
+    range.setStart(result.first, 0)
+    range.setEnd(result.last, result.last.length)
+    this.selectEnds(rangeEnds(range, backward))
   }
 
   /** Guarda a seleção de texto antes de o foco sair do editor (clique na barra) */
@@ -879,6 +914,7 @@ export class VersaEditCore {
       const range = sel.getRangeAt(0)
       if (isRangeWithinEditor(this.el, range)) {
         this.savedRange = range.cloneRange()
+        this.savedBackward = isSelectionBackward(sel)
         if (!range.collapsed) this.pendingStyle = {}
       }
     }
@@ -888,26 +924,12 @@ export class VersaEditCore {
   restorePreview = (): void => {
     const preview = this.preview
     if (!preview) return
-    const parent = preview.wrapper.parentNode
-    if (!parent) {
-      this.preview = null
-      return
-    }
-
-    const firstNode = preview.originalNodes[0]
-    const lastNode = preview.originalNodes[preview.originalNodes.length - 1]
-    preview.originalNodes.forEach((node) => parent.insertBefore(node, preview.wrapper))
-    parent.removeChild(preview.wrapper)
     this.preview = null
-
-    if (firstNode && lastNode) {
-      const range = document.createRange()
-      range.setStartBefore(firstNode)
-      range.setEndAfter(lastNode)
-      const selection = window.getSelection()
-      selection?.removeAllRanges()
-      selection?.addRange(range)
-      this.savedRange = range.cloneRange()
+    preview.revert()
+    // O HTML voltou ao de antes: as mudanças da prévia não são um passo do histórico
+    this.observer?.takeRecords()
+    if (preview.ends.anchorNode.isConnected && preview.ends.focusNode.isConnected) {
+      this.selectEnds(preview.ends)
     }
   }
 
@@ -918,54 +940,60 @@ export class VersaEditCore {
       this.restorePreview()
       preview = null
     }
+    if (preview?.value === value) return true
 
-    if (!preview) {
+    let ends: SelectionEnds
+    if (preview) {
+      // Outra opção da mesma lista: a prévia anterior sai antes
+      preview.revert()
+      ends = preview.ends
+    } else {
       const range = this.getCurrentRange()
       if (!range || range.collapsed) return false
-      this.restoreRange(range)
-      const originalFragment = range.extractContents()
-      const originalNodes = Array.from(originalFragment.childNodes)
-      if (!originalNodes.length) return false
-
-      const wrapper = document.createElement('span')
-      wrapper.dataset.editorSelectionPreview = 'true'
-      wrapper.append(...originalNodes.map((node) => node.cloneNode(true)))
-      range.insertNode(wrapper)
-      preview = { wrapper, originalNodes, property }
-      this.preview = preview
+      ends = rangeEnds(range, this.selectionIsBackward())
     }
 
-    preview.wrapper.replaceChildren(...preview.originalNodes.map((node) => node.cloneNode(true)))
-    const cssProperty = property === 'fontFamily' ? 'font-family' : 'color'
-    preview.wrapper.querySelectorAll<HTMLElement>('[style]').forEach((element) => {
-      element.style.removeProperty(cssProperty)
-      if (!element.getAttribute('style')?.trim()) element.removeAttribute('style')
+    const backward = isBackwardEnds(ends)
+    const result = applyInlineStyle(this.el, rangeFromEnds(ends), property, value, {
+      reversible: true,
     })
-    setPreviewWrapperStyle(preview.wrapper, property, value)
-
-    const range = document.createRange()
-    range.selectNodeContents(preview.wrapper)
-    const selection = window.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(range)
-    this.savedRange = range.cloneRange()
+    if (!result) {
+      // Sem texto para mostrar: fica o conteúdo de antes (a prévia anterior já saiu)
+      if (this.preview) {
+        this.preview = null
+        this.observer?.takeRecords()
+        this.selectEnds(ends)
+      }
+      return false
+    }
+    this.preview = { property, value, ends, revert: result.revert }
+    this.selectStyled(result, backward)
     return true
   }
 
-  /** Grava a pré-visualização; false se não havia trecho selecionado */
+  /** Grava a fonte ou a cor (da pré-visualização ou não); false se não havia trecho selecionado */
   commitPreview = (property: 'fontFamily' | 'color', value: string): boolean => {
-    if (!this.previewStyle(property, value)) return false
+    let ends: SelectionEnds
     const preview = this.preview
-    if (!preview) return false
-    preview.wrapper.removeAttribute('data-editor-selection-preview')
-    this.preview = null
+    if (preview && preview.property === property) {
+      this.preview = null
+      preview.revert()
+      ends = preview.ends
+    } else {
+      this.restorePreview()
+      const range = this.getCurrentRange()
+      if (!range || range.collapsed) return false
+      ends = rangeEnds(range, this.selectionIsBackward())
+    }
+    const backward = isBackwardEnds(ends)
+    const result = applyInlineStyle(this.el, rangeFromEnds(ends), property, value)
+    if (!result) {
+      if (preview) this.observer?.takeRecords()
+      this.selectEnds(ends)
+      return false
+    }
     this.pendingStyle = {}
-    const range = document.createRange()
-    range.selectNodeContents(preview.wrapper)
-    const selection = window.getSelection()
-    selection?.removeAllRanges()
-    selection?.addRange(range)
-    this.savedRange = range.cloneRange()
+    this.selectStyled(result, backward)
     this.emitChange()
     return true
   }
@@ -1031,23 +1059,13 @@ export class VersaEditCore {
       return
     }
 
-    const selection = window.getSelection()
     if (range && !range.collapsed) {
-      this.restoreRange(range)
-      const span = document.createElement('span')
-      span.style.fontSize = `${pt}pt`
-      const contents = range.extractContents()
-      contents.querySelectorAll<HTMLElement>('[style]').forEach((element) => {
-        element.style.removeProperty('font-size')
-        if (!element.getAttribute('style')?.trim()) element.removeAttribute('style')
-      })
-      span.appendChild(contents)
-      range.insertNode(span)
-      const next = document.createRange()
-      next.selectNodeContents(span)
-      selection?.removeAllRanges()
-      selection?.addRange(next)
-      this.savedRange = next.cloneRange()
+      // Bloco por bloco, sem partir itens de lista, parágrafos ou células
+      const backward = this.selectionIsBackward()
+      const ends = rangeEnds(range, backward)
+      const result = applyInlineStyle(this.el, range, 'fontSize', `${pt}pt`)
+      if (result) this.selectStyled(result, backward)
+      else this.selectEnds(ends)
     } else if (this.selectedTextbox) {
       this.selectedTextbox.style.fontSize = `${pt}pt`
     }
