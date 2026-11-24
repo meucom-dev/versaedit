@@ -6,6 +6,27 @@ by the internal stabilization batches.
 
 ## [Unreleased]
 
+## [0.5.0-beta.3] - unreleased
+
+### Fixed
+
+- Font size, font family and text color on a selection that spans several blocks (list items,
+  paragraphs, headings, table cells, text boxes) no longer break the structure. The selected range
+  used to be moved into a single `<span>` (`<ul><li></li><span><li>…</li></span><li></li></ul>`),
+  which left empty bullets above and below the list, split the first and last items and put
+  paragraphs inside a span; the bullet button on the empty item then inserted a line instead of
+  removing the bullet. It happened with mouse, keyboard and Ctrl+A selections, in Chromium, Firefox
+  and WebKit (reported with a bulleted list pasted from Word, `pasteSpacing: 'preserve'`). The style
+  is now applied block by block: only the text nodes at the two ends of the selection are split,
+  each block gets its own span (reused and merged with identical neighbours, so repeating a command
+  does not pile up spans), non-editable parts such as the text box handle are left alone, the
+  selection keeps its text and direction, and each command is one undo step.
+- Font and color preview (hovering an option without choosing it) now restores the exact HTML and
+  selection when it is cancelled, with no undo step and no `onChange`. Before, a cancelled preview
+  over several blocks left split or empty items behind.
+- A selection with no editable text (only an image, for example) is left unchanged by font size,
+  font family and text color; it used to be wrapped in an empty-styled span.
+
 ### Site, playground and tooling
 
 - Site only (versaedit.dev; the npm package is unchanged): the home page lists the 0.5.0-beta.2

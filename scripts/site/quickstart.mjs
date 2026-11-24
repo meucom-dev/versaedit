@@ -462,7 +462,7 @@ export const QUICKSTART = {
     intro: [
       'This guide adds VersaEdit to a React application with TypeScript and Vite: installation, a complete example that captures the edited HTML, the essential properties and how to send the content to your backend. It is based on the published beta, <a href="' +
         NPM +
-        '">0.5.0-beta.2</a>.',
+        '">0.5.0-beta.3</a>.',
       'Requirements: React 18.3 or 19 and a bundler that imports CSS files, such as Vite or Next.js.',
     ],
     sections: {
@@ -478,7 +478,7 @@ export const QUICKSTART = {
     install: {
       latest: 'Current beta',
       pinned: 'Specific version',
-      text: '<code>versaedit@beta</code> installs the most recent beta and records it in <code>package.json</code> with a range (<code>^0.5.0-beta.2</code>), so a later <code>npm install</code> or <code>npm update</code> may bring a newer beta. <code>versaedit@0.5.0-beta.2</code> installs exactly this version; add <code>--save-exact</code> to record it without a range, so every installation gets the same version until you change it. While the API may still change before 1.0, pinning the version is the safer choice for production.',
+      text: '<code>versaedit@beta</code> installs the most recent beta and records it in <code>package.json</code> with a range (<code>^0.5.0-beta.3</code>), so a later <code>npm install</code> or <code>npm update</code> may bring a newer beta. <code>versaedit@0.5.0-beta.3</code> installs exactly this version; add <code>--save-exact</code> to record it without a range, so every installation gets the same version until you change it. While the API may still change before 1.0, pinning the version is the safer choice for production.',
       newProject:
         'No project yet? Create one with Vite (React + TypeScript), then install VersaEdit inside it:',
     },
@@ -560,7 +560,7 @@ export const QUICKSTART = {
     intro: [
       'Este guia coloca o VersaEdit numa aplicação React com TypeScript e Vite: instalação, um exemplo completo que captura o HTML editado, as propriedades essenciais e como enviar o conteúdo para o seu backend. Ele se baseia na versão beta publicada, <a href="' +
         NPM +
-        '">0.5.0-beta.2</a>.',
+        '">0.5.0-beta.3</a>.',
       'Requisitos: React 18.3 ou 19 e um bundler que importe arquivos CSS, como o Vite ou o Next.js.',
     ],
     sections: {
@@ -576,7 +576,7 @@ export const QUICKSTART = {
     install: {
       latest: 'Beta atual',
       pinned: 'Versão específica',
-      text: '<code>versaedit@beta</code> instala a beta mais recente e a registra no <code>package.json</code> com uma faixa (<code>^0.5.0-beta.2</code>); assim, um <code>npm install</code> ou <code>npm update</code> posterior pode trazer uma beta mais nova. <code>versaedit@0.5.0-beta.2</code> instala exatamente esta versão; acrescente <code>--save-exact</code> para registrá-la sem faixa, e toda instalação recebe a mesma versão até você trocá-la. Como a API ainda pode mudar antes da 1.0, fixar a versão é a escolha mais segura para produção.',
+      text: '<code>versaedit@beta</code> instala a beta mais recente e a registra no <code>package.json</code> com uma faixa (<code>^0.5.0-beta.3</code>); assim, um <code>npm install</code> ou <code>npm update</code> posterior pode trazer uma beta mais nova. <code>versaedit@0.5.0-beta.3</code> instala exatamente esta versão; acrescente <code>--save-exact</code> para registrá-la sem faixa, e toda instalação recebe a mesma versão até você trocá-la. Como a API ainda pode mudar antes da 1.0, fixar a versão é a escolha mais segura para produção.',
       newProject:
         'Ainda não tem um projeto? Crie um com o Vite (React + TypeScript) e instale o VersaEdit dentro dele:',
     },
@@ -653,7 +653,7 @@ export const QUICKSTART = {
     intro: [
       'Esta guía añade VersaEdit a una aplicación React con TypeScript y Vite: instalación, un ejemplo completo que captura el HTML editado, las propiedades esenciales y cómo enviar el contenido a su backend. Se basa en la versión beta publicada, <a href="' +
         NPM +
-        '">0.5.0-beta.2</a>.',
+        '">0.5.0-beta.3</a>.',
       'Requisitos: React 18.3 o 19 y un bundler que importe archivos CSS, como Vite o Next.js.',
     ],
     sections: {
@@ -669,7 +669,7 @@ export const QUICKSTART = {
     install: {
       latest: 'Beta actual',
       pinned: 'Versión específica',
-      text: '<code>versaedit@beta</code> instala la beta más reciente y la registra en <code>package.json</code> con un rango (<code>^0.5.0-beta.2</code>), por lo que un <code>npm install</code> o <code>npm update</code> posterior puede traer una beta más nueva. <code>versaedit@0.5.0-beta.2</code> instala exactamente esta versión; añada <code>--save-exact</code> para registrarla sin rango, y cada instalación recibirá la misma versión hasta que usted la cambie. Como la API aún puede cambiar antes de la 1.0, fijar la versión es la opción más segura para producción.',
+      text: '<code>versaedit@beta</code> instala la beta más reciente y la registra en <code>package.json</code> con un rango (<code>^0.5.0-beta.3</code>), por lo que un <code>npm install</code> o <code>npm update</code> posterior puede traer una beta más nueva. <code>versaedit@0.5.0-beta.3</code> instala exactamente esta versión; añada <code>--save-exact</code> para registrarla sin rango, y cada instalación recibirá la misma versión hasta que usted la cambie. Como la API aún puede cambiar antes de la 1.0, fijar la versión es la opción más segura para producción.',
       newProject:
         '¿Aún no tiene un proyecto? Cree uno con Vite (React + TypeScript) e instale VersaEdit en él:',
     },
@@ -748,7 +748,7 @@ for (const key of Object.keys(QUICKSTART)) QUICKSTART[key].props.rows = PROPS[ke
 // Comandos do guia (iguais nos três idiomas)
 export const COMMANDS = {
   latest: 'npm install versaedit@beta',
-  pinned: 'npm install versaedit@0.5.0-beta.2',
+  pinned: 'npm install versaedit@0.5.0-beta.3',
   newProject:
     'npm create vite@latest my-editor -- --template react-ts\ncd my-editor\nnpm install\nnpm install versaedit@beta',
   usage:

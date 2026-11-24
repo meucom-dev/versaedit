@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Versão a publicar — igual à do package.json (ex.: 0.5.0-beta.2)'
+        description: 'Versão a publicar — igual à do package.json (ex.: 0.5.0-beta.3)'
         required: true
 
 permissions:

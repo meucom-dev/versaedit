@@ -22,7 +22,7 @@ folder to a temporary directory, installs the `.tgz` there, builds it and runs t
 With the published package instead:
 
 ```bash
-npm run test:package -- quick-start --from-registry=versaedit@0.5.0-beta.2
+npm run test:package -- quick-start --from-registry=versaedit@0.5.0-beta.3
 ```
 
 In your own project: `npm install versaedit@beta`, then copy `src/App.tsx`.
